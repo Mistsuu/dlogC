@@ -85,6 +85,16 @@ void ecc_init_pt_str(ecc curve, eccpt point, const char* x_str, const char* y_st
     assert(is_point_on_curve);
 }
 
+void ecc_init_pt_pt(eccpt dst_point, eccpt src_point)
+{
+    mpz_init(dst_point->x);
+    mpz_init(dst_point->y);
+    mpz_init(dst_point->z);
+    mpz_set(dst_point->x, src_point->x);
+    mpz_set(dst_point->y, src_point->y);
+    mpz_set(dst_point->z, src_point->z);
+}
+
 void ecc_set_pt(eccpt dst_point, eccpt src_point)
 {
     mpz_set(dst_point->x, src_point->x);

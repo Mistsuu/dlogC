@@ -4,13 +4,47 @@
 #include <gmp.h>
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 #include "ecc.h"
 #include "ecc_x.h"
 
-size_t dlog_alloc_buffer(
+size_t dlog_init_buffer(
     char** buffer,
     mpz_t n, size_t index_size, size_t item_size
 );
+
 int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads);
+
+void __thread__dlog_fill_buffer(
+    char* buffer,
+
+    size_t n_size_t, 
+    size_t index_size_bytes, size_t index_size_limbs,
+    size_t item_size_bytes, size_t item_size_limbs,
+
+    mp_limb_t* L0x, mp_limb_t* L0z,   // must be modified in-use
+    mp_limb_t* L1x, mp_limb_t* L1z,   // must be modified in-use
+    mp_limb_t* R0x, mp_limb_t* R0z,   // must be modified in-use
+    mp_limb_t* R1x, mp_limb_t* R1z,   // must be modified in-use
+    mp_limb_t* Px, mp_limb_t* Pz,
+
+    mp_limb_t* i_item_l, mp_limb_t* i_item_r,
+
+    mp_limb_t* curve_a,
+    mp_limb_t* curve_b,
+    mp_limb_t* curve_p
+);
+
+
+void dlog_fill_buffer(
+    char* buffer, 
+    ecc curve, eccpt G, eccpt kG, 
+
+    mpz_t n, size_t n_size_t, 
+    size_t index_size_bytes, size_t index_size_limbs,
+    size_t item_size_bytes, size_t item_size_limbs,
+    
+    unsigned int n_threads
+);
 
 #endif

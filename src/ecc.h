@@ -37,6 +37,7 @@ void ecc_free  (ecc curve);
 
 void ecc_init_pt       (eccpt point);
 void ecc_init_pt_str   (ecc curve, eccpt point, const char* x_str, const char* y_str, const char* z_str);
+void ecc_init_pt_pt    (eccpt dst_point, eccpt src_point);
 void ecc_set_pt        (eccpt dst_point, eccpt src_point);
 void ecc_set_pt_inf    (eccpt inf_point);
 void ecc_normalize_z_pt(ecc curve, eccpt point);
