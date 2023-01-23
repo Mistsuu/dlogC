@@ -7,7 +7,7 @@
 #include "ecc.h"
 #include "ecc_x.h"
 
-mp_limb_t* dlog_allocate(mpz_t nitems_alloc, size_t n_size_limbs, size_t p_size_limbs);
-int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t n);
+char* dlog_alloc_buffer(mpz_t nitems, size_t index_size, size_t item_size);
+int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads);
 
 #endif

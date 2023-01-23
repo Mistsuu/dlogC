@@ -16,14 +16,16 @@ void test_dlog(ecc curve, eccpt G)
     mpz_init_set_str(n, "857765763956341", 10);
 
     ecc_mul(curve, kG, G, k);
-    dlog(curve, k, G, kG, n);
+
+    unsigned int n_threads = 4;
+    dlog(curve, k, G, kG, n, n_threads);
     
     mpz_clear(k);
     mpz_clear(n);
     ecc_free_pt(kG);
 }
 
-int main()
+void main()
 {
     ecc curve;
     eccpt G;
@@ -45,5 +47,4 @@ int main()
 
     ecc_free_pt(G);
     ecc_free(curve);
-
 }
