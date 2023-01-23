@@ -1,0 +1,7 @@
+T0 -> 5N+2 vs 3N+1
+T1 -> 2N vs 2N+1
+T2 -> 2N vs 2N
+T3 -> 3N vs 4N
+T4 -> 6N vs 6N
+T5 -> 5N vs 5N+2
+T6 -> 5N+1 

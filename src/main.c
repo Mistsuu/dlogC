@@ -17,7 +17,7 @@ void test_dlog(ecc curve, eccpt G)
 
     ecc_mul(curve, kG, G, k);
     dlog(curve, k, G, kG, n);
-
+    
     mpz_clear(k);
     mpz_clear(n);
     ecc_free_pt(kG);

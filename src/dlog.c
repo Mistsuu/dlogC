@@ -34,7 +34,7 @@ mp_limb_t* dlog_allocate(mpz_t nitems_alloc, size_t n_size_limbs, size_t p_size_
                 nbytes_alloc / 1024.0 / 1024.0, 
                 nbytes_alloc / 1024.0 / 1024.0 / 1024.0
             );
-    return (mp_limb_t*) malloc(sizeof(mp_limb_t) * size_t_nitems_alloc * (n_size_limbs + p_size_limbs));
+    return (mp_limb_t*) malloc(nbytes_alloc);
 }
 
 /*
