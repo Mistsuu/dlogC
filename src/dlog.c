@@ -3,10 +3,10 @@
 #include "ecc_x.h"
 #include "const.h"
 
-#define mpz_size_bytes(n) (                             \
+#define mpz_size_bytes(n) (                              \
             ((mpz_size(n) * mp_bits_per_limb) >> 3) +    \
             ((mpz_size(n) * mp_bits_per_limb) &  7 != 0) \
-        )                                               \
+        )                                                \
 
 mp_limb_t* dlog_allocate(mpz_t nitems_alloc, size_t n_size_limbs, size_t p_size_limbs)
 {
