@@ -40,7 +40,7 @@ void ecc_xadd(
     mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
     mp_size_t n,                        // number of limbs in curve->p
     
-    ecc_xtemp T                         // temporary variables.
+    ecc_xtemp T                         // temporary variables, allocated with ecc_init_xtemp(T, n).
 )
 {
     // T0 = Px*Qx
@@ -98,7 +98,7 @@ void ecc_xdbl(
     mp_limb_t* curve_p,             // curve_p must have n limbs allocated
     mp_size_t n,                    // number of limbs in curve->p
     
-    ecc_xtemp T                     // temporary variables.
+    ecc_xtemp T                     // temporary variables, allocated with ecc_init_xtemp(T, n).
 )
 {
     // T0 = Px^2
@@ -154,7 +154,7 @@ void ecc_xmul(
     mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
     mp_size_t n,                        // number of limbs in curve->p
     
-    ecc_xtemp T                         // temporary variables.
+    ecc_xtemp T                         // temporary variables, allocated with ecc_init_xtemp(T, n).
 )
 {
     int i = n-1;
@@ -268,4 +268,42 @@ void ecc_xmul(
     }
 
     // R <- R0 (already done)
+}
+
+int ecc_xz_to_X(
+    mp_limb_t* PX,                      // PX must have n limbs allocated
+    mp_limb_t* Px, mp_limb_t* Pz,       // Px, Pz must have n limbs allocated
+
+    mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
+    mp_size_t n,
+    
+    ecc_xtemp T                         // temporary variables, allocated with ecc_init_xtemp(T, n).
+)
+{
+    mpn_copyd(T[0], Pz, n);
+    mpn_copyd(T[1], curve_p, n);
+
+    mp_size_t sn;
+    mpn_zero(T[6], n);
+    mpn_gcdext(T[5], T[6], &sn, T[0], n, T[1], n);
+
+    // curve_p divides Pz: return no.
+    if (!sn)
+        return 0;
+
+    // negative T[6]: T[6] = p - T[6]
+    if (sn < 0)
+        mpn_sub_n(T[6], curve_p, T[6], n);
+
+    // PX = Px / Pz mod p
+    mpn_mul_n(T[2], Px, T[6], n);
+    mpn_tdiv_qr(T[7], PX, 0, T[2], 2*n, curve_p, n);
+
+    // todo: i hope to remove this shit
+    if (abs(sn) > n) { 
+        printf("[debug] wtf, we have to take care of this shit, at ecc_xz_to_X() where inverted value > p????\n");
+        exit(-1);
+    }
+
+    return 1;
 }

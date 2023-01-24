@@ -14,7 +14,6 @@ size_t dlog_init_buffer(
     // Check if n fits in size_t -- argument size of malloc
     if (mpz_size_bytes(n) > sizeof(size_t))
         return 0;
-    printf("[debug] mpz_size_bytes(n) = %ld\n", mpz_size_bytes(n));
 
     // Convert n from mpz_t to size_t
     size_t           nitems_alloc_size   = mpz_size(n);
@@ -64,48 +63,37 @@ void __thread__dlog_fill_buffer(
     ecc_xtemp T;
     ecc_init_xtemp(T, item_size_limbs);
 
-    mp_limb_t* V0 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * 2 * item_size_limbs);
+    mp_limb_t* V0 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * item_size_limbs);
     mp_limb_t* V1 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * item_size_limbs);
-    mp_limb_t* V2 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * mpn_sec_invert_itch(item_size_limbs));
 
-    for (size_t _ = 0; _ < n_size_t; ++_) {
+    for (size_t _ = 0; _ < 10; ++_) {
         // ---------------------- Write iL -----------------------
         mpn_get_str(buffer, 256, i_item_l, index_size_limbs);
         buffer += index_size_bytes;
 
-        // ---------------------- Write L1x/L1z -----------------------
-        mpn_copyd(V0, L1z, item_size_limbs);
-        if (mpn_sec_invert(V1, V0, curve_p, item_size_limbs, 2 * item_size_bytes * 8, V2)) {            // V1 <- 1/L1z mod p
-            mpn_mul_n(V0, L1x, V1, item_size_limbs);                                                    // V0 <- L1x/L1z
-            mpn_tdiv_qr(V1, V0, 0, V0, 2*item_size_limbs, curve_p, item_size_limbs);                    // V0 <- L1x/L1z mod p
-            mpn_get_str(buffer, 256, V0, item_size_limbs);                                              // Write V0 to buffer.
-        }
-        else {
+        // ---------------------- Write L0x/L0z -----------------------
+        if (ecc_xz_to_X(V0, L0x, L0z, curve_p, item_size_limbs, T))
+            mpn_get_str(buffer, 256, V0, item_size_limbs);
+        else 
             mpn_get_str(buffer, 256, curve_p, item_size_limbs);
-        }
         buffer += item_size_limbs;
 
         // ---------------------- Write iR -----------------------
         mpn_get_str(buffer, 256, i_item_r, index_size_limbs);
         buffer += index_size_bytes;
 
-        // ---------------------- Write R1x/R1z -----------------------
-        mpn_copyd(V0, R1z, item_size_limbs);
-        if (mpn_sec_invert(V1, V0, curve_p, item_size_limbs, 2 * item_size_bytes * 8, V2)) {             // V1 <- 1/R1z mod p
-            mpn_mul_n(V0, R1x, V1, item_size_limbs);                                                     // V0 <- R1x/R1z
-            mpn_tdiv_qr(V1, V0, 0, V0, 2*item_size_limbs, curve_p, item_size_limbs);                     // V0 <- R1x/R1z mod p
-            mpn_get_str(buffer, 256, V0, item_size_limbs);                                               // Write V0 to buffer.
-        }
-        else {
+        // ---------------------- Write R0x/R0z -----------------------
+        if (ecc_xz_to_X(V0, R0x, R0z, curve_p, item_size_limbs, T))
+            mpn_get_str(buffer, 256, V0, item_size_limbs);
+        else 
             mpn_get_str(buffer, 256, curve_p, item_size_limbs);
-        }
         buffer += item_size_limbs;
 
         // ---------------------- Update iL -----------------------
-        mpn_add_1(i_item_l, i_item_l, item_size_limbs, 1);
+        mpn_add_1(i_item_l, i_item_l, index_size_limbs, 1);
 
         // ---------------------- Update iR -----------------------
-        mpn_sub_1(i_item_r, i_item_r, item_size_limbs, 1);
+        mpn_sub_1(i_item_r, i_item_r, index_size_limbs, 1);
 
         // ---------------------- Update L*x,L*z -----------------------
         ecc_xadd(
@@ -149,7 +137,6 @@ void __thread__dlog_fill_buffer(
     ecc_free_xtemp(T);
     free(V0);
     free(V1);
-    free(V2);
 }
 
 void dlog_fill_buffer(
@@ -163,12 +150,16 @@ void dlog_fill_buffer(
     unsigned int n_threads
 )
 {
-    mpz_t _0;
-    mpz_init_set_ui(_0, 0);
-
     mpz_t n_per_thread;
     mpz_init_set(n_per_thread, n);
-    mpz_tdiv_r_ui(n_per_thread, n_per_thread, (unsigned long)n_threads);
+    mpz_sub_ui(n_per_thread, n_per_thread, 1);
+
+    mpz_t n_last_thread;
+    mpz_init(n_last_thread);
+
+
+    mpz_tdiv_qr_ui(n_per_thread, n_last_thread, n_per_thread, (unsigned long)n_threads);
+    mpz_add(n_last_thread, n_last_thread, n_per_thread);
 
     eccpt L0; ecc_init_pt_pt(L0, G);    // L0 <- G
     eccpt L1; ecc_init_pt_pt(L1, G);    
@@ -184,8 +175,8 @@ void dlog_fill_buffer(
     eccpt R1; ecc_init_pt_pt(R1, R0);    
     ecc_add(curve, R1, R1, G);          // R1 <- (k-n*n+1)*G
 
-    mp_limb_t* iL = mpz_limbs_init_cpy(_0,           index_size_limbs);
-    mp_limb_t* iR = mpz_limbs_init_cpy(n_per_thread, index_size_limbs);
+    mp_limb_t* i_item_l = mpz_limbs_init_zero(index_size_limbs);
+    mp_limb_t* i_item_r = mpz_limbs_init_cpy(n_per_thread, index_size_limbs);
     mp_limb_t* Gx = mpz_limbs_init_cpy(G->x, item_size_limbs);
     mp_limb_t* Gz = mpz_limbs_init_cpy(G->z, item_size_limbs);
     mp_limb_t* L0x = mpz_limbs_init_cpy(L0->x, item_size_limbs);
@@ -201,6 +192,7 @@ void dlog_fill_buffer(
     mp_limb_t* curve_p = mpz_limbs_init_cpy(curve->p, item_size_limbs);
 
     size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
     __thread__dlog_fill_buffer(
         buffer,
 
@@ -214,21 +206,24 @@ void dlog_fill_buffer(
         R1x, R1z,
         Gx, Gz,
 
-        iL, iR,
+        i_item_l, i_item_r,
 
         curve_a,
         curve_b,
         curve_p
     );
 
-    mpz_clear(_0);
     mpz_clear(n_per_thread);
+    mpz_clear(n_last_thread);
 
     ecc_free_pt(L0);
     ecc_free_pt(L1);
     ecc_free_pt(R0);
     ecc_free_pt(R1);
+    ecc_free_pt(_nnG);
 
+    free(i_item_l);
+    free(i_item_r);
     free(Gx);
     free(Gz);
     free(L0x);
@@ -278,6 +273,8 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     }
     printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
     printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
+    printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
+    printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
 
     dlog_fill_buffer(
         buffer, 

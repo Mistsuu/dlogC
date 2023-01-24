@@ -25,7 +25,7 @@ void ecc_xadd(
     mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
     mp_size_t n,                        // number of limbs in curve->p
     
-    ecc_xtemp T                         // temporary variables.
+    ecc_xtemp T                         // temporary variables, allocated with ecc_init_xtemp(T, n).
 );
 void ecc_xdbl(
     mp_limb_t* Rx, mp_limb_t* Rz,   // Rx, Rz must have n limbs allocated
@@ -36,7 +36,7 @@ void ecc_xdbl(
     mp_limb_t* curve_p,             // curve_p must have n limbs allocated
     mp_size_t n,                    // number of limbs in curve->p
     
-    ecc_xtemp T                     // temporary variables.
+    ecc_xtemp T                     // temporary variables, allocated with ecc_init_xtemp(T, n).
 );
 void ecc_xmul(
     mp_limb_t* Rx, mp_limb_t* Rz,       // Rx, Rz must have n limbs allocated
@@ -49,7 +49,16 @@ void ecc_xmul(
     mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
     mp_size_t n,                        // number of limbs in curve->p
     
-    ecc_xtemp T                         // temporary variables.
+    ecc_xtemp T                         // temporary variables, allocated with ecc_init_xtemp(T, n).
+);
+int ecc_xz_to_X(
+    mp_limb_t* PX,                      // PX must have n limbs allocated
+    mp_limb_t* Px, mp_limb_t* Pz,       // Px, Pz must have n limbs allocated
+
+    mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
+    mp_size_t n,
+    
+    ecc_xtemp T                         // temporary variables, allocated with ecc_init_xtemp(T, n).
 );
 
 #endif
