@@ -55,6 +55,18 @@ void dlog_fill_buffer(
     unsigned int n_threads
 );
 
+typedef struct {
+    char* buffer;
+
+    size_t n_size_t;
+    size_t index_size_bytes;
+    size_t item_size_bytes;
+} __args_thread__dlog_sort_buffer;
+
+void* __thread__dlog_sort_buffer(
+    void* vargs
+);
+
 void dlog_sort_buffer(
     char* lbuffer,
     char* rbuffer,
