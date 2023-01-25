@@ -33,11 +33,6 @@ size_t dlog_init_buffer(
 
     // Now we allocate
     size_t nbytes_alloc = (n_size_t + 1) * (index_size_bytes + item_size_bytes);
-    printf("[debug] size buffer: %ld bytes = %f MB = %f GB\n", 
-                nbytes_alloc * 2, 
-                nbytes_alloc * 2 / 1024.0 / 1024.0, 
-                nbytes_alloc * 2 / 1024.0 / 1024.0 / 1024.0
-            );
     (*lbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     (*rbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     return n_size_t;
@@ -498,12 +493,6 @@ int dlog_search_buffer(
 int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
 {
     assert(mpz_cmp_si(upper_k, 4) > 0);
-
-    printf("[debug] Finding k = dlog(G, kG) for point:");
-    printf("[debug]    G = "); ecc_printf_pt(G); printf("\n");
-    printf("[debug]    kG = "); ecc_printf_pt(kG); printf("\n");
-    printf("[debug] on curve: "); printf("\n");
-    printf("[debug]    "); ecc_printf(curve); printf("\n");
     
     // Number of [n | p] items we have to allocate.
     mpz_t n;
@@ -526,15 +515,10 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     // Allocation failed
     if (!n_size_t) {
         mpz_clear(n);
-        printf("[debug] cannot allocate memory!\n");
+        printf("[error] cannot allocate memory!\n");
         return DLOG_CANNOT_ALLOCATE;
     }
-    printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
-    printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
-    printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
-    printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
 
-    printf("[debug] Filling lbuffer - rbuffer...\n");
     dlog_fill_buffer(
         lbuffer, 
         rbuffer, 
@@ -548,7 +532,6 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         n_threads
     );
 
-    printf("[debug] Sorting lbuffer - rbuffer...\n");
     dlog_sort_buffer(
         lbuffer,
         rbuffer,
@@ -558,7 +541,6 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         item_size_bytes
     );
 
-    printf("[debug] Searching lbuffer - rbuffer...\n");
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
     if (!dlog_search_buffer(
@@ -581,14 +563,6 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
 
         return DLOG_NOT_FOUND_DLOG;
     }
-
-    // FILE* pfile;
-    // pfile = fopen("miscellaneous/outputl", "w");
-    // fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    // fclose(pfile);
-    // pfile = fopen("miscellaneous/outputr", "w");
-    // fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    // fclose(pfile);
 
     eccpt Y;
     ecc_init_pt(Y);

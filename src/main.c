@@ -18,16 +18,22 @@ void test_dlog(ecc curve, eccpt G)
 
     ecc_mul(curve, kG, G, k);
 
+    printf("[i] Finding k = dlog(G, kG) for point:\n");
+    printf("[i]    G = "); ecc_printf_pt(G); printf("\n");
+    printf("[i]    kG = "); ecc_printf_pt(kG); printf("\n");
+    printf("[i] on curve: "); printf("\n");
+    printf("[i]    "); ecc_printf(curve); printf("\n");
+
     unsigned int n_threads = 4;
     if (dlog(curve, k, G, kG, n, n_threads) == DLOG_SUCCESS)
     {
-        printf("[debug] k = "); 
+        printf("[i] k = "); 
         mpz_out_str(stdout, 10, k);
         printf("\n");
     }
     else
     {
-        printf("[debug] Cannot find dlog!\n");
+        printf("[i] Cannot find dlog!\n");
     }
     
     mpz_clear(k);
