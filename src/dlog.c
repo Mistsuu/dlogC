@@ -45,78 +45,115 @@ void __thread__dlog_fill_buffer(
     __args_thread__dlog_fill_buffer* args
 )
 {   
+    
+    // -------------------------------------------------------------------------------------
+    //      Setup arguments.
+    // -------------------------------------------------------------------------------------
+    char* lbuffer = args->lbuffer;
+    char* rbuffer = args->rbuffer;
+
+    size_t n_size_t = args->n_size_t; 
+    size_t index_size_bytes = args->index_size_bytes; 
+    size_t index_size_limbs = args->index_size_limbs;
+    size_t item_size_bytes = args->item_size_bytes; 
+    size_t item_size_limbs = args->item_size_limbs;
+
+    mp_limb_t* L0x = args->L0x; 
+    mp_limb_t* L0z = args->L0z;
+    mp_limb_t* L1x = args->L1x; 
+    mp_limb_t* L1z = args->L1z;
+    mp_limb_t* R0x = args->R0x; 
+    mp_limb_t* R0z = args->R0z;
+    mp_limb_t* R1x = args->R1x; 
+    mp_limb_t* R1z = args->R1z;
+    mp_limb_t* Gx = args->Gx; 
+    mp_limb_t* Gz = args->Gz;
+    mp_limb_t* nGx = args->nGx; 
+    mp_limb_t* nGz = args->nGz;
+
+    mp_limb_t* i_l = args->i_l; 
+    mp_limb_t* i_r = args->i_r;
+
+    mp_limb_t* curve_a = args->curve_a;
+    mp_limb_t* curve_b = args->curve_b;
+    mp_limb_t* curve_p = args->curve_p;
+
+    // -------------------------------------------------------------------------------------
+    //      Real calculation
+    // -------------------------------------------------------------------------------------
+
     ecc_xtemp T;
-    ecc_init_xtemp(T, args->item_size_limbs);
+    ecc_init_xtemp(T, item_size_limbs);
 
-    mp_limb_t* V0 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * args->item_size_limbs);
-    mp_limb_t* V1 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * args->item_size_limbs);
+    mp_limb_t* V0 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * item_size_limbs);
+    mp_limb_t* V1 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * item_size_limbs);
 
-    for (size_t _ = 0; _ < args->n_size_t; ++_) {
+    for (size_t _ = 0; _ < n_size_t; ++_) {
         // ---------------------- Write iL -----------------------
-        mpn2bytes(args->lbuffer, args->index_size_bytes, args->i_l, args->index_size_limbs);
-        args->lbuffer += args->index_size_bytes;
+        mpn2bytes(lbuffer, index_size_bytes, i_l, index_size_limbs);
+        lbuffer += index_size_bytes;
 
         // ---------------------- Write L0x/L0z -----------------------
-        if (ecc_xz_to_X(V0, args->L0x, args->L0z, args->curve_p, args->item_size_limbs, T))
-            mpn2bytes(args->lbuffer, args->item_size_bytes, V0, args->item_size_limbs);
+        if (ecc_xz_to_X(V0, L0x, L0z, curve_p, item_size_limbs, T))
+            mpn2bytes(lbuffer, item_size_bytes, V0, item_size_limbs);
         else 
-            mpn2bytes(args->lbuffer, args->item_size_bytes, args->curve_p, args->item_size_limbs);
-        args->lbuffer += args->item_size_bytes;
+            mpn2bytes(lbuffer, item_size_bytes, curve_p, item_size_limbs);
+        lbuffer += item_size_bytes;
 
         // ---------------------- Write iR -----------------------
-        mpn2bytes(args->rbuffer, args->index_size_bytes, args->i_r, args->index_size_limbs);
-        args->rbuffer += args->index_size_bytes;
+        mpn2bytes(rbuffer, index_size_bytes, i_r, index_size_limbs);
+        rbuffer += index_size_bytes;
 
         // ---------------------- Write R0x/R0z -----------------------
-        if (ecc_xz_to_X(V0, args->R0x, args->R0z, args->curve_p, args->item_size_limbs, T))
-            mpn2bytes(args->rbuffer, args->item_size_bytes, V0, args->item_size_limbs);
+        if (ecc_xz_to_X(V0, R0x, R0z, curve_p, item_size_limbs, T))
+            mpn2bytes(rbuffer, item_size_bytes, V0, item_size_limbs);
         else 
-            mpn2bytes(args->rbuffer, args->item_size_bytes, args->curve_p, args->item_size_limbs);
-        args->rbuffer += args->item_size_bytes;
+            mpn2bytes(rbuffer, item_size_bytes, curve_p, item_size_limbs);
+        rbuffer += item_size_bytes;
 
         // ---------------------- Update iL -----------------------
-        mpn_add_1(args->i_l, args->i_l, args->index_size_limbs, 1);
+        mpn_add_1(i_l, i_l, index_size_limbs, 1);
 
         // ---------------------- Update iR -----------------------
-        mpn_sub_1(args->i_r, args->i_r, args->index_size_limbs, 1);
+        mpn_sub_1(i_r, i_r, index_size_limbs, 1);
 
         // ---------------------- Update L*x,L*z -----------------------
         ecc_xadd(
             V0, V1,
-            args->L1x, args->L1z,
-            args->Gx, args->Gz,
-            args->L0x, args->L0z,
+            L1x, L1z,
+            Gx, Gz,
+            L0x, L0z,
 
-            args->curve_a,
-            args->curve_b,
-            args->curve_p,
-            args->item_size_limbs,
+            curve_a,
+            curve_b,
+            curve_p,
+            item_size_limbs,
 
             T
         );
-        mpn_copyd(args->L0x, args->L1x, args->item_size_limbs);
-        mpn_copyd(args->L0z, args->L1z, args->item_size_limbs);
-        mpn_copyd(args->L1x, V0, args->item_size_limbs);
-        mpn_copyd(args->L1z, V1, args->item_size_limbs);
+        mpn_copyd(L0x, L1x, item_size_limbs);
+        mpn_copyd(L0z, L1z, item_size_limbs);
+        mpn_copyd(L1x, V0, item_size_limbs);
+        mpn_copyd(L1z, V1, item_size_limbs);
 
         // ---------------------- Update R*x,R*z -----------------------
         ecc_xadd(
             V0, V1,
-            args->R1x, args->R1z,
-            args->nGx, args->nGz,
-            args->R0x, args->R0z,
+            R1x, R1z,
+            nGx, nGz,
+            R0x, R0z,
 
-            args->curve_a,
-            args->curve_b,
-            args->curve_p,
-            args->item_size_limbs,
+            curve_a,
+            curve_b,
+            curve_p,
+            item_size_limbs,
 
             T
         );
-        mpn_copyd(args->R0x, args->R1x, args->item_size_limbs);
-        mpn_copyd(args->R0z, args->R1z, args->item_size_limbs);
-        mpn_copyd(args->R1x, V0, args->item_size_limbs);
-        mpn_copyd(args->R1z, V1, args->item_size_limbs);
+        mpn_copyd(R0x, R1x, item_size_limbs);
+        mpn_copyd(R0z, R1z, item_size_limbs);
+        mpn_copyd(R1x, V0, item_size_limbs);
+        mpn_copyd(R1z, V1, item_size_limbs);
     }
 
     ecc_free_xtemp(T);
