@@ -22,8 +22,8 @@ int que2_pop(que2 queue, size_t* val1, size_t* val2)
 {
     if (queue->size < 2)
         return 0;
-    (*val2) = queue->data[queue->size--];
-    (*val1) = queue->data[queue->size--];
+    (*val2) = queue->data[--queue->size];
+    (*val1) = queue->data[--queue->size];
     return 1;
 }
 
