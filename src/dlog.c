@@ -3,6 +3,7 @@
 #include "ecc_x.h"
 #include "num.h"
 #include "const.h"
+#include "que2.h"
 
 #define mpz_size_bytes(n) mpz_sizeinbase(n, 256)
             
@@ -365,11 +366,49 @@ void dlog_fill_buffer(
     free(threads);
 }
 
-void __thread__dlog_sort_buffer(
+size_t __thread_partition__dlog_sort_buffer(
+    char* buffer,
 
+    size_t lo, size_t hi,
+    size_t index_size_bytes,
+    size_t item_size_bytes
 )
 {
+    size_t i = 0;
+    return i;
+}
 
+void __thread__dlog_sort_buffer(
+    char* buffer,
+
+    size_t n_size_t,
+    size_t index_size_bytes,
+    size_t item_size_bytes
+)
+{
+    que2 sort_queue;
+    que2_init(sort_queue);
+
+    size_t LO = 0;
+    size_t HI = n_size_t-1;
+    size_t PI;
+    que2_push(sort_queue, LO, HI);
+
+    while (que2_pop(sort_queue, &LO, &HI)) {
+        // Create a temporary buffer here.
+        PI = __thread_partition__dlog_sort_buffer(
+                buffer,
+                LO, HI,
+                index_size_bytes,
+                item_size_bytes
+            );
+        if (LO < PI-1)
+            que2_push(sort_queue, LO, PI-1);
+        if (PI+1 < HI)
+            que2_push(sort_queue, PI+1, HI);
+    }
+
+    que2_free(sort_queue);
 }
 
 void dlog_sort_buffer(
@@ -383,10 +422,24 @@ void dlog_sort_buffer(
     unsigned int n_threads
 )
 {
+    n_size_t += 1; // Remember, index is [0 -> n].
     size_t n_per_thread_size_t = n_size_t / n_threads;
     size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
 
     printf("[debug] sort l-buffer...\n");
+    __thread__dlog_sort_buffer(
+        lbuffer,
+
+        n_per_thread_size_t,
+        index_size_bytes,
+        item_size_bytes
+    );
+
+    // for (unsigned int i = 0; i < n_threads; ++i) {
+    //     lbuffer += n_per_thread_size_t * (index_size_bytes + item_size_bytes);
+    // }
+
+    printf("[debug] sort r-buffer...\n");
 }
 
 
