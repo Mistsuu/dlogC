@@ -9,14 +9,16 @@
 #include "ecc_x.h"
 
 size_t dlog_init_buffer(
-    char** buffer,
-    mpz_t n, size_t index_size, size_t item_size
+    char** lbuffer,
+    char** rbuffer,
+    mpz_t n, size_t index_size_bytes, size_t item_size_bytes
 );
 
 int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads);
 
 void __thread__dlog_fill_buffer(
-    char* buffer,
+    char* lbuffer,
+    char* rbuffer,
 
     size_t n_size_t, 
     size_t index_size_bytes, size_t index_size_limbs,
@@ -37,7 +39,8 @@ void __thread__dlog_fill_buffer(
 
 
 void dlog_fill_buffer(
-    char* buffer, 
+    char* lbuffer,
+    char* rbuffer,
     ecc curve, eccpt G, eccpt kG, 
 
     mpz_t n, size_t n_size_t, 

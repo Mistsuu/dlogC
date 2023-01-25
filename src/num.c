@@ -26,3 +26,27 @@ mp_limb_t* mpz_limbs_init_zero(size_t n)
     memset(x_limbs, 0, sizeof(mp_limb_t) * n);
     return x_limbs;
 }
+
+void mpn2bytes(unsigned char *str, mp_size_t len, mp_limb_t *s1p, mp_size_t s1n)
+{
+    // If I don't do this, 
+    // mpn_get_str() will return some crazy stuffs :'<
+    if (mpn_zero_p(s1p, s1n)) {
+        memset(str, 0, len);
+        return;
+    }
+
+    mp_size_t actual_len = mpn_get_str(str, 256, s1p, s1n);
+    if (actual_len > len) { // todo: god i hope i could delete this shit
+        printf("[debug] omg plz, whyyyyy mpn_get_str cannot fit in mpn2bytes: actual_len=%ld, len=%ld???????\n", actual_len, len);
+        printf("[debug] s1p: \n");
+
+        for (mp_size_t i = 0; i < s1n; ++i) {
+            printf("       0x%016lx\n", s1p[i]);
+        }
+        exit(-1);
+    }
+    
+    memmove(&str[len - actual_len], str, actual_len);
+    memset(str, 0, len - actual_len);
+}
