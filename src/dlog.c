@@ -498,6 +498,12 @@ int dlog_search_buffer(
 int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
 {
     assert(mpz_cmp_si(upper_k, 4) > 0);
+
+    printf("[debug] Finding k = dlog(G, kG) for point:");
+    printf("[debug]    G = "); ecc_printf_pt(G); printf("\n");
+    printf("[debug]    kG = "); ecc_printf_pt(kG); printf("\n");
+    printf("[debug] on curve: "); printf("\n");
+    printf("[debug]    "); ecc_printf(curve); printf("\n");
     
     // Number of [n | p] items we have to allocate.
     mpz_t n;

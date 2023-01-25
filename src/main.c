@@ -13,7 +13,7 @@ void test_dlog(ecc curve, eccpt G)
 
     mpz_t k;
     mpz_t n;
-    mpz_init_set_str(k, "2023", 10);
+    mpz_init_set_str(k, "22535525235", 10);
     mpz_init_set_str(n, "857765763956341", 10);
 
     ecc_mul(curve, kG, G, k);
