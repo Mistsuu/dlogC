@@ -47,6 +47,7 @@ void ecc_free_pt       (eccpt point);
 void ecc_add_noverify  (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
 void ecc_mul_noverify  (ecc curve, eccpt pointR, eccpt pointP, mpz_t k);
 void ecc_add           (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
+void ecc_sub           (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
 void ecc_mul           (ecc curve, eccpt pointR, eccpt pointP, mpz_t k);
 
 #endif

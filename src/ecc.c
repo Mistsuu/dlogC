@@ -304,6 +304,24 @@ void ecc_add(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 }
 
 /*
+    ? Calculate R = P - Q.
+    ! (Required every input is already init-ed)
+*/
+void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
+{
+    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
+    assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
+    assert(ecc_verify_pt(curve, pointP));
+    assert(ecc_verify_pt(curve, pointQ));
+
+    eccpt _pointQ;
+    ecc_init_pt_pt(_pointQ, pointQ);
+    mpz_sub(_pointQ, curve->p, _pointQ);
+    ecc_add_noverify(curve, pointR, pointP, _pointQ);
+    ecc_free(_pointQ);
+}
+
+/*
     ? Calculate R = P * k.
     ! (Required every input is already init-ed)
 */
