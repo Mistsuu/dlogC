@@ -215,16 +215,6 @@ void dlog_fill_buffer(
         curve_p
     );
 
-    FILE* file = fopen("outputl", "w");
-    fwrite(lbuffer, 1, 497889880, file);
-    fclose(file);
-    file = fopen("outputr", "w");
-    fwrite(rbuffer, 1, 497889880, file);
-    fclose(file);
-
-    printf("lbuffer = %lx\n", lbuffer);
-    printf("rbuffer = %lx\n", rbuffer);
-
     mpz_clear(n_per_thread);
     mpz_clear(n_last_thread);
 

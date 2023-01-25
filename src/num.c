@@ -47,6 +47,6 @@ void mpn2bytes(unsigned char *str, mp_size_t len, mp_limb_t *s1p, mp_size_t s1n)
         exit(-1);
     }
     
-    memmove(&str[len - actual_len], str, actual_len);
+    memmove(str + len - actual_len, str, actual_len);
     memset(str, 0, len - actual_len);
 }
