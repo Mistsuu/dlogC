@@ -5,6 +5,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <pthread.h>
 #include "ecc.h"
 #include "ecc_x.h"
 
@@ -38,8 +39,8 @@ typedef struct {
     mp_limb_t* curve_p;
 } __args_thread__dlog_fill_buffer;
 
-void __thread__dlog_fill_buffer(
-    __args_thread__dlog_fill_buffer* args
+void* __thread__dlog_fill_buffer(
+    void* vargs
 );
 
 void dlog_fill_buffer(

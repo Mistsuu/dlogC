@@ -41,14 +41,16 @@ size_t dlog_init_buffer(
     return n_size_t;
 }
 
-void __thread__dlog_fill_buffer(
-    __args_thread__dlog_fill_buffer* args
+void* __thread__dlog_fill_buffer(
+    void* vargs
 )
 {   
     
     // -------------------------------------------------------------------------------------
     //      Setup arguments.
     // -------------------------------------------------------------------------------------
+    __args_thread__dlog_fill_buffer* args = (__args_thread__dlog_fill_buffer*) vargs;
+
     char* lbuffer = args->lbuffer;
     char* rbuffer = args->rbuffer;
 
@@ -173,6 +175,9 @@ void dlog_fill_buffer(
     unsigned int n_threads
 )
 {
+    // char* start_lbuffer = lbuffer;
+    // char* start_rbuffer = rbuffer;
+
     // -------------------------------------------------------------------------------------
     //      Set up number of items per thread.
     // -------------------------------------------------------------------------------------
@@ -232,17 +237,6 @@ void dlog_fill_buffer(
     mp_limb_t* curve_b = mpz_limbs_init_cpy(curve->b, item_size_limbs);
     mp_limb_t* curve_p = mpz_limbs_init_cpy(curve->p, item_size_limbs);
 
-    mp_limb_t** i_l = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** i_r = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** L0x = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** L0z = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** L1x = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** L1z = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** R0x = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** R0z = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** R1x = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-    mp_limb_t** R1z = (mp_limb_t**) malloc(sizeof(mp_limb_t*) * n_threads);
-
     eccpt n_per_threadG;
     eccpt nn_per_threadG;
     ecc_init_pt(n_per_threadG);
@@ -256,17 +250,36 @@ void dlog_fill_buffer(
     mpz_init_set(iR, n);
     mpz_sub_ui(iR, iR, 1);      // Because we have written n to buffer, so index of rbuffer starts with n-1.
 
+    size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
+
     for (unsigned int i = 0; i < n_threads; ++i) {
-        i_l[i] = mpz_limbs_init_cpy(iL, index_size_limbs);
-        i_r[i] = mpz_limbs_init_cpy(iR, index_size_limbs);
-        L0x[i] = mpz_limbs_init_cpy(L0->x, item_size_limbs);
-        L0z[i] = mpz_limbs_init_cpy(L0->z, item_size_limbs);
-        L1x[i] = mpz_limbs_init_cpy(L1->x, item_size_limbs);
-        L1z[i] = mpz_limbs_init_cpy(L1->z, item_size_limbs);
-        R0x[i] = mpz_limbs_init_cpy(R0->x, item_size_limbs);
-        R0z[i] = mpz_limbs_init_cpy(R0->z, item_size_limbs);
-        R1x[i] = mpz_limbs_init_cpy(R1->x, item_size_limbs);
-        R1z[i] = mpz_limbs_init_cpy(R1->z, item_size_limbs);
+        thread_args[i].lbuffer = lbuffer;
+        thread_args[i].rbuffer = rbuffer;
+        thread_args[i].n_size_t = (i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t);
+        thread_args[i].index_size_bytes = index_size_bytes;
+        thread_args[i].index_size_limbs = index_size_limbs;
+        thread_args[i].item_size_bytes = item_size_bytes;
+        thread_args[i].item_size_limbs = item_size_limbs;
+
+        thread_args[i].Gx = Gx;
+        thread_args[i].nGx = nGx;
+        thread_args[i].Gz = Gz;
+        thread_args[i].nGz = nGz;
+        thread_args[i].curve_a = curve_a;
+        thread_args[i].curve_b = curve_b;
+        thread_args[i].curve_p = curve_p;
+
+        thread_args[i].i_l = mpz_limbs_init_cpy(iL, index_size_limbs);
+        thread_args[i].i_r = mpz_limbs_init_cpy(iR, index_size_limbs);
+        thread_args[i].L0x = mpz_limbs_init_cpy(L0->x, item_size_limbs);
+        thread_args[i].L0z = mpz_limbs_init_cpy(L0->z, item_size_limbs);
+        thread_args[i].L1x = mpz_limbs_init_cpy(L1->x, item_size_limbs);
+        thread_args[i].L1z = mpz_limbs_init_cpy(L1->z, item_size_limbs);
+        thread_args[i].R0x = mpz_limbs_init_cpy(R0->x, item_size_limbs);
+        thread_args[i].R0z = mpz_limbs_init_cpy(R0->z, item_size_limbs);
+        thread_args[i].R1x = mpz_limbs_init_cpy(R1->x, item_size_limbs);
+        thread_args[i].R1z = mpz_limbs_init_cpy(R1->z, item_size_limbs);
 
         ecc_add(curve, L0, L0, n_per_threadG);      // L0 <- L0 + n_per_thread*G
         ecc_add(curve, L1, L1, n_per_threadG);      // L1 <- L1 + n_per_thread*G
@@ -274,36 +287,40 @@ void dlog_fill_buffer(
         ecc_add(curve, R1, R1, nn_per_threadG);     // R1 <- R1 + n*n_per_thread*G
         mpz_add(iL, iL, n_per_thread);
         mpz_sub(iR, iR, n_per_thread);
+
+        lbuffer += n_per_thread_size_t * (item_size_bytes + index_size_bytes);
+        rbuffer += n_per_thread_size_t * (item_size_bytes + index_size_bytes);
     }
 
     // -------------------------------------------------------------------------------------
     //      Generate threads.
     // -------------------------------------------------------------------------------------
 
-    size_t n_per_thread_size_t = n_size_t / n_threads;
-    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
-    // __thread__dlog_fill_buffer(
-    //     lbuffer,
-    //     rbuffer,
+    pthread_t* threads = (pthread_t*) malloc(sizeof(pthread_t) * n_threads);
+    int result_code;
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        result_code = pthread_create(&threads[i], NULL, __thread__dlog_fill_buffer, (void*)(&thread_args[i]));
+        if (result_code) {
+            printf("[debug] oh no! dlog_fill_buffer cannot CREATE thread!!!\n");
+            exit(-1);
+        }
+    }
 
-    //     n_per_thread_size_t, 
-    //     index_size_bytes, index_size_limbs,
-    //     item_size_bytes, item_size_limbs,
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        result_code = pthread_join(threads[i], NULL);
+        if (result_code) {
+            printf("[debug] oh no! dlog_fill_buffer cannot JOIN thread!!!\n");
+            exit(-1);
+        }
+    }
 
-    //     L0x, L0z,
-    //     L1x, L1z,
-    //     R0x, R0z,
-    //     R1x, R1z,
-    //     Gx, Gz,
-    //     nGx, nGz,
-
-    //     i_l, i_r,
-
-    //     curve_a,
-    //     curve_b,
-    //     curve_p
-    // );
-
+    // FILE* pfile;
+    // pfile = fopen("miscellaneous/outputl", "w");
+    // fwrite(start_lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
+    // pfile = fopen("miscellaneous/outputr", "w");
+    // fwrite(start_rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
 
     // -------------------------------------------------------------------------------------
     //      Cleaning up.
@@ -332,28 +349,20 @@ void dlog_fill_buffer(
     free(curve_p);
 
     for (unsigned int i = 0; i < n_threads; ++i) {
-        free(i_l[i]);
-        free(i_r[i]);
-        free(L0x[i]);
-        free(L0z[i]);
-        free(L1x[i]);
-        free(L1z[i]);
-        free(R0x[i]);
-        free(R0z[i]);
-        free(R1x[i]);
-        free(R1z[i]);
+        free(thread_args[i].i_l);
+        free(thread_args[i].i_r);
+        free(thread_args[i].L0x);
+        free(thread_args[i].L0z);
+        free(thread_args[i].L1x);
+        free(thread_args[i].L1z);
+        free(thread_args[i].R0x);
+        free(thread_args[i].R0z);
+        free(thread_args[i].R1x);
+        free(thread_args[i].R1z);
     }
 
-    free(i_l);
-    free(i_r);
-    free(L0x);
-    free(L0z);
-    free(L1x);
-    free(L1z);
-    free(R0x);
-    free(R0z);
-    free(R1x);
-    free(R1z);
+    free(thread_args);
+    free(threads);
 }
 
 /*
