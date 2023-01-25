@@ -301,7 +301,7 @@ void dlog_fill_buffer(
     for (unsigned int i = 0; i < n_threads; ++i) {
         result_code = pthread_create(&threads[i], NULL, __thread__dlog_fill_buffer, (void*)(&thread_args[i]));
         if (result_code) {
-            printf("[debug] oh no! dlog_fill_buffer cannot CREATE thread!!!\n");
+            printf("[error] oh no! dlog_fill_buffer cannot CREATE thread!!!\n");
             exit(-1);
         }
     }
@@ -309,7 +309,7 @@ void dlog_fill_buffer(
     for (unsigned int i = 0; i < n_threads; ++i) {
         result_code = pthread_join(threads[i], NULL);
         if (result_code) {
-            printf("[debug] oh no! dlog_fill_buffer cannot JOIN thread!!!\n");
+            printf("[error] oh no! dlog_fill_buffer cannot JOIN thread!!!\n");
             exit(-1);
         }
     }
@@ -365,6 +365,31 @@ void dlog_fill_buffer(
     free(threads);
 }
 
+void __thread__dlog_sort_buffer(
+
+)
+{
+
+}
+
+void dlog_sort_buffer(
+    char* lbuffer,
+    char* rbuffer,
+
+    size_t n_size_t,
+    size_t index_size_bytes,
+    size_t item_size_bytes,
+
+    unsigned int n_threads
+)
+{
+    size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
+
+    printf("[debug] sort l-buffer...\n");
+}
+
+
 /*
     dlog():
         ? Calculate k from G and k*G where k < upper_k.
@@ -416,16 +441,16 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         n_threads
     );
 
-    // dlog_sort_buffer(
-    //     lbuffer,
-    //     rbuffer,
-    //
-    //     n_size_t, 
-    //     index_size_bytes, 
-    //     item_size_bytes,
-    //
-    //     n_threads
-    // );
+    dlog_sort_buffer(
+        lbuffer,
+        rbuffer,
+    
+        n_size_t, 
+        index_size_bytes, 
+        item_size_bytes,
+    
+        n_threads
+    );
 
     // mpz_t iL, iR;
     // dlog_search_buffer(
