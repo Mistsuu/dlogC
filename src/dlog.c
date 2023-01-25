@@ -4,6 +4,7 @@
 #include "num.h"
 #include "const.h"
 #include "que2.h"
+#include "mem.h"
 
 #define mpz_size_bytes(n) mpz_sizeinbase(n, 256)
             
@@ -37,8 +38,8 @@ size_t dlog_init_buffer(
                 nbytes_alloc * 2 / 1024.0 / 1024.0, 
                 nbytes_alloc * 2 / 1024.0 / 1024.0 / 1024.0
             );
-    (*lbuffer) = (char*) malloc(nbytes_alloc);
-    (*rbuffer) = (char*) malloc(nbytes_alloc);
+    (*lbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
+    (*rbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     return n_size_t;
 }
 
@@ -88,8 +89,8 @@ void* __thread__dlog_fill_buffer(
     ecc_xtemp T;
     ecc_init_xtemp(T, item_size_limbs);
 
-    mp_limb_t* V0 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * item_size_limbs);
-    mp_limb_t* V1 = (mp_limb_t*) malloc(sizeof(mp_limb_t) * item_size_limbs);
+    mp_limb_t* V0 = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * item_size_limbs);
+    mp_limb_t* V1 = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * item_size_limbs);
 
     for (size_t _ = 0; _ < n_size_t; ++_) {
         // ---------------------- Write iL -----------------------
@@ -176,9 +177,6 @@ void dlog_fill_buffer(
     unsigned int n_threads
 )
 {
-    // char* start_lbuffer = lbuffer;
-    // char* start_rbuffer = rbuffer;
-
     // -------------------------------------------------------------------------------------
     //      Set up number of items per thread.
     // -------------------------------------------------------------------------------------
@@ -228,7 +226,7 @@ void dlog_fill_buffer(
     //      Initialize memory for arguments of __thread__dlog_fill_buffer.
     // -------------------------------------------------------------------------------------
 
-    __args_thread__dlog_fill_buffer* thread_args = (__args_thread__dlog_fill_buffer*) malloc(sizeof(__args_thread__dlog_fill_buffer) * n_threads);
+    __args_thread__dlog_fill_buffer* thread_args = (__args_thread__dlog_fill_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_fill_buffer) * n_threads);
 
     mp_limb_t* Gx = mpz_limbs_init_cpy(G->x, item_size_limbs);
     mp_limb_t* Gz = mpz_limbs_init_cpy(G->z, item_size_limbs);
@@ -297,7 +295,7 @@ void dlog_fill_buffer(
     //      Generate threads.
     // -------------------------------------------------------------------------------------
 
-    pthread_t* threads = (pthread_t*) malloc(sizeof(pthread_t) * n_threads);
+    pthread_t* threads = (pthread_t*) malloc_exit_when_null(sizeof(pthread_t) * n_threads);
     int result_code;
     for (unsigned int i = 0; i < n_threads; ++i) {
         result_code = pthread_create(&threads[i], NULL, __thread__dlog_fill_buffer, (void*)(&thread_args[i]));
@@ -314,14 +312,6 @@ void dlog_fill_buffer(
             exit(-1);
         }
     }
-
-    // FILE* pfile;
-    // pfile = fopen("miscellaneous/outputl", "w");
-    // fwrite(start_lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    // fclose(pfile);
-    // pfile = fopen("miscellaneous/outputr", "w");
-    // fwrite(start_rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    // fclose(pfile);
 
     // -------------------------------------------------------------------------------------
     //      Cleaning up.
@@ -366,18 +356,6 @@ void dlog_fill_buffer(
     free(threads);
 }
 
-size_t __thread_partition__dlog_sort_buffer(
-    char* buffer,
-
-    size_t lo, size_t hi,
-    size_t index_size_bytes,
-    size_t item_size_bytes
-)
-{
-    size_t i = 0;
-    return i;
-}
-
 void __thread__dlog_sort_buffer(
     char* buffer,
 
@@ -386,22 +364,55 @@ void __thread__dlog_sort_buffer(
     size_t item_size_bytes
 )
 {
+    // Create a temporary buffer to have a place holder for swapping :)
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    char* temp_buf = (char*) malloc_exit_when_null(slot_size_bytes);
+
+    // Queue for holding lo, hi values.
     que2 sort_queue;
     que2_init(sort_queue);
 
     size_t LO = 0;
     size_t HI = n_size_t-1;
     size_t PI;
-    que2_push(sort_queue, LO, HI);
 
+    char* pivot;
+    char* buffer_i = buffer;
+    char* buffer_j = buffer;
+
+    que2_push(sort_queue, LO, HI);
     while (que2_pop(sort_queue, &LO, &HI)) {
-        // Create a temporary buffer here.
-        PI = __thread_partition__dlog_sort_buffer(
-                buffer,
-                LO, HI,
-                index_size_bytes,
-                item_size_bytes
-            );
+        pivot    = buffer + HI * slot_size_bytes;
+        buffer_i = buffer + LO * slot_size_bytes;
+        buffer_j = buffer + LO * slot_size_bytes;
+        PI       = LO;
+        while (buffer_j < pivot) {
+            // Swap i, j views if element is < pivot
+            if (memcmp(
+                    buffer_j + index_size_bytes, 
+                    pivot + index_size_bytes, 
+                    item_size_bytes
+                ) < 0) {
+                    // Swap i view with j view.
+                    memcpy(temp_buf, buffer_i, slot_size_bytes);
+                    memcpy(buffer_i, buffer_j, slot_size_bytes);
+                    memcpy(buffer_j, temp_buf, slot_size_bytes);
+
+                    // Update i view.
+                    buffer_i += slot_size_bytes;
+                    PI       += 1;
+                }
+
+            // Update j view.
+            buffer_j += slot_size_bytes;
+        }
+
+        // Swap i view with pivot :)
+        memcpy(temp_buf, buffer_i, slot_size_bytes);
+        memcpy(buffer_i, pivot, slot_size_bytes);
+        memcpy(pivot, temp_buf, slot_size_bytes);
+
+        // Append lookup indices to quicksort queue.
         if (LO < PI-1)
             que2_push(sort_queue, LO, PI-1);
         if (PI+1 < HI)
@@ -409,6 +420,7 @@ void __thread__dlog_sort_buffer(
     }
 
     que2_free(sort_queue);
+    free(temp_buf);
 }
 
 void dlog_sort_buffer(
@@ -518,6 +530,15 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     //
     //     n_threads
     // );
+
+
+    FILE* pfile;
+    pfile = fopen("miscellaneous/outputl", "w");
+    fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    fclose(pfile);
+    pfile = fopen("miscellaneous/outputr", "w");
+    fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    fclose(pfile);
 
     mpz_clear(n);
     free(lbuffer);

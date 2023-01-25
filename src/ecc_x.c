@@ -1,17 +1,18 @@
 #include "ecc_x.h"
 #include "num.h"
+#include "mem.h"
 
 void ecc_init_xtemp(ecc_xtemp T, mp_size_t n)
 {
-    T[0] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (5*n+2));
-    T[1] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (2*n+1));
-    T[2] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (2*n));
-    T[3] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (4*n));
-    T[4] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (6*n));
-    T[5] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (5*n+2));
-    T[6] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (5*n+1));
-    T[7] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (n));
-    T[8] = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (n));
+    T[0] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (5*n+2));
+    T[1] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (2*n+1));
+    T[2] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (2*n));
+    T[3] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (4*n));
+    T[4] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n));
+    T[5] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (5*n+2));
+    T[6] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (5*n+1));
+    T[7] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (n));
+    T[8] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (n));
 }
 
 void ecc_free_xtemp(ecc_xtemp T)

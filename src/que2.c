@@ -1,9 +1,10 @@
 #include "que2.h"
+#include "mem.h"
 
 void que2_init(que2 queue)
 {
     queue->max_size = 4 * sizeof(size_t) * 8;
-    queue->data = (size_t*) malloc(queue->max_size * sizeof(size_t));
+    queue->data = (size_t*) malloc_exit_when_null(queue->max_size * sizeof(size_t));
     queue->size = 0;
 }
 

@@ -55,4 +55,15 @@ void dlog_fill_buffer(
     unsigned int n_threads
 );
 
+void dlog_sort_buffer(
+    char* lbuffer,
+    char* rbuffer,
+
+    size_t n_size_t,
+    size_t index_size_bytes,
+    size_t item_size_bytes,
+
+    unsigned int n_threads
+);
+
 #endif
