@@ -318,7 +318,7 @@ void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     ecc_init_pt_pt(_pointQ, pointQ);
     mpz_sub(_pointQ, curve->p, _pointQ);
     ecc_add_noverify(curve, pointR, pointP, _pointQ);
-    ecc_free(_pointQ);
+    ecc_free_pt(_pointQ);
 }
 
 /*
