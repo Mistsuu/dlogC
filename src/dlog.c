@@ -477,8 +477,8 @@ int dlog_search_buffer(
     mp_limb_t* exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
     mpn_zero(exp_l_limbs, index_size_limbs+1);
     mpn_zero(exp_r_limbs, index_size_limbs+1);
-    printf("%ld\n", mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256));
-    printf("%ld\n", mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256));
+    mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256);
+    mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256);
 
     mpz_t tmp;
     mpz_set(exp_l, mpz_roinit_n(tmp, exp_l_limbs, index_size_limbs));
