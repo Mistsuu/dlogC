@@ -301,7 +301,7 @@ int ecc_xz_to_X(
 
     // todo: i hope to remove this shit
     if (abs(sn) > n) { 
-        printf("[debug] wtf, we have to take care of this shit, at ecc_xz_to_X() where inverted value > p????\n");
+        printf("[error] wtf, we have to take care of this shit, at ecc_xz_to_X() where inverted value > p????\n");
         exit(-1);
     }
 
