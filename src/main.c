@@ -4,6 +4,7 @@
 #include "ecc_x.h"
 #include "num.h"
 #include "dlog.h"
+#include "const.h"
 
 void test_dlog(ecc curve, eccpt G)
 {
@@ -18,7 +19,16 @@ void test_dlog(ecc curve, eccpt G)
     ecc_mul(curve, kG, G, k);
 
     unsigned int n_threads = 4;
-    dlog(curve, k, G, kG, n, n_threads);
+    if (dlog(curve, k, G, kG, n, n_threads) == DLOG_SUCCESS)
+    {
+        printf("[debug] k = "); 
+        mpz_out_str(stdout, 10, k);
+        printf("\n");
+    }
+    else
+    {
+        printf("[debug] Cannot find dlog!\n");
+    }
     
     mpz_clear(k);
     mpz_clear(n);

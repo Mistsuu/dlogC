@@ -15,8 +15,6 @@ size_t dlog_init_buffer(
     mpz_t n, size_t index_size_bytes, size_t item_size_bytes
 );
 
-int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads);
-
 typedef struct {
     char* lbuffer;  
     char* rbuffer;
@@ -55,27 +53,27 @@ void dlog_fill_buffer(
     unsigned int n_threads
 );
 
-typedef struct {
-    char* buffer;
-
-    size_t n_size_t;
-    size_t index_size_bytes;
-    size_t item_size_bytes;
-} __args_thread__dlog_sort_buffer;
-
-void* __thread__dlog_sort_buffer(
-    void* vargs
-);
-
 void dlog_sort_buffer(
     char* lbuffer,
     char* rbuffer,
 
     size_t n_size_t,
     size_t index_size_bytes,
-    size_t item_size_bytes,
-
-    unsigned int n_threads
+    size_t item_size_bytes
 );
+
+int dlog_search_buffer(
+    mpz_t exp_l,
+    mpz_t exp_r,
+
+    char* lbuffer,
+    char* rbuffer,
+    
+    size_t n_size_t, 
+    size_t index_size_limbs, size_t index_size_bytes, 
+    size_t item_size_bytes
+);
+
+int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads);
 
 #endif

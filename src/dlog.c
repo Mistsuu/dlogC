@@ -356,25 +356,14 @@ void dlog_fill_buffer(
     free(threads);
 }
 
-void* __thread__dlog_sort_buffer(
-    void* vargs
+void dlog_sort_one_buffer(
+    char* buffer,
+
+    size_t n_size_t,
+    size_t index_size_bytes,
+    size_t item_size_bytes
 )
 {
-    // -------------------------------------------------------------------------------------
-    //      Setup arguments.
-    // -------------------------------------------------------------------------------------
-    __args_thread__dlog_sort_buffer* args = (__args_thread__dlog_sort_buffer*) vargs;
-
-    char* buffer = args->buffer;
-
-    size_t n_size_t = args->n_size_t;
-    size_t index_size_bytes = args->index_size_bytes;
-    size_t item_size_bytes = args->item_size_bytes;
-
-    // -------------------------------------------------------------------------------------
-    //      Real calculation
-    // -------------------------------------------------------------------------------------
-
     // Create a temporary buffer to have a place holder for swapping :)
     size_t slot_size_bytes = index_size_bytes + item_size_bytes;
     char* temp_buf = (char*) malloc_exit_when_null(slot_size_bytes);
@@ -383,15 +372,15 @@ void* __thread__dlog_sort_buffer(
     que2 sort_queue;
     que2_init(sort_queue);
 
-    signed long LO = 0;
-    signed long HI = n_size_t-1;
+    signed long LO;
+    signed long HI;
     signed long PI;
 
     char* pivot;
     char* buffer_i = buffer;
     char* buffer_j = buffer;
 
-    que2_push(sort_queue, LO, HI);
+    que2_push(sort_queue, 0, n_size_t-1);
     while (que2_pop(sort_queue, &LO, &HI)) {
         pivot    = buffer + HI * slot_size_bytes;
         buffer_i = buffer + LO * slot_size_bytes;
@@ -428,7 +417,6 @@ void* __thread__dlog_sort_buffer(
             que2_push(sort_queue, LO, PI-1);
         if (PI+1 < HI)
             que2_push(sort_queue, PI+1, HI);
-
     }
 
     que2_free(sort_queue);
@@ -441,84 +429,64 @@ void dlog_sort_buffer(
 
     size_t n_size_t,
     size_t index_size_bytes,
-    size_t item_size_bytes,
-
-    unsigned int n_threads
+    size_t item_size_bytes
 )
 {
     n_size_t += 1; // Remember, index is [0 -> n].
-    size_t n_per_thread_size_t = n_size_t / n_threads;
-    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
+    dlog_sort_one_buffer(lbuffer, n_size_t, index_size_bytes, item_size_bytes);
+    dlog_sort_one_buffer(rbuffer, n_size_t, index_size_bytes, item_size_bytes);
+}
 
-    // -------------------------------------------------------------------------------------
-    //      Initialize memory for arguments of __thread__dlog_sort_buffer.
-    // -------------------------------------------------------------------------------------
 
-    __args_thread__dlog_sort_buffer* thread_args = (__args_thread__dlog_sort_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_sort_buffer) * n_threads);
-    for (unsigned int i = 0; i < n_threads; ++i) {
-        thread_args[i].buffer = lbuffer;
-        thread_args[i].n_size_t = (i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t);
-        thread_args[i].index_size_bytes = index_size_bytes;
-        thread_args[i].item_size_bytes = item_size_bytes;
+int dlog_search_buffer(
+    mpz_t exp_l,
+    mpz_t exp_r,
+
+    char* lbuffer,
+    char* rbuffer,
+    
+    size_t n_size_t, 
+    size_t index_size_limbs, size_t index_size_bytes, 
+    size_t item_size_bytes
+)
+{
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    char* lend = lbuffer + n_size_t * slot_size_bytes;
+    char* rend = rbuffer + n_size_t * slot_size_bytes;
+
+    int cmp_status;
+    while (lbuffer != lend && rbuffer != rend) {
+        cmp_status = memcmp(
+                        lbuffer + index_size_bytes, 
+                        rbuffer + index_size_bytes, 
+                        item_size_bytes
+                     );
+
+        if (cmp_status < 0)
+            lbuffer += slot_size_bytes;
+        else if (cmp_status > 0)
+            rbuffer += slot_size_bytes;
+        else
+            break;
     }
 
-    // -------------------------------------------------------------------------------------
-    //      Generate threads to sort lbuffer.
-    // -------------------------------------------------------------------------------------
+    if (lbuffer == lend || rbuffer == rend)
+        return 0;
+    
+    mp_limb_t* exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+    mp_limb_t* exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+    mpn_zero(exp_l_limbs, index_size_limbs+1);
+    mpn_zero(exp_r_limbs, index_size_limbs+1);
+    printf("%ld\n", mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256));
+    printf("%ld\n", mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256));
 
-    printf("[debug] Sorting lbuffer...\n");
-    pthread_t* threads = (pthread_t*) malloc_exit_when_null(sizeof(pthread_t) * n_threads);
-    int result_code;
-    for (unsigned int i = 0; i < n_threads; i++) {
-        result_code = pthread_create(&threads[i], NULL, __thread__dlog_sort_buffer, (void*)(&thread_args[i]));
-        if (result_code) {
-            printf("[error] oh no! dlog_sort_buffer cannot CREATE thread!!!\n");
-            exit(-1);
-        }
-    }
+    mpz_t tmp;
+    mpz_set(exp_l, mpz_roinit_n(tmp, exp_l_limbs, index_size_limbs));
+    mpz_set(exp_r, mpz_roinit_n(tmp, exp_r_limbs, index_size_limbs));
 
-    for (unsigned int i = 0; i < n_threads; i++) {
-        result_code = pthread_join(threads[i], NULL);
-        if (result_code) {
-            printf("[error] oh no! dlog_sort_buffer cannot JOIN thread!!!\n");
-            exit(-1);
-        }
-    }
-
-    // -------------------------------------------------------------------------------------
-    //      Set parameters to arguments again of __thread__dlog_sort_buffer to sort rbuffer.
-    // -------------------------------------------------------------------------------------
-
-    for (unsigned int i = 0; i < n_threads; ++i) {
-        thread_args[i].buffer = rbuffer;
-        thread_args[i].n_size_t = (i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t);
-        thread_args[i].index_size_bytes = index_size_bytes;
-        thread_args[i].item_size_bytes = item_size_bytes;
-        rbuffer += n_per_thread_size_t * (index_size_bytes + item_size_bytes);
-    }
-
-    // -------------------------------------------------------------------------------------
-    //      Generate threads to sort lbuffer.
-    // -------------------------------------------------------------------------------------
-    printf("[debug] Sorting rbuffer...\n");
-    for (unsigned int i = 0; i < n_threads; ++i) {
-        result_code = pthread_create(&threads[i], NULL, __thread__dlog_sort_buffer, (void*)(&thread_args[i]));
-        if (result_code) {
-            printf("[error] oh no! dlog_sort_buffer cannot CREATE thread!!!\n");
-            exit(-1);
-        }
-    }
-
-    for (unsigned int i = 0; i < n_threads; ++i) {
-        result_code = pthread_join(threads[i], NULL);
-        if (result_code) {
-            printf("[error] oh no! dlog_sort_buffer cannot JOIN thread!!!\n");
-            exit(-1);
-        }
-    }
-
-    free(thread_args);
-    free(threads);
+    free(exp_l_limbs);
+    free(exp_r_limbs);
+    return 1;
 }
 
 
@@ -581,37 +549,89 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     
         n_size_t, 
         index_size_bytes, 
-        item_size_bytes,
-    
-        n_threads
+        item_size_bytes
     );
 
-    // mpz_t iL, iR;
-    // dlog_search_buffer(
-    //     iL, iR,
-    //
-    //     lbuffer,
-    //     rbuffer,
-    //
-    //     n_size_t, 
-    //     index_size_bytes, 
-    //     item_size_bytes,
-    //
-    //     n_threads
-    // );
+    printf("[debug] Searching lbuffer - rbuffer...\n");
+    mpz_t exp_l; mpz_init(exp_l);
+    mpz_t exp_r; mpz_init(exp_r);
+    if (!dlog_search_buffer(
+        exp_l, exp_r,
+    
+        lbuffer,
+        rbuffer,
+    
+        n_size_t, 
+        index_size_limbs, index_size_bytes, 
+        item_size_bytes
+    )) 
+    {
+        mpz_clear(n);
+        mpz_clear(exp_l);
+        mpz_clear(exp_r);
 
+        free(lbuffer);
+        free(rbuffer);
 
-    FILE* pfile;
-    pfile = fopen("miscellaneous/outputl", "w");
-    fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    fclose(pfile);
-    pfile = fopen("miscellaneous/outputr", "w");
-    fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    fclose(pfile);
+        return DLOG_NOT_FOUND_DLOG;
+    }
+
+    // FILE* pfile;
+    // pfile = fopen("miscellaneous/outputl", "w");
+    // fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
+    // pfile = fopen("miscellaneous/outputr", "w");
+    // fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
+
+    eccpt Y;
+    ecc_init_pt(Y);
+
+    // -- Case 1: l*X = Y - r*n*X
+    mpz_mul(k, exp_r, n);
+    mpz_add(k, k, exp_l);
+    mpz_mod(k, k, curve->p);
+    ecc_mul(curve, Y, G, k);
+    if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
+    {
+        ecc_free_pt(Y);
+
+        mpz_clear(n);
+        mpz_clear(exp_l);
+        mpz_clear(exp_r);
+
+        free(lbuffer);
+        free(rbuffer);
+
+        return DLOG_SUCCESS;
+    }
+
+    // -- Case 2: -l*X = Y - r*n*X
+    mpz_mul(k, exp_r, n);
+    mpz_sub(k, k, exp_l);
+    mpz_mod(k, k, curve->p);
+    ecc_mul(curve, Y, G, k);
+    if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
+    {
+        ecc_free_pt(Y);
+
+        mpz_clear(n);
+        mpz_clear(exp_l);
+        mpz_clear(exp_r);
+
+        free(lbuffer);
+        free(rbuffer);
+
+        return DLOG_SUCCESS;
+    }
+
+    ecc_free_pt(Y);
 
     mpz_clear(n);
+    mpz_clear(exp_l);
+    mpz_clear(exp_r);
+
     free(lbuffer);
     free(rbuffer);
-    
-    return DLOG_SUCCESS;
+    return DLOG_NOT_FOUND_DLOG;
 }
