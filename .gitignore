@@ -4,4 +4,4 @@ miscellaneous
 main
 obj
 .gdb_history
-callgrind*
+*grind.out.*
