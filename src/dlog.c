@@ -33,6 +33,11 @@ size_t dlog_init_buffer(
 
     // Now we allocate
     size_t nbytes_alloc = (n_size_t + 1) * (index_size_bytes + item_size_bytes);
+    printf("[debug] size buffer: %ld bytes = %f MB = %f GB\n", 
+        nbytes_alloc * 2, 
+        nbytes_alloc * 2 / 1024.0 / 1024.0, 
+        nbytes_alloc * 2 / 1024.0 / 1024.0 / 1024.0
+    );
     (*lbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     (*rbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     return n_size_t;

@@ -5,8 +5,8 @@ SOURCE_DIR  = src
 
 # Compilers options
 CC          = gcc
-CFLAGS      = -I$(LIBRARY_DIR) -O2 -ggdb #-fsanitize=address
-LIBS        = -lgmp
+CFLAGS      = -I$(LIBRARY_DIR) -O3 #-fsanitize=address
+LIBS        = -lgmp -lpthread
 
 # Requirements and stuffs
 FULLDEPS := $(shell find $(LIBRARY_DIR) -name '*.h')
