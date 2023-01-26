@@ -429,12 +429,35 @@ void dlog_sort_buffer(
 
     size_t n_size_t,
     size_t index_size_bytes,
-    size_t item_size_bytes
+    size_t item_size_bytes,
+    
+    unsigned int n_threads
 )
 {
     n_size_t += 1; // Remember, index is [0 -> n].
-    dlog_sort_one_buffer(lbuffer, n_size_t, index_size_bytes, item_size_bytes);
-    dlog_sort_one_buffer(rbuffer, n_size_t, index_size_bytes, item_size_bytes);
+
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
+
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        dlog_sort_one_buffer(
+            lbuffer, 
+            i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t, 
+            index_size_bytes, 
+            item_size_bytes
+        );
+
+        dlog_sort_one_buffer(
+            rbuffer, 
+            i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t, 
+            index_size_bytes, 
+            item_size_bytes
+        );
+
+        lbuffer += slot_size_bytes * n_per_thread_size_t;
+        rbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
 }
 
 
@@ -543,80 +566,82 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     
         n_size_t, 
         index_size_bytes, 
-        item_size_bytes
+        item_size_bytes,
+
+        n_threads
     );
 
-    mpz_t exp_l; mpz_init(exp_l);
-    mpz_t exp_r; mpz_init(exp_r);
-    if (!dlog_search_buffer(
-        exp_l, exp_r,
+    // mpz_t exp_l; mpz_init(exp_l);
+    // mpz_t exp_r; mpz_init(exp_r);
+    // if (!dlog_search_buffer(
+    //     exp_l, exp_r,
     
-        lbuffer,
-        rbuffer,
+    //     lbuffer,
+    //     rbuffer,
     
-        n_size_t, 
-        index_size_limbs, index_size_bytes, 
-        item_size_bytes
-    )) 
-    {
-        mpz_clear(n);
-        mpz_clear(exp_l);
-        mpz_clear(exp_r);
+    //     n_size_t, 
+    //     index_size_limbs, index_size_bytes, 
+    //     item_size_bytes
+    // )) 
+    // {
+    //     mpz_clear(n);
+    //     mpz_clear(exp_l);
+    //     mpz_clear(exp_r);
 
-        free(lbuffer);
-        free(rbuffer);
+    //     free(lbuffer);
+    //     free(rbuffer);
 
-        return DLOG_NOT_FOUND_DLOG;
-    }
+    //     return DLOG_NOT_FOUND_DLOG;
+    // }
 
-    eccpt Y;
-    ecc_init_pt(Y);
+    // eccpt Y;
+    // ecc_init_pt(Y);
 
-    // -- Case 1: l*X = Y - r*n*X
-    mpz_mul(k, exp_r, n);
-    mpz_add(k, k, exp_l);
-    mpz_mod(k, k, curve->p);
-    ecc_mul(curve, Y, G, k);
-    if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
-    {
-        ecc_free_pt(Y);
+    // // -- Case 1: l*X = Y - r*n*X
+    // mpz_mul(k, exp_r, n);
+    // mpz_add(k, k, exp_l);
+    // mpz_mod(k, k, curve->p);
+    // ecc_mul(curve, Y, G, k);
+    // if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
+    // {
+    //     ecc_free_pt(Y);
 
-        mpz_clear(n);
-        mpz_clear(exp_l);
-        mpz_clear(exp_r);
+    //     mpz_clear(n);
+    //     mpz_clear(exp_l);
+    //     mpz_clear(exp_r);
 
-        free(lbuffer);
-        free(rbuffer);
+    //     free(lbuffer);
+    //     free(rbuffer);
 
-        return DLOG_SUCCESS;
-    }
+    //     return DLOG_SUCCESS;
+    // }
 
-    // -- Case 2: -l*X = Y - r*n*X
-    mpz_mul(k, exp_r, n);
-    mpz_sub(k, k, exp_l);
-    mpz_mod(k, k, curve->p);
-    ecc_mul(curve, Y, G, k);
-    if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
-    {
-        ecc_free_pt(Y);
+    // // -- Case 2: -l*X = Y - r*n*X
+    // mpz_mul(k, exp_r, n);
+    // mpz_sub(k, k, exp_l);
+    // mpz_mod(k, k, curve->p);
+    // ecc_mul(curve, Y, G, k);
+    // if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
+    // {
+    //     ecc_free_pt(Y);
 
-        mpz_clear(n);
-        mpz_clear(exp_l);
-        mpz_clear(exp_r);
+    //     mpz_clear(n);
+    //     mpz_clear(exp_l);
+    //     mpz_clear(exp_r);
 
-        free(lbuffer);
-        free(rbuffer);
+    //     free(lbuffer);
+    //     free(rbuffer);
 
-        return DLOG_SUCCESS;
-    }
+    //     return DLOG_SUCCESS;
+    // }
 
-    ecc_free_pt(Y);
+    // ecc_free_pt(Y);
 
-    mpz_clear(n);
-    mpz_clear(exp_l);
-    mpz_clear(exp_r);
+    // mpz_clear(n);
+    // mpz_clear(exp_l);
+    // mpz_clear(exp_r);
 
-    free(lbuffer);
-    free(rbuffer);
+    // free(lbuffer);
+    // free(rbuffer);
     return DLOG_NOT_FOUND_DLOG;
 }

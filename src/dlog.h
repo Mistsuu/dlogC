@@ -59,7 +59,9 @@ void dlog_sort_buffer(
 
     size_t n_size_t,
     size_t index_size_bytes,
-    size_t item_size_bytes
+    size_t item_size_bytes,
+
+    unsigned int n_threads
 );
 
 int dlog_search_buffer(
