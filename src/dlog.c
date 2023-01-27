@@ -505,6 +505,7 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     mpz_t n;
     mpz_init(n);
     mpz_sqrt(n, upper_k);
+    mpz_add_ui(n, n, 1);
 
     size_t index_size_bytes = mpz_size_bytes(n);
     size_t item_size_bytes  = mpz_size_bytes(curve->p);
