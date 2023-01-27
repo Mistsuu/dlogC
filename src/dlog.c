@@ -456,6 +456,7 @@ int dlog_search_buffer(
     char* lend = lbuffer + n_size_t * slot_size_bytes;
     char* rend = rbuffer + n_size_t * slot_size_bytes;
 
+    int i = 0, j = 0;
     int cmp_status;
     while (lbuffer != lend && rbuffer != rend) {
         cmp_status = memcmp(
@@ -464,12 +465,14 @@ int dlog_search_buffer(
                         item_size_bytes
                      );
 
+        printf("[     ] i(%d), j(%d)\n", i, j);
         if (cmp_status < 0)
-            lbuffer += slot_size_bytes;
+            lbuffer += slot_size_bytes, i++;
         else if (cmp_status > 0)
-            rbuffer += slot_size_bytes;
+            rbuffer += slot_size_bytes, j++;
         else
             break;
+
     }
 
     if (lbuffer == lend || rbuffer == rend)
@@ -642,7 +645,6 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     // -- Case 2: -l*X = Y - r*n*X
     mpz_mul(k, exp_r, n);
     mpz_sub(k, k, exp_l);
-    mpz_mod(k, k, curve->p);
     ecc_mul(curve, Y, G, k);
     if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
     {
