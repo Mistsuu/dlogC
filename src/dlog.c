@@ -510,14 +510,17 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     size_t item_size_bytes  = mpz_size_bytes(curve->p);
     size_t index_size_limbs = mpz_size(n);
     size_t item_size_limbs  = mpz_size(curve->p);
+
+
     #ifdef DLOG_VERBOSE
         printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
         printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
         printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
         printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
 
-        time_t time_start_operation, time_end_operation;
-        double time_elapsed_operation;
+        struct timeval time_start_op; 
+        struct timeval time_end_op; 
+        struct timeval time_elapsed_op;
     #endif
 
     char* lbuffer;
@@ -537,7 +540,7 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
 
     #ifdef DLOG_VERBOSE
         printf("[debug] Filling lbuffer - rbuffer...\n");
-        time(&time_start_operation);
+        gettimeofday(&time_start_op, NULL);
     #endif
     dlog_fill_buffer(
         lbuffer, 
@@ -553,11 +556,11 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     );
 
     #ifdef DLOG_VERBOSE
-        time(&time_end_operation);
-        time_elapsed_operation = difftime(time_end_operation, time_start_operation);
-        printf("[debug] Filling took %f seconds.\n", time_elapsed_operation);
+        gettimeofday(&time_end_op, NULL);
+        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+        printf("[debug] Filling took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
         printf("[debug] Sorting lbuffer - rbuffer...\n");
-        time(&time_start_operation);
+        gettimeofday(&time_start_op, NULL);
     #endif
     dlog_sort_buffer(
         lbuffer,
@@ -569,11 +572,11 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     );
 
     #ifdef DLOG_VERBOSE
-        time(&time_end_operation);
-        time_elapsed_operation = difftime(time_end_operation, time_start_operation);
-        printf("[debug] Sorting took %f seconds.\n", time_elapsed_operation);
+        gettimeofday(&time_end_op, NULL);
+        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+        printf("[debug] Sorting took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
         printf("[debug] Searching lbuffer - rbuffer...\n");
-        time(&time_start_operation);
+        gettimeofday(&time_start_op, NULL);
     #endif
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
@@ -599,9 +602,9 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     }
 
     #ifdef DLOG_VERBOSE
-        time(&time_end_operation);
-        time_elapsed_operation = difftime(time_end_operation, time_start_operation);
-        printf("[debug] Searching took %f seconds.\n", time_elapsed_operation);
+        gettimeofday(&time_end_op, NULL);
+        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+        printf("[debug] Searching took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
         printf("[debug] Finished! Now solve for k...\n");
     #endif
     eccpt Y;

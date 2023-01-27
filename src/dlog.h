@@ -8,7 +8,7 @@
 #include <pthread.h>
 
 #ifdef DLOG_VERBOSE
-    #include <time.h>
+    #include <sys/time.h>
 #endif
 
 #include "ecc.h"
