@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 #include <gmp.h>
 #include "ecc.h"
 #include "ecc_x.h"
@@ -7,59 +9,108 @@
 #include "const.h"
 
 const unsigned int NUM_THREADS = 4;
+const unsigned int BLOCK_BUFFER_SIZE = 10;
+int str_init_readline(char** pbuffer)
+{
+    char c = 's';
+    int buffer_size = BLOCK_BUFFER_SIZE;
+    int str_len = 0;
+    (*pbuffer) = (char*) malloc(buffer_size);
+
+    ssize_t nbytes_read;
+    while (c != '\0') {
+        // Read character
+        nbytes_read = read(STDIN_FILENO, &c, 1);
+        if (!nbytes_read)
+            break;
+
+        // modify '\n' -> '\0'
+        if (c == '\n')
+            c = '\0';
+
+        // Realloacte if needed
+        if (str_len == buffer_size) {
+            buffer_size += BLOCK_BUFFER_SIZE;
+            (*pbuffer) = (char*) realloc(*pbuffer, buffer_size);
+        }
+
+        (*pbuffer)[str_len++] = c;
+    }
+
+    return str_len;
+}
 
 void main()
 {
+    char* curve_a;
+    char* curve_b;
+    char* curve_p;
+    char* Gx;
+    char* Gy;
+    char* kGx;
+    char* kGy;
+    char* n_str;
+
+    str_init_readline(&curve_a);
+    str_init_readline(&curve_b);
+    str_init_readline(&curve_p);
+    str_init_readline(&Gx);
+    str_init_readline(&Gy);
+    str_init_readline(&kGx);
+    str_init_readline(&kGy);
+    str_init_readline(&n_str);
+
     ecc curve;
     ecc_init(
         curve, 
-        "1986076773346522069111732327339",    // a 
-        "808177731529494834911895879646",     // b
-        "13276420418771432419898581447951"    // p
+        curve_a, // a 
+        curve_b, // b
+        curve_p  // p
     );
 
     eccpt G;
     ecc_init_pt_str(
         curve, G,
-        "12752653901711390718579996242468",   // x
-        "9102988295173351464328400869432",    // y
-        NULL                                  // z
+        Gx,   // x
+        Gy,   // y
+        NULL  // z
     );
 
     eccpt kG;
     ecc_init_pt_str(
         curve, kG,
-        "160854798263565084664403423288",
-        "2332898824679189780448318708917",
+        kGx,
+        kGy,
         NULL
     );
 
-    printf("[i] Finding k = dlog(G, kG) for point:\n");
-    printf("[i]    G = "); ecc_printf_pt(G); printf("\n");
-    printf("[i]    kG = "); ecc_printf_pt(kG); printf("\n");
-    printf("[i] on curve: "); printf("\n");
-    printf("[i]    "); ecc_printf(curve); printf("\n");
-
     // order of G.
     mpz_t n;
-    mpz_init_set_str(n, "857765763956341", 10);
+    mpz_init_set_str(n, n_str, 10);
 
     mpz_t k;
     mpz_init(k);
-    if (dlog(curve, k, G, kG, n, NUM_THREADS) == DLOG_SUCCESS)
-    {
-        printf("[i] k = "); 
+    if (dlog(curve, k, G, kG, n, NUM_THREADS) == DLOG_SUCCESS) {
         mpz_out_str(stdout, 10, k);
         printf("\n");
     }
-    else
-    {
-        printf("[i] Cannot find dlog!\n");
+    else {
+        printf("None\n");
     }
 
     mpz_clear(k);
     mpz_clear(n);
+
     ecc_free_pt(G);
     ecc_free_pt(kG);
     ecc_free(curve);
+
+    free(curve_a);
+    free(curve_b);
+    free(curve_p);
+    free(Gx);
+    free(Gy);
+    free(kGx);
+    free(kGy);
+    free(n_str);
 }
