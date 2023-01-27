@@ -465,7 +465,6 @@ int dlog_search_buffer(
                         item_size_bytes
                      );
 
-        printf("[     ] i(%d), j(%d)\n", i, j);
         if (cmp_status < 0)
             lbuffer += slot_size_bytes, i++;
         else if (cmp_status > 0)
