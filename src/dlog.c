@@ -35,6 +35,13 @@ size_t dlog_init_buffer(
     size_t nbytes_alloc = (n_size_t + 1) * (index_size_bytes + item_size_bytes);
     (*lbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     (*rbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
+    #ifdef DLOG_VERBOSE
+        printf("[debug] size buffer: %ld bytes = %f MB = %f GB\n", 
+                nbytes_alloc * 2, 
+                nbytes_alloc * 2 / 1024.0 / 1024.0, 
+                nbytes_alloc * 2 / 1024.0 / 1024.0 / 1024.0
+            );
+    #endif
     return n_size_t;
 }
 
@@ -503,6 +510,15 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     size_t item_size_bytes  = mpz_size_bytes(curve->p);
     size_t index_size_limbs = mpz_size(n);
     size_t item_size_limbs  = mpz_size(curve->p);
+    #ifdef DLOG_VERBOSE
+        printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
+        printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
+        printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
+        printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
+
+        time_t time_start_operation, time_end_operation;
+        double time_elapsed_operation;
+    #endif
 
     char* lbuffer;
     char* rbuffer;
@@ -519,6 +535,10 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         return DLOG_CANNOT_ALLOCATE;
     }
 
+    #ifdef DLOG_VERBOSE
+        printf("[debug] Filling lbuffer - rbuffer...\n");
+        time(&time_start_operation);
+    #endif
     dlog_fill_buffer(
         lbuffer, 
         rbuffer, 
@@ -532,6 +552,13 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         n_threads
     );
 
+    #ifdef DLOG_VERBOSE
+        time(&time_end_operation);
+        time_elapsed_operation = difftime(time_end_operation, time_start_operation);
+        printf("[debug] Filling took %f seconds.\n", time_elapsed_operation);
+        printf("[debug] Sorting lbuffer - rbuffer...\n");
+        time(&time_start_operation);
+    #endif
     dlog_sort_buffer(
         lbuffer,
         rbuffer,
@@ -541,6 +568,13 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         item_size_bytes
     );
 
+    #ifdef DLOG_VERBOSE
+        time(&time_end_operation);
+        time_elapsed_operation = difftime(time_end_operation, time_start_operation);
+        printf("[debug] Sorting took %f seconds.\n", time_elapsed_operation);
+        printf("[debug] Searching lbuffer - rbuffer...\n");
+        time(&time_start_operation);
+    #endif
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
     if (!dlog_search_buffer(
@@ -564,6 +598,12 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         return DLOG_NOT_FOUND_DLOG;
     }
 
+    #ifdef DLOG_VERBOSE
+        time(&time_end_operation);
+        time_elapsed_operation = difftime(time_end_operation, time_start_operation);
+        printf("[debug] Searching took %f seconds.\n", time_elapsed_operation);
+        printf("[debug] Finished! Now solve for k...\n");
+    #endif
     eccpt Y;
     ecc_init_pt(Y);
 
