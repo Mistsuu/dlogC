@@ -612,13 +612,13 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         printf("[debug] Finished! Now solve for k...\n");
     #endif
 
-    FILE* pfile;
-    pfile = fopen("miscellaneous/outputl", "w");
-    fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    fclose(pfile);
-    pfile = fopen("miscellaneous/outputr", "w");
-    fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    fclose(pfile);
+    // FILE* pfile;
+    // pfile = fopen("miscellaneous/outputl", "w");
+    // fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
+    // pfile = fopen("miscellaneous/outputr", "w");
+    // fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
 
     eccpt Y;
     ecc_init_pt(Y);
