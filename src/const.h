@@ -9,4 +9,6 @@
 #define DLOG_NOT_FOUND_DLOG      1
 #define DLOG_CANNOT_ALLOCATE     2
 
+#define DEFAULT_NUM_THREADS      4
+
 #endif
