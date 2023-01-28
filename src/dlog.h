@@ -6,6 +6,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <pthread.h>
+
+#ifdef DLOG_VERBOSE
+    #include <sys/time.h>
+#endif
+
 #include "ecc.h"
 #include "ecc_x.h"
 

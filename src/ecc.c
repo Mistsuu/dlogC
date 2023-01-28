@@ -282,13 +282,22 @@ void ecc_mul_noverify(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
     ecc_init_pt(pointT); 
     ecc_set_pt(pointT, pointP);
 
-    mp_bitcnt_t nbits_n = k->_mp_size * mp_bits_per_limb;
+    mpz_t abs_k;
+    mpz_init(abs_k);
+    mpz_abs(abs_k, k);
+
+    mp_bitcnt_t nbits_n = mpz_size(k) * mp_bits_per_limb;
     for (mp_bitcnt_t i = 0; i < nbits_n; ++i) {
-        if (mpz_tstbit(k, i))
+        if (mpz_tstbit(abs_k, i))
             ecc_add_noverify(curve, pointS, pointS, pointT);
         ecc_add_noverify(curve, pointT, pointT, pointT);
     }
 
+    // In case k is negative :)
+    if (mpz_cmp_si(k, 0) < 0) 
+        mpz_sub(pointS->y, curve->p, pointS->y);
+
+    mpz_clear(abs_k);
     ecc_set_pt(pointR, pointS);
     ecc_free_pt(pointT);
     ecc_free_pt(pointS);

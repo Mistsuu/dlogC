@@ -40,6 +40,13 @@ size_t dlog_init_buffer(
     );
     (*lbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
     (*rbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
+    #ifdef DLOG_VERBOSE
+        printf("[debug] size buffer: %ld bytes = %f MB = %f GB\n", 
+                nbytes_alloc * 2, 
+                nbytes_alloc * 2 / 1024.0 / 1024.0, 
+                nbytes_alloc * 2 / 1024.0 / 1024.0 / 1024.0
+            );
+    #endif
     return n_size_t;
 }
 
@@ -480,6 +487,7 @@ int dlog_search_buffer(
     char* lend = lbuffer + n_size_t * slot_size_bytes;
     char* rend = rbuffer + n_size_t * slot_size_bytes;
 
+    int i = 0, j = 0;
     int cmp_status;
     while (lbuffer != lend && rbuffer != rend) {
         cmp_status = memcmp(
@@ -489,11 +497,12 @@ int dlog_search_buffer(
                      );
 
         if (cmp_status < 0)
-            lbuffer += slot_size_bytes;
+            lbuffer += slot_size_bytes, i++;
         else if (cmp_status > 0)
-            rbuffer += slot_size_bytes;
+            rbuffer += slot_size_bytes, j++;
         else
             break;
+
     }
 
     if (lbuffer == lend || rbuffer == rend)
@@ -529,11 +538,25 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     mpz_t n;
     mpz_init(n);
     mpz_sqrt(n, upper_k);
-    
+    mpz_add_ui(n, n, 1);
+
     size_t index_size_bytes = mpz_size_bytes(n);
     size_t item_size_bytes  = mpz_size_bytes(curve->p);
     size_t index_size_limbs = mpz_size(n);
     size_t item_size_limbs  = mpz_size(curve->p);
+
+
+    #ifdef DLOG_VERBOSE
+        printf("[debug] n_threads = %d\n", n_threads);
+        printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
+        printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
+        printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
+        printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
+
+        struct timeval time_start_op; 
+        struct timeval time_end_op; 
+        struct timeval time_elapsed_op;
+    #endif
 
     char* lbuffer;
     char* rbuffer;
@@ -550,6 +573,10 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         return DLOG_CANNOT_ALLOCATE;
     }
 
+    #ifdef DLOG_VERBOSE
+        printf("[debug] Filling lbuffer - rbuffer...\n");
+        gettimeofday(&time_start_op, NULL);
+    #endif
     dlog_fill_buffer(
         lbuffer, 
         rbuffer, 
@@ -563,6 +590,13 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         n_threads
     );
 
+    #ifdef DLOG_VERBOSE
+        gettimeofday(&time_end_op, NULL);
+        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+        printf("[debug] Filling took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
+        printf("[debug] Sorting lbuffer - rbuffer...\n");
+        gettimeofday(&time_start_op, NULL);
+    #endif
     dlog_sort_buffer(
         lbuffer,
         rbuffer,
@@ -574,8 +608,15 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         n_threads
     );
 
-    // mpz_t exp_l; mpz_init(exp_l);
-    // mpz_t exp_r; mpz_init(exp_r);
+    #ifdef DLOG_VERBOSE
+        gettimeofday(&time_end_op, NULL);
+        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+        printf("[debug] Sorting took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
+        printf("[debug] Searching lbuffer - rbuffer...\n");
+        gettimeofday(&time_start_op, NULL);
+    #endif
+    mpz_t exp_l; mpz_init(exp_l);
+    mpz_t exp_r; mpz_init(exp_r);
     // if (!dlog_search_buffer(
     //     exp_l, exp_r,
     
@@ -597,8 +638,23 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     //     return DLOG_NOT_FOUND_DLOG;
     // }
 
-    // eccpt Y;
-    // ecc_init_pt(Y);
+    #ifdef DLOG_VERBOSE
+        gettimeofday(&time_end_op, NULL);
+        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+        printf("[debug] Searching took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
+        printf("[debug] Finished! Now solve for k...\n");
+    #endif
+
+    // FILE* pfile;
+    // pfile = fopen("miscellaneous/outputl", "w");
+    // fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
+    // pfile = fopen("miscellaneous/outputr", "w");
+    // fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
+    // fclose(pfile);
+
+    eccpt Y;
+    ecc_init_pt(Y);
 
     // // -- Case 1: l*X = Y - r*n*X
     // mpz_mul(k, exp_r, n);
@@ -622,7 +678,6 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     // // -- Case 2: -l*X = Y - r*n*X
     // mpz_mul(k, exp_r, n);
     // mpz_sub(k, k, exp_l);
-    // mpz_mod(k, k, curve->p);
     // ecc_mul(curve, Y, G, k);
     // if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
     // {
@@ -638,13 +693,13 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     //     return DLOG_SUCCESS;
     // }
 
-    // ecc_free_pt(Y);
+    ecc_free_pt(Y);
 
-    // mpz_clear(n);
-    // mpz_clear(exp_l);
-    // mpz_clear(exp_r);
+    mpz_clear(n);
+    mpz_clear(exp_l);
+    mpz_clear(exp_r);
 
-    // free(lbuffer);
-    // free(rbuffer);
+    free(lbuffer);
+    free(rbuffer);
     return DLOG_NOT_FOUND_DLOG;
 }
