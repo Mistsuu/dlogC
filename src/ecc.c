@@ -26,7 +26,7 @@ void ecc_printf(ecc curve)
 {
     printf("Elliptic Curve y^2 = x^3 + ");
     mpz_out_str(stdout, 10, curve->a);
-    printf("x + ");
+    printf("*x + ");
     mpz_out_str(stdout, 10, curve->b);
     printf(" in GF(");
     mpz_out_str(stdout, 10, curve->p);

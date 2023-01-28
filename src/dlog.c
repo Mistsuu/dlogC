@@ -600,6 +600,22 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     size_t item_size_limbs  = mpz_size(curve->p);
 
     #ifdef DLOG_VERBOSE
+        printf("[debug] curve: \n");
+        printf("[debug]    ");
+        ecc_printf(curve);
+        printf("\n");
+        printf("[debug] G: \n");
+        printf("[debug]    ");
+        ecc_printf_pt(G);
+        printf("\n");
+        printf("[debug] kG: \n");
+        printf("[debug]    ");
+        ecc_printf_pt(kG);
+        printf("\n");
+        printf("[debug] upper_k = ");
+        mpz_out_str(stdout, 10, upper_k);
+        printf("\n");
+
         printf("[debug] n_threads = %d\n", n_threads);
         printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
         printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
