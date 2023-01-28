@@ -69,6 +69,24 @@ void dlog_sort_buffer(
     unsigned int n_threads
 );
 
+
+typedef struct {
+    mp_limb_t* exp_l_limbs;     // Must be index_size_limbs + 1 limbs allocated.
+    mp_limb_t* exp_r_limbs;     // Must be index_size_limbs + 1 limbs allocated.
+
+    char* lbuffer;
+    char* rbuffer;
+
+    size_t n_size_t_l;
+    size_t n_size_t_r;
+
+    size_t index_size_limbs; 
+    size_t index_size_bytes;
+    size_t item_size_bytes;
+
+    int* p_result;
+} __args_thread__dlog_search_buffer;
+
 int dlog_search_buffer(
     mpz_t exp_l,
     mpz_t exp_r,

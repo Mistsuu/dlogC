@@ -465,6 +465,66 @@ void dlog_sort_buffer(
     }
 }
 
+void* __thread__dlog_search_buffer(
+    void* vargs
+)
+{
+    // -------------------------------------------------------------------------------------
+    //      Setup arguments.
+    // -------------------------------------------------------------------------------------
+    __args_thread__dlog_search_buffer* args = (__args_thread__dlog_search_buffer*) vargs;
+
+    mp_limb_t* exp_l_limbs = args->exp_l_limbs;
+    mp_limb_t* exp_r_limbs = args->exp_r_limbs;
+
+    char* lbuffer = args->lbuffer;
+    char* rbuffer = args->rbuffer;
+
+    size_t n_size_t_l = args->n_size_t_l;
+    size_t n_size_t_r = args->n_size_t_r;
+
+    size_t index_size_limbs = args->index_size_limbs; 
+    size_t index_size_bytes = args->index_size_bytes;
+    size_t item_size_bytes = args->item_size_bytes;
+
+    int* p_result = args->p_result;
+
+    // -------------------------------------------------------------------------------------
+    //      Real calculation
+    // -------------------------------------------------------------------------------------
+
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    char* lend = lbuffer + n_size_t_l * slot_size_bytes;
+    char* rend = rbuffer + n_size_t_r * slot_size_bytes;
+
+    int cmp_status;
+    while (lbuffer != lend && rbuffer != rend) {
+        cmp_status = memcmp(
+                        lbuffer + index_size_bytes, 
+                        rbuffer + index_size_bytes, 
+                        item_size_bytes
+                     );
+
+        if (cmp_status < 0)
+            lbuffer += slot_size_bytes;
+        else if (cmp_status > 0)
+            rbuffer += slot_size_bytes;
+        else
+            break;
+    }
+
+    if (lbuffer == lend || rbuffer == rend) {
+        *p_result = 0;
+        return;
+    }
+
+    mpn_zero(exp_l_limbs, index_size_limbs+1);
+    mpn_zero(exp_r_limbs, index_size_limbs+1);
+    mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256);
+    mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256);
+    *p_result = 1;
+}
+
 
 int dlog_search_buffer(
     mpz_t exp_l,
@@ -475,47 +535,46 @@ int dlog_search_buffer(
     
     size_t n_size_t, 
     size_t index_size_limbs, size_t index_size_bytes, 
-    size_t item_size_bytes
+    size_t item_size_bytes,
+
+    unsigned int n_threads
 )
 {
-    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
-    char* lend = lbuffer + n_size_t * slot_size_bytes;
-    char* rend = rbuffer + n_size_t * slot_size_bytes;
+    // -------------------------------------------------------------------------------------
+    //      Initialize memory for arguments of __thread__dlog_search_buffer.
+    // -------------------------------------------------------------------------------------
 
-    int i = 0, j = 0;
-    int cmp_status;
-    while (lbuffer != lend && rbuffer != rend) {
-        cmp_status = memcmp(
-                        lbuffer + index_size_bytes, 
-                        rbuffer + index_size_bytes, 
-                        item_size_bytes
-                     );
-
-        if (cmp_status < 0)
-            lbuffer += slot_size_bytes, i++;
-        else if (cmp_status > 0)
-            rbuffer += slot_size_bytes, j++;
-        else
-            break;
-
-    }
-
-    if (lbuffer == lend || rbuffer == rend)
-        return 0;
+    __args_thread__dlog_search_buffer* thread_args = (__args_thread__dlog_search_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_search_buffer) * n_threads);
     
     mp_limb_t* exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
     mp_limb_t* exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
-    mpn_zero(exp_l_limbs, index_size_limbs+1);
-    mpn_zero(exp_r_limbs, index_size_limbs+1);
-    mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256);
-    mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256);
+
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        thread_args[i].exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+        thread_args[i].exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Generate threads.
+    // -------------------------------------------------------------------------------------
+
+
+    // -------------------------------------------------------------------------------------
+    //      Filling exp_l, exp_r
+    // -------------------------------------------------------------------------------------
 
     mpz_t tmp;
     mpz_set(exp_l, mpz_roinit_n(tmp, exp_l_limbs, index_size_limbs));
     mpz_set(exp_r, mpz_roinit_n(tmp, exp_r_limbs, index_size_limbs));
 
+    // -------------------------------------------------------------------------------------
+    //      Cleaning up.
+    // -------------------------------------------------------------------------------------
+
     free(exp_l_limbs);
     free(exp_r_limbs);
+
+    free(thread_args);
     return 1;
 }
 
@@ -619,7 +678,9 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     
     //     n_size_t, 
     //     index_size_limbs, index_size_bytes, 
-    //     item_size_bytes
+    //     item_size_bytes,
+
+    //     n_threads
     // )) 
     // {
     //     mpz_clear(n);
