@@ -537,7 +537,7 @@ int dlog_search_buffer(
 )
 {
     int is_search_found = 0;
-    n_size_t++; // Remember, index is [0 -> n]
+    n_size_t += 1;                // Remember, index is [0 -> n]
 
     // -------------------------------------------------------------------------------------
     //      Initialize memory for arguments of __thread__dlog_search_buffer.
