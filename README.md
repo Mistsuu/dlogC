@@ -30,6 +30,9 @@ To use `./dlog`, we supply input as a list of numbers seperated by a newline (`\
 <Y(kG)>
 <upper k bound>
 ```
+
+You can run `./dlog <num_threads>` to specify the number of threads used in multithreading part. If not specified, the default value for `num_threads` is `4`. 
+
 The output will either be a number *(a negative one is normal)*, or `None`, or some error data *(only happens in the case of memory error or thread creation error, which is not often as long as `<upper k bound>` is small enough that its square root fits 64-bits)*.
 
 ## Example
@@ -58,7 +61,7 @@ Which gives the output:
 690204827669615
 ```
 
-You may copy the above data into a text file (`./data`) and run `./dlog < ./data`. The result is still the same.
+You may copy the above data into a text file (`./data`) and run `./dlog < ./data` or `./dlog <num_threads> < ./data`. The result is still the same.
 
 
 ## Makefile compile modes
