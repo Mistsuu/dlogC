@@ -202,10 +202,10 @@ void ecc_add_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
         return;
     }
 
-    mpz_t λ, λ_den;      // λ and its denominator.
+    mpz_t h, h_den;      // h and its denominator.
     mpz_t Rx, Ry;        // To prevent output to the same variable as input.
-    mpz_init(λ);
-    mpz_init(λ_den);
+    mpz_init(h);
+    mpz_init(h_den);
     mpz_init(Rx);
     mpz_init(Ry);
     
@@ -217,41 +217,41 @@ void ecc_add_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
         }
 
         // P == Q
-        // λ = (3x_P^2 + a) / 2y_P
-        mpz_set(λ, pointP->x);                  // x_P
-        mpz_mul(λ, λ, λ);                       // x_P^2
-        mpz_mul_si(λ, λ, 3);                    // 3x_P^2
-        mpz_add(λ, λ, curve->a);                // 3x_P^2 + a
+        // h = (3x_P^2 + a) / 2y_P
+        mpz_set(h, pointP->x);                  // x_P
+        mpz_mul(h, h, h);                       // x_P^2
+        mpz_mul_si(h, h, 3);                    // 3x_P^2
+        mpz_add(h, h, curve->a);                // 3x_P^2 + a
 
-        mpz_set(λ_den, pointP->y);              // y_P
-        mpz_mul_si(λ_den, λ_den, 2);            // 2y_P
-        mpz_invert(λ_den, λ_den, curve->p);     // 1/(2y_P) mod p
+        mpz_set(h_den, pointP->y);              // y_P
+        mpz_mul_si(h_den, h_den, 2);            // 2y_P
+        mpz_invert(h_den, h_den, curve->p);     // 1/(2y_P) mod p
     }
     else {
         // P != Q
-        // λ = (y_Q - y_P) / (x_Q - x_P)
-        mpz_set(λ, pointQ->y);                  // y_Q
-        mpz_sub(λ, λ, pointP->y);               // y_Q - y_P
+        // h = (y_Q - y_P) / (x_Q - x_P)
+        mpz_set(h, pointQ->y);                  // y_Q
+        mpz_sub(h, h, pointP->y);               // y_Q - y_P
 
-        mpz_set(λ_den, pointQ->x);              // x_Q
-        mpz_sub(λ_den, λ_den, pointP->x);       // x_Q - x_P
-        mpz_invert(λ_den, λ_den, curve->p);     // 1/(x_Q - x_P) mod p
+        mpz_set(h_den, pointQ->x);              // x_Q
+        mpz_sub(h_den, h_den, pointP->x);       // x_Q - x_P
+        mpz_invert(h_den, h_den, curve->p);     // 1/(x_Q - x_P) mod p
     }
 
-    mpz_mul(λ, λ, λ_den);
-    mpz_mod(λ, λ, curve->p);
+    mpz_mul(h, h, h_den);
+    mpz_mod(h, h, curve->p);
 
-    // x_R = λ^2 - x_P - x_Q
-    mpz_set(Rx, λ);
+    // x_R = h^2 - x_P - x_Q
+    mpz_set(Rx, h);
     mpz_mul(Rx, Rx, Rx);
     mpz_sub(Rx, Rx, pointP->x);
     mpz_sub(Rx, Rx, pointQ->x);
     mpz_mod(Rx, Rx, curve->p);
 
-    // y_R = λ(x_P - x_R) - y_P
+    // y_R = h(x_P - x_R) - y_P
     mpz_set(Ry, pointP->x);
     mpz_sub(Ry, Ry, Rx);
-    mpz_mul(Ry, Ry, λ);
+    mpz_mul(Ry, Ry, h);
     mpz_sub(Ry, Ry, pointP->y);
     mpz_mod(Ry, Ry, curve->p);
 
@@ -259,8 +259,8 @@ void ecc_add_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     mpz_set(pointR->y, Ry);
     mpz_set_si(pointR->z, 1);
 
-    mpz_clear(λ);
-    mpz_clear(λ_den);
+    mpz_clear(h);
+    mpz_clear(h_den);
     mpz_clear(Rx);
     mpz_clear(Ry);
 }

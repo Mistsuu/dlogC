@@ -448,6 +448,10 @@ void dlog_sort_buffer(
             item_size_bytes
         );
 
+        lbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
+    
+    for (unsigned int i = 0; i < n_threads; ++i) {
         dlog_sort_one_buffer(
             rbuffer, 
             i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t, 
@@ -455,7 +459,6 @@ void dlog_sort_buffer(
             item_size_bytes
         );
 
-        lbuffer += slot_size_bytes * n_per_thread_size_t;
         rbuffer += slot_size_bytes * n_per_thread_size_t;
     }
 }
