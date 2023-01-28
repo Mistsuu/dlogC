@@ -21,10 +21,12 @@ int str_init_readline(char** pbuffer)
     while (c != '\0') {
         // Read character
         nbytes_read = read(STDIN_FILENO, &c, 1);
-        if (!nbytes_read || c == '\n')
+        if (!nbytes_read || c == '\n' || c == '\0')
             c = '\0';
+        else if (c < '0' || c > '9')
+            continue;
 
-        // Realloacte if needed
+        // Reallocate if needed
         if (str_len == buffer_size) {
             buffer_size += BLOCK_BUFFER_SIZE;
             (*pbuffer) = (char*) realloc(*pbuffer, buffer_size);

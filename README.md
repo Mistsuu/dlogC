@@ -10,17 +10,56 @@ This repo is made for educational purposes, striving for optimal time and space 
 
 Utilizes **GMP version 6.2.1**.
 
-## Running
+## Usages
 
 ```
 git clone https://github.com/Mistsuu/BabyStepGiantStepC
 cd BabyStepGiantStepC
-make
+make -j16
+```
+to produce `./dlog`.
+
+To use `./dlog`, we supply input as a list of numbers seperated by a newline (`\n`) in the following format:
+```
+<curve.a>
+<curve.b>
+<curve.p>
+<X(G)>
+<Y(G)>
+<X(kG)>
+<Y(kG)>
+<upper k bound>
+```
+The output will either be a number *(a negative one is normal)*, or `None`, or some error data *(only happens in the case of memory error or thread creation error, which is not often as long as `<upper k bound>` is small enough that its square root fits 64-bits)*.
+
+## Example
+
+For example, to recover `k` from:
+```
+G = (12752653901711390718579996242468 : 9102988295173351464328400869432 : 1)
+k*G = (6229151533029573525925181224628 : 1280290834308035816922484971565 : 1)
+```
+in curve `y^2 = x^3 + 1986076773346522069111732327339x + 808177731529494834911895879646 mod 13276420418771432419898581447951` where we know the order of `G` is `857765763956341`.
+
+We can supply the following input:
+```
+1986076773346522069111732327339
+808177731529494834911895879646
+13276420418771432419898581447951
+12752653901711390718579996242468
+9102988295173351464328400869432
+6229151533029573525925181224628
+1280290834308035816922484971565
+857765763956341
 ```
 
-to compile `src/main.c` to `./main` in `BabyStepGiantStepC` folder.
+Which gives the output:
+```
+690204827669615
+```
 
-Modify `src/main.c` following by a `make` for a quick use.
+You may copy the above data into a text file (`./data`) and run `./dlog < ./data`. The result is still the same.
+
 
 ## Makefile compile modes
 

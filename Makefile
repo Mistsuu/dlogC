@@ -18,7 +18,7 @@ LIBS            = -lgmp -lpthread
 FULLDEPS := $(shell find $(LIBRARY_DIR) -name '*.h')
 FULLOBJS := $(shell find $(SOURCE_DIR) -name '*.c' | sed -e "s/^$(SOURCE_DIR)/$(OBJECT_DIR)/" | sed -e "s/\\.c$$/.o/")
 
-main: $(FULLOBJS) $(OBJECT_DIR)/main.o
+dlog: $(FULLOBJS) $(OBJECT_DIR)/main.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 $(OBJECT_DIR):
@@ -30,10 +30,4 @@ $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c $(FULLDEPS) | $(OBJECT_DIR)
 # For commands
 .PHONY: clean run dbg
 clean:
-	rm -f $(SOURCE_DIR)/*.o $(OBJECT_DIR)/*.o ./main
-
-run: main
-	./main
-
-dbg: main
-	gdb ./main
+	rm -f $(SOURCE_DIR)/*.o $(OBJECT_DIR)/*.o ./dlog
