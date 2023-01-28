@@ -487,8 +487,6 @@ void* __thread__dlog_search_buffer(
     size_t index_size_bytes = args->index_size_bytes;
     size_t item_size_bytes = args->item_size_bytes;
 
-    int* p_result = args->p_result;
-
     // -------------------------------------------------------------------------------------
     //      Real calculation
     // -------------------------------------------------------------------------------------
@@ -513,16 +511,14 @@ void* __thread__dlog_search_buffer(
             break;
     }
 
-    if (lbuffer == lend || rbuffer == rend) {
-        *p_result = 0;
-        return;
-    }
+    if (lbuffer == lend || rbuffer == rend) 
+        return (void*) 0;
 
     mpn_zero(exp_l_limbs, index_size_limbs+1);
     mpn_zero(exp_r_limbs, index_size_limbs+1);
     mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256);
     mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256);
-    *p_result = 1;
+    return (void*) 1;
 }
 
 
@@ -540,42 +536,84 @@ int dlog_search_buffer(
     unsigned int n_threads
 )
 {
+    int is_search_found = 0;
+    n_size_t++; // Remember, index is [0 -> n]
+
     // -------------------------------------------------------------------------------------
     //      Initialize memory for arguments of __thread__dlog_search_buffer.
     // -------------------------------------------------------------------------------------
 
     __args_thread__dlog_search_buffer* thread_args = (__args_thread__dlog_search_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_search_buffer) * n_threads);
     
-    mp_limb_t* exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
-    mp_limb_t* exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
 
     for (unsigned int i = 0; i < n_threads; ++i) {
         thread_args[i].exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
         thread_args[i].exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+
+        thread_args[i].index_size_bytes = index_size_bytes;
+        thread_args[i].index_size_limbs = index_size_limbs;
+        thread_args[i].item_size_bytes = item_size_bytes;
+
+        thread_args[i].rbuffer = rbuffer;
+        thread_args[i].n_size_t_r = i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t;
+
+        rbuffer += slot_size_bytes * n_per_thread_size_t;
     }
 
     // -------------------------------------------------------------------------------------
     //      Generate threads.
     // -------------------------------------------------------------------------------------
 
+    pthread_t* threads = (pthread_t*) malloc_exit_when_null(sizeof(pthread_t) * n_threads);
+    int result_code;
+    int is_search_found_in_thread = 0;
+    for (unsigned int j = 0; j < n_threads && !is_search_found; ++j) {
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            thread_args[i].lbuffer = lbuffer;
+            thread_args[i].n_size_t_l = j != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t;
+        }
 
-    // -------------------------------------------------------------------------------------
-    //      Filling exp_l, exp_r
-    // -------------------------------------------------------------------------------------
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            result_code = pthread_create(&threads[i], NULL, __thread__dlog_search_buffer, (void*)(&thread_args[i]));
+            if (result_code) {
+                printf("[error] oh no! dlog_fill_buffer cannot CREATE thread!!!\n");
+                exit(-1);
+            }
+        }
 
-    mpz_t tmp;
-    mpz_set(exp_l, mpz_roinit_n(tmp, exp_l_limbs, index_size_limbs));
-    mpz_set(exp_r, mpz_roinit_n(tmp, exp_r_limbs, index_size_limbs));
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            result_code = pthread_join(threads[i], (void**)&is_search_found_in_thread);
+            if (result_code) {
+                printf("[error] oh no! dlog_fill_buffer cannot JOIN thread!!!\n");
+                exit(-1);
+            }
+
+            // If result is found from search, write to exp_l :)
+            if (is_search_found_in_thread && !is_search_found) {
+                mpz_t tmp;
+                mpz_set(exp_l, mpz_roinit_n(tmp, thread_args[i].exp_l_limbs, index_size_limbs));
+                mpz_set(exp_r, mpz_roinit_n(tmp, thread_args[i].exp_r_limbs, index_size_limbs));
+                is_search_found = 1;
+            }
+        }
+
+        lbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
 
     // -------------------------------------------------------------------------------------
     //      Cleaning up.
     // -------------------------------------------------------------------------------------
-
-    free(exp_l_limbs);
-    free(exp_r_limbs);
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        free(thread_args[i].exp_l_limbs);
+        free(thread_args[i].exp_r_limbs);
+    }
 
     free(thread_args);
-    return 1;
+    free(threads);
+    return is_search_found;
 }
 
 
@@ -686,28 +724,28 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     #endif
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
-    // if (!dlog_search_buffer(
-    //     exp_l, exp_r,
+    if (!dlog_search_buffer(
+        exp_l, exp_r,
     
-    //     lbuffer,
-    //     rbuffer,
+        lbuffer,
+        rbuffer,
     
-    //     n_size_t, 
-    //     index_size_limbs, index_size_bytes, 
-    //     item_size_bytes,
+        n_size_t, 
+        index_size_limbs, index_size_bytes, 
+        item_size_bytes,
 
-    //     n_threads
-    // )) 
-    // {
-    //     mpz_clear(n);
-    //     mpz_clear(exp_l);
-    //     mpz_clear(exp_r);
+        n_threads
+    )) 
+    {
+        mpz_clear(n);
+        mpz_clear(exp_l);
+        mpz_clear(exp_r);
 
-    //     free(lbuffer);
-    //     free(rbuffer);
+        free(lbuffer);
+        free(rbuffer);
 
-    //     return DLOG_NOT_FOUND_DLOG;
-    // }
+        return DLOG_NOT_FOUND_DLOG;
+    }
 
     #ifdef DLOG_VERBOSE
         gettimeofday(&time_end_op, NULL);
@@ -727,42 +765,42 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     eccpt Y;
     ecc_init_pt(Y);
 
-    // // -- Case 1: l*X = Y - r*n*X
-    // mpz_mul(k, exp_r, n);
-    // mpz_add(k, k, exp_l);
-    // mpz_mod(k, k, curve->p);
-    // ecc_mul(curve, Y, G, k);
-    // if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
-    // {
-    //     ecc_free_pt(Y);
+    // -- Case 1: l*X = Y - r*n*X
+    mpz_mul(k, exp_r, n);
+    mpz_add(k, k, exp_l);
+    mpz_mod(k, k, curve->p);
+    ecc_mul(curve, Y, G, k);
+    if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
+    {
+        ecc_free_pt(Y);
 
-    //     mpz_clear(n);
-    //     mpz_clear(exp_l);
-    //     mpz_clear(exp_r);
+        mpz_clear(n);
+        mpz_clear(exp_l);
+        mpz_clear(exp_r);
 
-    //     free(lbuffer);
-    //     free(rbuffer);
+        free(lbuffer);
+        free(rbuffer);
 
-    //     return DLOG_SUCCESS;
-    // }
+        return DLOG_SUCCESS;
+    }
 
-    // // -- Case 2: -l*X = Y - r*n*X
-    // mpz_mul(k, exp_r, n);
-    // mpz_sub(k, k, exp_l);
-    // ecc_mul(curve, Y, G, k);
-    // if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
-    // {
-    //     ecc_free_pt(Y);
+    // -- Case 2: -l*X = Y - r*n*X
+    mpz_mul(k, exp_r, n);
+    mpz_sub(k, k, exp_l);
+    ecc_mul(curve, Y, G, k);
+    if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
+    {
+        ecc_free_pt(Y);
 
-    //     mpz_clear(n);
-    //     mpz_clear(exp_l);
-    //     mpz_clear(exp_r);
+        mpz_clear(n);
+        mpz_clear(exp_l);
+        mpz_clear(exp_r);
 
-    //     free(lbuffer);
-    //     free(rbuffer);
+        free(lbuffer);
+        free(rbuffer);
 
-    //     return DLOG_SUCCESS;
-    // }
+        return DLOG_SUCCESS;
+    }
 
     ecc_free_pt(Y);
 
