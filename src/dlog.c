@@ -452,6 +452,8 @@ int dlog_search_buffer(
     size_t item_size_bytes
 )
 {
+    n_size_t += 1;                // Remember, index is [0 -> n]
+
     size_t slot_size_bytes = index_size_bytes + item_size_bytes;
     char* lend = lbuffer + n_size_t * slot_size_bytes;
     char* rend = rbuffer + n_size_t * slot_size_bytes;
