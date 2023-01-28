@@ -21,11 +21,7 @@ int str_init_readline(char** pbuffer)
     while (c != '\0') {
         // Read character
         nbytes_read = read(STDIN_FILENO, &c, 1);
-        if (!nbytes_read)
-            break;
-
-        // modify '\n' -> '\0'
-        if (c == '\n')
+        if (!nbytes_read || c == '\n')
             c = '\0';
 
         // Realloacte if needed
