@@ -37,17 +37,17 @@ int str_init_readline(char** pbuffer)
     return str_len;
 }
 
-unsigned long int get_number_of_threads(int argc, char** argv)
+unsigned int get_number_of_threads(int argc, char** argv)
 {   
-    unsigned long int NUM_THREADS = DEFAULT_NUM_THREADS;
+    long int NUM_THREADS = DEFAULT_NUM_THREADS;
     if (argc >= 2) {
-        NUM_THREADS = (unsigned long int) strtol(argv[1], NULL, 10);
+        NUM_THREADS = strtol(argv[1], NULL, 10);
         if (NUM_THREADS == 0 || NUM_THREADS == LONG_MAX || NUM_THREADS == LONG_MIN)
             NUM_THREADS = DEFAULT_NUM_THREADS;
         else
             NUM_THREADS = abs(NUM_THREADS);
     }
-    return NUM_THREADS;
+    return (unsigned int) NUM_THREADS;
 }
 
 void main(int argc, char** argv)
@@ -98,7 +98,7 @@ void main(int argc, char** argv)
     mpz_t n;
     mpz_init_set_str(n, n_str, 10);
 
-    unsigned long int NUM_THREADS = get_number_of_threads(argc, argv);
+    unsigned int NUM_THREADS = get_number_of_threads(argc, argv);
     mpz_t k;
     mpz_init(k);
     if (dlog(curve, k, G, kG, n, NUM_THREADS) == DLOG_SUCCESS) {

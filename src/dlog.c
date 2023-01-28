@@ -516,6 +516,7 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
 
 
     #ifdef DLOG_VERBOSE
+        printf("[debug] n_threads = %ld\n", n_threads);
         printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
         printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
         printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
