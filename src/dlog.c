@@ -737,6 +737,13 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         n_threads
     )) 
     {
+        #ifdef DLOG_VERBOSE
+            gettimeofday(&time_end_op, NULL);
+            timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+            printf("[debug] Searching took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
+            printf("[debug] Cannot find k!\n");
+        #endif
+
         mpz_clear(n);
         mpz_clear(exp_l);
         mpz_clear(exp_r);
