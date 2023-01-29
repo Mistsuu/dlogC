@@ -42,9 +42,9 @@ For example, to recover `k` from:
 G = (12752653901711390718579996242468 : 9102988295173351464328400869432 : 1)
 k*G = (6229151533029573525925181224628 : 1280290834308035816922484971565 : 1)
 ```
-in curve `y^2 = x^3 + 1986076773346522069111732327339x + 808177731529494834911895879646 mod 13276420418771432419898581447951` where we know the order of `G` is `857765763956341`.
+in curve `y^2 = x^3 + 1986076773346522069111732327339x + 808177731529494834911895879646 mod 13276420418771432419898581447951` where we know the order of `G` is `857765763956341` using `4` threads.
 
-We can supply the following input:
+We can run `./dlog 4` & supply the following input:
 ```
 1986076773346522069111732327339
 808177731529494834911895879646
@@ -61,7 +61,32 @@ Which gives the output:
 690204827669615
 ```
 
-You may copy the above data into a text file (`./data`) and run `./dlog < ./data` or `./dlog <num_threads> < ./data`. The result is still the same.
+If compiled with `BUILD=verbose` *(see the next section, **Makefile compile modes**, for more detail)*, it will produce some outputs like this:
+```
+[debug] curve:
+[debug]    Elliptic Curve y^2 = x^3 + 1986076773346522069111732327339*x + 808177731529494834911895879646 in GF(13276420418771432419898581447951)
+[debug] G:
+[debug]    (12752653901711390718579996242468 : 9102988295173351464328400869432 : 1)
+[debug] kG:
+[debug]    (6229151533029573525925181224628 : 1280290834308035816922484971565 : 1)
+[debug] upper_k = 857765763956341
+[debug] n_threads = 4
+[debug] index_size_bytes = 4
+[debug] item_size_bytes  = 13
+[debug] index_size_limbs = 1
+[debug] item_size_limbs  = 2
+[debug] size buffer: 995779760 bytes = 949.649582 MB = 0.927392 GB
+[debug] Filling lbuffer - rbuffer...
+[debug] Filling took 16.409791 seconds.
+[debug] Sorting lbuffer - rbuffer...
+[debug] Sorting took 21.665407 seconds.
+[debug] Searching lbuffer - rbuffer...
+[debug] Searching took 0.158339 seconds.
+[debug] Finished! Now solve for k...
+690204827669615
+```
+
+You can see some input examples provided in the `examples/` folder.
 
 
 ## Makefile compile modes
@@ -126,7 +151,7 @@ Filling `L` and `R` with the above points. This part can be space-optimized by s
 +---------+-------------------------+
 ```
 
-We store `X` coordinates of the points only. Because if `X(l*G) == X((k-r*n)*G)`, we can still recover `k` from `k = l + r*n`, or `k = r*n - l `.
+We store `X` coordinates of the points only. Because if `X(l*G) == X((k-r*n)*G)`, we can still recover `k` from `k = l + r*n`, or `k = r*n - l`.
 
 I use multi-threading in this sub-operations to speed up the filling.
 
