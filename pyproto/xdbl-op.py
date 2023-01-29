@@ -1,3 +1,11 @@
+#   
+#   Optimized code from xdbl.py -- reduce the number of variables required.
+#   This formula is not made by me! It is based on this website that you can
+#   look for similar ones:
+#       https://hyperelliptic.org/EFD/g1p/auto-code/shortw/xz/doubling/dbl-2002-it-2.op3
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-xz.html
+#    
+
 T0 = Px^2           # 2N
 T1 = Pz^2           # 2N
 T5 = a*T1           # 3N
