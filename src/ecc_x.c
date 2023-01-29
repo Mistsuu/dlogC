@@ -8,7 +8,7 @@ void ecc_init_xtemp(ecc_xtemp T, mp_size_t n)
     T[1] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (2*n+1));
     T[2] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (2*n));
     T[3] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (4*n));
-    T[4] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n));
+    T[4] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n+1));
     T[5] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (5*n+2));
     T[6] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (5*n+1));
     T[7] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (n));
@@ -68,7 +68,8 @@ void ecc_xadd(
     // T5 = T0*T1
     mpn_mul(T[5], T[0], 3*n+1, T[1], 2*n+1);
     // T4 = (T4-T5) mod p
-    if (mpn_sub(T[4], T[4], 6*n, T[5], 5*n+2) == 0) {
+    T[4][6*n] = 0; // To prevent 6*n < 5*n+2 when n == 1
+    if (mpn_sub(T[4], T[4], 6*n+1, T[5], 5*n+2) == 0) {
         // T4 >= T5: T4 = (T4-T5) mod p
         mpn_tdiv_qr(T[6], T[4], 0, T[4], 6*n, curve_p, n);
     } else {
