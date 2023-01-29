@@ -458,7 +458,6 @@ int dlog_search_buffer(
     char* lend = lbuffer + n_size_t * slot_size_bytes;
     char* rend = rbuffer + n_size_t * slot_size_bytes;
 
-    int i = 0, j = 0;
     int cmp_status;
     while (lbuffer != lend && rbuffer != rend) {
         cmp_status = memcmp(
@@ -468,9 +467,9 @@ int dlog_search_buffer(
                      );
 
         if (cmp_status < 0)
-            lbuffer += slot_size_bytes, i++;
+            lbuffer += slot_size_bytes;
         else if (cmp_status > 0)
-            rbuffer += slot_size_bytes, j++;
+            rbuffer += slot_size_bytes;
         else
             break;
 
