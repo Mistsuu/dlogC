@@ -143,19 +143,32 @@ void* __thread__dlog_fill_buffer(
         mpn_copyd(L1z, V1, item_size_limbs);
 
         // ---------------------- Update R*x,R*z -----------------------
-        ecc_xadd(
-            V0, V1,
-            R1x, R1z,
-            nGx, nGz,
-            R0x, R0z,
+        if (mpn_zero_p(R0z, item_size_limbs) == 0)
+            ecc_xadd(
+                V0, V1,
+                R1x, R1z,
+                nGx, nGz,
+                R0x, R0z,
 
-            curve_a,
-            curve_b,
-            curve_p,
-            item_size_limbs,
+                curve_a,
+                curve_b,
+                curve_p,
+                item_size_limbs,
 
-            T
-        );
+                T
+            );
+        else
+            ecc_xdbl(
+                V0, V1,
+                R1x, R1z,
+
+                curve_a,
+                curve_b,
+                curve_p,
+                item_size_limbs,
+
+                T
+            );
         mpn_copyd(R0x, R1x, item_size_limbs);
         mpn_copyd(R0z, R1z, item_size_limbs);
         mpn_copyd(R1x, V0, item_size_limbs);
