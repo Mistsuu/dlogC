@@ -431,32 +431,69 @@ void dlog_sort_buffer(
 
     size_t n_size_t,
     size_t index_size_bytes,
-    size_t item_size_bytes
+    size_t item_size_bytes,
+    
+    unsigned int n_threads
 )
 {
     n_size_t += 1; // Remember, index is [0 -> n].
-    dlog_sort_one_buffer(lbuffer, n_size_t, index_size_bytes, item_size_bytes);
-    dlog_sort_one_buffer(rbuffer, n_size_t, index_size_bytes, item_size_bytes);
-}
-
-
-int dlog_search_buffer(
-    mpz_t exp_l,
-    mpz_t exp_r,
-
-    char* lbuffer,
-    char* rbuffer,
-    
-    size_t n_size_t, 
-    size_t index_size_limbs, size_t index_size_bytes, 
-    size_t item_size_bytes
-)
-{
-    n_size_t += 1; // Remember, index is [0 -> n]
 
     size_t slot_size_bytes = index_size_bytes + item_size_bytes;
-    char* lend = lbuffer + n_size_t * slot_size_bytes;
-    char* rend = rbuffer + n_size_t * slot_size_bytes;
+    size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
+
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        dlog_sort_one_buffer(
+            lbuffer, 
+            i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t, 
+            index_size_bytes, 
+            item_size_bytes
+        );
+
+        lbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
+    
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        dlog_sort_one_buffer(
+            rbuffer, 
+            i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t, 
+            index_size_bytes, 
+            item_size_bytes
+        );
+
+        rbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
+}
+
+void* __thread__dlog_search_buffer(
+    void* vargs
+)
+{
+    // -------------------------------------------------------------------------------------
+    //      Setup arguments.
+    // -------------------------------------------------------------------------------------
+    __args_thread__dlog_search_buffer* args = (__args_thread__dlog_search_buffer*) vargs;
+
+    mp_limb_t* exp_l_limbs = args->exp_l_limbs;
+    mp_limb_t* exp_r_limbs = args->exp_r_limbs;
+
+    char* lbuffer = args->lbuffer;
+    char* rbuffer = args->rbuffer;
+
+    size_t n_size_t_l = args->n_size_t_l;
+    size_t n_size_t_r = args->n_size_t_r;
+
+    size_t index_size_limbs = args->index_size_limbs; 
+    size_t index_size_bytes = args->index_size_bytes;
+    size_t item_size_bytes = args->item_size_bytes;
+
+    // -------------------------------------------------------------------------------------
+    //      Real calculation
+    // -------------------------------------------------------------------------------------
+
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    char* lend = lbuffer + n_size_t_l * slot_size_bytes;
+    char* rend = rbuffer + n_size_t_r * slot_size_bytes;
 
     int cmp_status;
     while (lbuffer != lend && rbuffer != rend) {
@@ -472,26 +509,111 @@ int dlog_search_buffer(
             rbuffer += slot_size_bytes;
         else
             break;
-
     }
 
-    if (lbuffer == lend || rbuffer == rend)
-        return 0;
-    
-    mp_limb_t* exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
-    mp_limb_t* exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+    if (lbuffer == lend || rbuffer == rend) 
+        return (void*) 0;
+
     mpn_zero(exp_l_limbs, index_size_limbs+1);
     mpn_zero(exp_r_limbs, index_size_limbs+1);
     mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256);
     mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256);
+    return (void*) 1;
+}
 
-    mpz_t tmp;
-    mpz_set(exp_l, mpz_roinit_n(tmp, exp_l_limbs, index_size_limbs));
-    mpz_set(exp_r, mpz_roinit_n(tmp, exp_r_limbs, index_size_limbs));
 
-    free(exp_l_limbs);
-    free(exp_r_limbs);
-    return 1;
+int dlog_search_buffer(
+    mpz_t exp_l,
+    mpz_t exp_r,
+
+    char* lbuffer,
+    char* rbuffer,
+    
+    size_t n_size_t, 
+    size_t index_size_limbs, size_t index_size_bytes, 
+    size_t item_size_bytes,
+
+    unsigned int n_threads
+)
+{
+    int is_search_found = 0;
+    n_size_t += 1; // Remember, index is [0 -> n]
+
+    // -------------------------------------------------------------------------------------
+    //      Initialize memory for arguments of __thread__dlog_search_buffer.
+    // -------------------------------------------------------------------------------------
+
+    __args_thread__dlog_search_buffer* thread_args = (__args_thread__dlog_search_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_search_buffer) * n_threads);
+    
+    size_t slot_size_bytes = index_size_bytes + item_size_bytes;
+    size_t n_per_thread_size_t = n_size_t / n_threads;
+    size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
+
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        thread_args[i].exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+        thread_args[i].exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+
+        thread_args[i].index_size_bytes = index_size_bytes;
+        thread_args[i].index_size_limbs = index_size_limbs;
+        thread_args[i].item_size_bytes = item_size_bytes;
+
+        thread_args[i].rbuffer = rbuffer;
+        thread_args[i].n_size_t_r = i != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t;
+
+        rbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Generate threads.
+    // -------------------------------------------------------------------------------------
+
+    pthread_t* threads = (pthread_t*) malloc_exit_when_null(sizeof(pthread_t) * n_threads);
+    int result_code;
+    int is_search_found_in_thread = 0;
+    for (unsigned int j = 0; j < n_threads && !is_search_found; ++j) {
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            thread_args[i].lbuffer = lbuffer;
+            thread_args[i].n_size_t_l = j != n_threads - 1 ? n_per_thread_size_t : n_last_thread_size_t;
+        }
+
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            result_code = pthread_create(&threads[i], NULL, __thread__dlog_search_buffer, (void*)(&thread_args[i]));
+            if (result_code) {
+                printf("[error] oh no! dlog_fill_buffer cannot CREATE thread!!!\n");
+                exit(-1);
+            }
+        }
+
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            result_code = pthread_join(threads[i], (void**)&is_search_found_in_thread);
+            if (result_code) {
+                printf("[error] oh no! dlog_fill_buffer cannot JOIN thread!!!\n");
+                exit(-1);
+            }
+
+            // If result is found from search, write to exp_l :)
+            if (is_search_found_in_thread && !is_search_found) {
+                mpz_t tmp;
+                mpz_set(exp_l, mpz_roinit_n(tmp, thread_args[i].exp_l_limbs, index_size_limbs));
+                mpz_set(exp_r, mpz_roinit_n(tmp, thread_args[i].exp_r_limbs, index_size_limbs));
+                is_search_found = 1;
+            }
+        }
+
+        lbuffer += slot_size_bytes * n_per_thread_size_t;
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Cleaning up.
+    // -------------------------------------------------------------------------------------
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        free(thread_args[i].exp_l_limbs);
+        free(thread_args[i].exp_r_limbs);
+    }
+
+    free(thread_args);
+    free(threads);
+    return is_search_found;
 }
 
 
@@ -588,7 +710,9 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     
         n_size_t, 
         index_size_bytes, 
-        item_size_bytes
+        item_size_bytes,
+
+        n_threads
     );
 
     #ifdef DLOG_VERBOSE
@@ -608,7 +732,9 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     
         n_size_t, 
         index_size_limbs, index_size_bytes, 
-        item_size_bytes
+        item_size_bytes,
+
+        n_threads
     )) 
     {
         #ifdef DLOG_VERBOSE
