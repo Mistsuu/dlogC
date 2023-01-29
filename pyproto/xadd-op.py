@@ -1,3 +1,11 @@
+#   
+#   Optimized code from xadd.py -- reduce the number of variables required.
+#   This formula is not made by me! It is based on this website that you can
+#   look for similar ones:
+#       https://hyperelliptic.org/EFD/g1p/auto-code/shortw/xz/diffadd/dadd-2002-it-3.op3
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-xz.html
+#       
+
 T0 = Px*Qx          # 2N
 T1 = Pz*Qz          # 2N
 T2 = Px*Qz          # 2N

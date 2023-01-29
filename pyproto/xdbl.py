@@ -1,3 +1,10 @@
+#   
+#   This formula is not made by me! It is based on this website that you can
+#   look for similar ones:
+#       https://hyperelliptic.org/EFD/g1p/auto-code/shortw/xz/doubling/dbl-2002-it-2.op3
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-xz.html
+#    
+
 T1 = Px^2           # 2N
 T2 = Pz^2           # 2N
 T3 = a*T2           # 3N

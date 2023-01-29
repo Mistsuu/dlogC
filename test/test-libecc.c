@@ -8,7 +8,7 @@
 void test1(ecc curve, eccpt G)
 {
     eccpt R;
-    mpz_t n;
+    mpz_t k;
     mpz_init(k);
     ecc_init_pt(R);
 
