@@ -1,5 +1,5 @@
 # You can change this to release|memcheck|verbose
-BUILD = verbose
+BUILD = release
 
 # Settings for folders
 OBJECT_DIR  = obj
