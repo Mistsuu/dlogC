@@ -70,19 +70,19 @@ If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for 
 [debug] kG:
 [debug]    (6229151533029573525925181224628 : 1280290834308035816922484971565 : 1)
 [debug] upper_k = 857765763956341
-[debug] n_threads = 4
+[debug] n_threads = 8
 [debug] index_size_bytes = 4
 [debug] item_size_bytes  = 13
 [debug] index_size_limbs = 1
 [debug] item_size_limbs  = 2
 [debug] size buffer: 995779760 bytes = 949.649582 MB = 0.927392 GB
-[debug] Filling lbuffer - rbuffer...
-[debug] Filling took 16.409791 seconds.
-[debug] Sorting lbuffer - rbuffer...
-[debug] Sorting took 21.665407 seconds.
-[debug] Searching lbuffer - rbuffer...
-[debug] Searching took 0.158339 seconds.
-[debug] Finished! Now solve for k...
+[debug] Filling L & R buffers...
+[debug] Filling took 12.085264 seconds.
+[debug] Sorting L & R buffers...
+[debug] Sorting took 21.569493 seconds.
+[debug] Searching in L & R buffers...
+[debug] Searching took 0.123187 seconds.
+[debug] Found k = 690204827669615
 690204827669615
 ```
 
@@ -116,7 +116,7 @@ Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memch
   generator_order = 857765763956341
   ```
 
-  in the parent project from **10 minutes** to **35 seconds** using *4-cores* on **Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz**.
+  in the parent project from **10 minutes** to **34 seconds** using *8 threads* on **Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz**.
 
 - Also reduces some more memory.
 
