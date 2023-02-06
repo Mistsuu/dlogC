@@ -8,6 +8,7 @@
 #define DLOG_SUCCESS             0
 #define DLOG_NOT_FOUND_DLOG      1
 #define DLOG_CANNOT_ALLOCATE     2
+#define DLOG_INVALID_UPPER_K     3
 
 #define DEFAULT_NUM_THREADS      4
 

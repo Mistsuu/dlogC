@@ -629,6 +629,13 @@ int dlog_search_buffer(
     return is_search_found;
 }
 
+int dlog_vanilla(ecc curve, mpz_t k, eccpt G, eccpt kG, unsigned long int long_upper_k)
+{
+    for (unsigned long int i = 0; i < long_upper_k; ++i) {
+
+    }
+}
+
 
 /*
     dlog():
@@ -637,7 +644,15 @@ int dlog_search_buffer(
 */
 int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
 {
-    assert(mpz_cmp_si(upper_k, 4) > 0);
+    // Could have used the abs() version,
+    // but this is much better.
+    if (mpz_cmp_si(upper_k, 0) <= 0)
+        return DLOG_INVALID_UPPER_K;
+
+    // Doing multithread this case would
+    // have caused a memory error.
+    if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0)
+        return dlog_vanilla(curve, k, G, kG, mpz_get_ui(upper_k));
 
     // Number of [n | p] items we have to allocate.
     mpz_t n;
