@@ -639,28 +639,6 @@ int dlog_search_buffer(
     return is_search_found;
 }
 
-int dlog_vanilla(ecc curve, mpz_t k, eccpt G, eccpt kG, unsigned long long_upper_k)
-{
-    eccpt R;
-    ecc_init_pt(R);
-    ecc_set_pt_inf(R);
-
-    // Yeah... Just do a lazy point addition.
-    int ret_code = DLOG_NOT_FOUND_DLOG;
-    for (unsigned long i = 0; i < long_upper_k; ++i) {
-        if (mpz_cmp(R->x, kG->x) == 0 && mpz_cmp(R->y, kG->y) == 0) {
-            mpz_set_ui(k, i);
-            ret_code = DLOG_SUCCESS;
-            break;
-        }
-        ecc_add(curve, R, R, G);
-    }
-
-    ecc_free_pt(R);
-    return ret_code;
-}
-
-
 /*
     dlog():
         ? Calculate k from G and k*G where k < upper_k.
@@ -703,9 +681,9 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     // have caused a memory error.
     if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] Switched to dlog_vanilla() because upper_k < n_threads ^ 2...\n");
+            printf("[debug] Setting n_threads=1 because upper_k < n_threads ^ 2...\n");
         #endif
-        return dlog_vanilla(curve, k, G, kG, mpz_get_ui(upper_k));
+        n_threads = 1;
     }
 
     // Number of [n | p] items we have to allocate.
