@@ -33,8 +33,8 @@ size_t dlog_init_buffer(
 
     // Now we allocate
     size_t nbytes_alloc = (n_size_t + 1) * (index_size_bytes + item_size_bytes);
-    (*lbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
-    (*rbuffer) = (char*) malloc_exit_when_null(nbytes_alloc);
+    (*lbuffer) = (char*) malloc(nbytes_alloc);
+    (*rbuffer) = (char*) malloc(nbytes_alloc);
     #ifdef DLOG_VERBOSE
         printf("[debug] size buffer: %ld bytes = %f MB = %f GB\n", 
                 nbytes_alloc * 2, 
@@ -42,6 +42,16 @@ size_t dlog_init_buffer(
                 nbytes_alloc * 2 / 1024.0 / 1024.0 / 1024.0
             );
     #endif
+
+    // Check for valid allocation?
+    if (!(*lbuffer) || !(*rbuffer)) {
+        if (*lbuffer)
+            free(*lbuffer);
+        if (*rbuffer)
+            free(*rbuffer);
+        return 0;
+    }
+
     return n_size_t;
 }
 
@@ -629,11 +639,25 @@ int dlog_search_buffer(
     return is_search_found;
 }
 
-int dlog_vanilla(ecc curve, mpz_t k, eccpt G, eccpt kG, unsigned long int long_upper_k)
+int dlog_vanilla(ecc curve, mpz_t k, eccpt G, eccpt kG, unsigned long long_upper_k)
 {
-    for (unsigned long int i = 0; i < long_upper_k; ++i) {
+    eccpt R;
+    ecc_init_pt(R);
+    ecc_set_pt_inf(R);
 
+    // Yeah... Just do a lazy point addition.
+    int ret_code = DLOG_NOT_FOUND_DLOG;
+    for (unsigned long i = 0; i < long_upper_k; ++i) {
+        if (mpz_cmp(R->x, kG->x) == 0 && mpz_cmp(R->y, kG->y) == 0) {
+            mpz_set_ui(k, i);
+            ret_code = DLOG_SUCCESS;
+            break;
+        }
+        ecc_add(curve, R, R, G);
     }
+
+    ecc_free_pt(R);
+    return ret_code;
 }
 
 
@@ -644,27 +668,6 @@ int dlog_vanilla(ecc curve, mpz_t k, eccpt G, eccpt kG, unsigned long int long_u
 */
 int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
 {
-    // Could have used the abs() version,
-    // but this is much better.
-    if (mpz_cmp_si(upper_k, 0) <= 0)
-        return DLOG_INVALID_UPPER_K;
-
-    // Doing multithread this case would
-    // have caused a memory error.
-    if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0)
-        return dlog_vanilla(curve, k, G, kG, mpz_get_ui(upper_k));
-
-    // Number of [n | p] items we have to allocate.
-    mpz_t n;
-    mpz_init(n);
-    mpz_sqrt(n, upper_k);
-    mpz_add_ui(n, n, 1);
-
-    size_t index_size_bytes = mpz_size_bytes(n);
-    size_t item_size_bytes  = mpz_size_bytes(curve->p);
-    size_t index_size_limbs = mpz_size(n);
-    size_t item_size_limbs  = mpz_size(curve->p);
-
     #ifdef DLOG_VERBOSE
         printf("[debug] curve: \n");
         printf("[debug]    ");
@@ -681,8 +684,42 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         printf("[debug] upper_k = ");
         mpz_out_str(stdout, 10, upper_k);
         printf("\n");
-
         printf("[debug] n_threads = %d\n", n_threads);
+    #endif
+
+    // Create return code...
+    int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
+
+    // Could have used the abs() version,
+    // but this is much better.
+    if (mpz_cmp_si(upper_k, 0) <= 0) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Negative value of k is detected! Exiting...\n");
+        #endif
+        return DLOG_INVALID_UPPER_K;
+    }
+
+    // Doing multithread this case would
+    // have caused a memory error.
+    if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Switched to dlog_vanilla() because upper_k < n_threads ^ 2...\n");
+        #endif
+        return dlog_vanilla(curve, k, G, kG, mpz_get_ui(upper_k));
+    }
+
+    // Number of [n | p] items we have to allocate.
+    mpz_t n;
+    mpz_init(n);
+    mpz_sqrt(n, upper_k);
+    mpz_add_ui(n, n, 1);
+
+    size_t index_size_bytes = mpz_size_bytes(n);
+    size_t item_size_bytes  = mpz_size_bytes(curve->p);
+    size_t index_size_limbs = mpz_size(n);
+    size_t item_size_limbs  = mpz_size(curve->p);
+
+    #ifdef DLOG_VERBOSE
         printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
         printf("[debug] item_size_bytes  = %ld\n", item_size_bytes);
         printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
@@ -703,15 +740,19 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
 
     // Allocation failed
     if (!n_size_t) {
-        mpz_clear(n);
-        printf("[error] cannot allocate memory!\n");
-        return DLOG_CANNOT_ALLOCATE;
+        #ifdef DLOG_VERBOSE
+            printf("[error] Cannot allocate memory for lBuffer & rBuffer!\n");
+        #endif
+
+        dlog_ret_code = DLOG_CANNOT_ALLOCATE;
+        goto dlog_end_free_n;
     }
 
     #ifdef DLOG_VERBOSE
         printf("[debug] Filling lbuffer - rbuffer...\n");
         gettimeofday(&time_start_op, NULL);
     #endif
+
     dlog_fill_buffer(
         lbuffer, 
         rbuffer, 
@@ -732,6 +773,7 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         printf("[debug] Sorting lbuffer - rbuffer...\n");
         gettimeofday(&time_start_op, NULL);
     #endif
+
     dlog_sort_buffer(
         lbuffer,
         rbuffer,
@@ -750,52 +792,37 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         printf("[debug] Searching lbuffer - rbuffer...\n");
         gettimeofday(&time_start_op, NULL);
     #endif
+    
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
-    if (!dlog_search_buffer(
-        exp_l, exp_r,
-    
-        lbuffer,
-        rbuffer,
-    
-        n_size_t, 
-        index_size_limbs, index_size_bytes, 
-        item_size_bytes,
+    int dlog_search_status = 
+        dlog_search_buffer(
+            exp_l, exp_r,
+        
+            lbuffer,
+            rbuffer,
+        
+            n_size_t, 
+            index_size_limbs, index_size_bytes, 
+            item_size_bytes,
 
-        n_threads
-    )) 
-    {
-        #ifdef DLOG_VERBOSE
-            gettimeofday(&time_end_op, NULL);
-            timersub(&time_end_op, &time_start_op, &time_elapsed_op);
-            printf("[debug] Searching took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
-            printf("[debug] Cannot find k!\n");
-        #endif
-
-        mpz_clear(n);
-        mpz_clear(exp_l);
-        mpz_clear(exp_r);
-
-        free(lbuffer);
-        free(rbuffer);
-
-        return DLOG_NOT_FOUND_DLOG;
-    }
+            n_threads
+        );
 
     #ifdef DLOG_VERBOSE
         gettimeofday(&time_end_op, NULL);
         timersub(&time_end_op, &time_start_op, &time_elapsed_op);
         printf("[debug] Searching took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
-        printf("[debug] Finished! Now solve for k...\n");
     #endif
 
-    // FILE* pfile;
-    // pfile = fopen("miscellaneous/outputl", "w");
-    // fwrite(lbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    // fclose(pfile);
-    // pfile = fopen("miscellaneous/outputr", "w");
-    // fwrite(rbuffer, 1, (n_size_t + 1) * (index_size_bytes + item_size_bytes), pfile);
-    // fclose(pfile);
+    if (!dlog_search_status) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Cannot search for equal values in lBuffer and rBuffer!\n");
+        #endif
+
+        dlog_ret_code = DLOG_NOT_FOUND_DLOG;
+        goto dlog_end_free_bufs_and_nums;
+    }
 
     eccpt Y;
     ecc_init_pt(Y);
@@ -807,16 +834,14 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     ecc_mul(curve, Y, G, k);
     if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
     {
-        ecc_free_pt(Y);
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Found k = ");
+            mpz_out_str(stdout, 10, k);
+            printf("\n");
+        #endif
 
-        mpz_clear(n);
-        mpz_clear(exp_l);
-        mpz_clear(exp_r);
-
-        free(lbuffer);
-        free(rbuffer);
-
-        return DLOG_SUCCESS;
+        dlog_ret_code = DLOG_SUCCESS;
+        goto dlog_end_free_all;
     }
 
     // -- Case 2: -l*X = Y - r*n*X
@@ -825,25 +850,29 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     ecc_mul(curve, Y, G, k);
     if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
     {
-        ecc_free_pt(Y);
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Found k = ");
+            mpz_out_str(stdout, 10, k);
+            printf("\n");
+        #endif
 
-        mpz_clear(n);
-        mpz_clear(exp_l);
-        mpz_clear(exp_r);
-
-        free(lbuffer);
-        free(rbuffer);
-
-        return DLOG_SUCCESS;
+        dlog_ret_code = DLOG_SUCCESS;
+        goto dlog_end_free_all;
     }
 
+dlog_end_free_all:
     ecc_free_pt(Y);
 
-    mpz_clear(n);
+dlog_end_free_bufs_and_nums:
     mpz_clear(exp_l);
     mpz_clear(exp_r);
 
     free(lbuffer);
     free(rbuffer);
-    return DLOG_NOT_FOUND_DLOG;
+
+dlog_end_free_n:
+    mpz_clear(n);
+
+dlog_end_ret:
+    return dlog_ret_code;
 }
