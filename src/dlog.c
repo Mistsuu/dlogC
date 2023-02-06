@@ -681,10 +681,15 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     // have caused a memory error.
     if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] Setting n_threads=1 because upper_k < n_threads ^ 2...\n");
+            printf("[debug] Setting n_threads = 1 because upper_k < n_threads ^ 2...\n");
         #endif
         n_threads = 1;
     }
+
+    // -------------------------------------------------------------------------------------
+    //      Calculating the amount of memory needed for each data unit
+    //      to run the algorithm.
+    // -------------------------------------------------------------------------------------
 
     // Number of [n | p] items we have to allocate.
     mpz_t n;
@@ -708,6 +713,10 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         struct timeval time_elapsed_op;
     #endif
 
+    // -------------------------------------------------------------------------------------
+    //      Allocating the amount of memory needed to hold the buffers.
+    // -------------------------------------------------------------------------------------
+
     char* lbuffer;
     char* rbuffer;
     size_t n_size_t = dlog_init_buffer(
@@ -719,15 +728,19 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     // Allocation failed
     if (!n_size_t) {
         #ifdef DLOG_VERBOSE
-            printf("[error] Cannot allocate memory for lBuffer & rBuffer!\n");
+            printf("[error] Cannot allocate memory for L & R buffers!\n");
         #endif
 
         dlog_ret_code = DLOG_CANNOT_ALLOCATE;
         goto dlog_end_free_n;
     }
 
+    // -------------------------------------------------------------------------------------
+    //      Step 1: Filling the L & R buffers.
+    // -------------------------------------------------------------------------------------
+
     #ifdef DLOG_VERBOSE
-        printf("[debug] Filling lbuffer - rbuffer...\n");
+        printf("[debug] Filling L & R buffers...\n");
         gettimeofday(&time_start_op, NULL);
     #endif
 
@@ -748,7 +761,14 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         gettimeofday(&time_end_op, NULL);
         timersub(&time_end_op, &time_start_op, &time_elapsed_op);
         printf("[debug] Filling took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
-        printf("[debug] Sorting lbuffer - rbuffer...\n");
+    #endif
+
+    // -------------------------------------------------------------------------------------
+    //      Step 2: Sorting the L & R buffers.
+    // -------------------------------------------------------------------------------------
+
+    #ifdef DLOG_VERBOSE
+        printf("[debug] Sorting L & R buffers...\n");
         gettimeofday(&time_start_op, NULL);
     #endif
 
@@ -767,10 +787,17 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         gettimeofday(&time_end_op, NULL);
         timersub(&time_end_op, &time_start_op, &time_elapsed_op);
         printf("[debug] Sorting took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
-        printf("[debug] Searching lbuffer - rbuffer...\n");
+    #endif
+
+    // -------------------------------------------------------------------------------------
+    //      Step 3: Searching the L & R buffers.
+    // -------------------------------------------------------------------------------------
+    
+    #ifdef DLOG_VERBOSE
+        printf("[debug] Searching in L & R buffers...\n");
         gettimeofday(&time_start_op, NULL);
     #endif
-    
+
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
     int dlog_search_status = 
@@ -801,6 +828,10 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         dlog_ret_code = DLOG_NOT_FOUND_DLOG;
         goto dlog_end_free_bufs_and_nums;
     }
+
+    // -------------------------------------------------------------------------------------
+    //      Deduce k from the search.
+    // -------------------------------------------------------------------------------------
 
     eccpt Y;
     ecc_init_pt(Y);
@@ -837,6 +868,10 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         dlog_ret_code = DLOG_SUCCESS;
         goto dlog_end_free_all;
     }
+
+    // -------------------------------------------------------------------------------------
+    //      Cleanup.
+    // -------------------------------------------------------------------------------------
 
 dlog_end_free_all:
     ecc_free_pt(Y);
