@@ -89,15 +89,15 @@ If compiled with `BUILD=verbose` *(see the next section, **Makefile compile mode
 You can see some input examples provided in the `examples/` folder.
 
 
-## Makefile compile modes
+## Compile modes
 
-In `Makefile`, you can modify `BUILD` variable to `release`, `verbose`, `memcheck` which creates different kind of builds:
+Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck` which creates different kind of builds:
 
-- `release`: Using `dlog` will produce no debug output.
+- `release`: Using `dlog` will produce no debug output. *(default)*
 - `verbose`: Using `dlog` will produce debug output such as:
   - The size of allocated memory to construct the `L` and `R` `char` buffers in the baby step giant step algorithm.
   - Time took for each sub-operations.
-- `memcheck`: Which just compiles the code with `-fsanitize=address`, that checks for memory leaks, but it's got a weird bug that saying I freed the wrong stuffs, so idk...
+- `memcheck`: Which just compiles the code with `-fsanitize=address`. Helpful in looking for memory leaks in the code.
 
 ## Comparisons with the [parent project](https://github.com/Mistsuu/baby-giant-Fp-parallel)
 
