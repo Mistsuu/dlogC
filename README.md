@@ -61,7 +61,7 @@ Which gives the output:
 690204827669615
 ```
 
-If compiled with `BUILD=verbose` *(see the next section, **Makefile compile modes**, for more detail)*, it will produce some outputs like this:
+If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for more detail)*, it will produce some outputs like this:
 ```
 [debug] curve:
 [debug]    Elliptic Curve y^2 = x^3 + 1986076773346522069111732327339*x + 808177731529494834911895879646 in GF(13276420418771432419898581447951)
