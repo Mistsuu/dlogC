@@ -822,7 +822,7 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
 
     if (!dlog_search_status) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] Cannot search for equal values in lBuffer and rBuffer!\n");
+            printf("[debug] Cannot search for equal values in L & R buffers!\n");
         #endif
 
         dlog_ret_code = DLOG_NOT_FOUND_DLOG;

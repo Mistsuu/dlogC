@@ -124,7 +124,7 @@ Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memch
 
 - Cannot parallelize array-sorting in the 2nd step without causing some unknown bottleneck problem.
 - `malloc()` fails are handled by quick-and-dirty-`exit(-1)`s, (not sure if it's bad or not?)
-- Code is probably unnecessarily long because of `xmul()`s or `xadd()`s and `xdbl()`s that are not used at all. To be honest, I just like to implement them while doing this, so that's the reason they are there...
+- Code is probably unnecessarily long because of some function is built such as `xmul()`s that is not used at all. It's only there because I just like to implement them for no other reasons than curiosity.
 
 ## How it works
 
