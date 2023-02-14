@@ -14,10 +14,23 @@
 #include "ecc.h"
 #include "ecc_x.h"
 
-size_t dlog_init_buffer(
+size_t dlog_calc_mem(
+    mpz_t n,
+    size_t* index_size_limbs, size_t* index_size_bytes,
+    size_t* item_size_limbs, size_t* item_size_bytes,
+    size_t* n_partitions,
+    
+    mpz_t upper_k,
+    size_t mem_limit,
+    mpz_t curve_p
+);
+
+int dlog_alloc_buffer(
     char** lbuffer,
     char** rbuffer,
-    mpz_t n, size_t index_size_bytes, size_t item_size_bytes
+
+    size_t n_size_t, 
+    size_t index_size_bytes, size_t item_size_bytes
 );
 
 typedef struct {
@@ -108,6 +121,30 @@ int dlog_search_buffer(
     unsigned int n_threads
 );
 
-int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads);
+int __dlog__(
+    ecc curve, 
+    mpz_t k, 
+    eccpt G, eccpt kG, 
+    
+    char* lbuffer, 
+    char* rbuffer,
+    
+    mpz_t n, size_t n_size_t,
+    size_t index_size_limbs, size_t index_size_bytes,
+    size_t item_size_limbs, size_t item_size_bytes,
+
+    unsigned int n_threads,
+    unsigned int is_update_lbuffer
+);
+
+int dlog(
+    ecc curve, 
+    mpz_t k, 
+    eccpt G, eccpt kG, 
+    mpz_t upper_k, 
+
+    size_t mem_limit,
+    unsigned int n_threads
+);
 
 #endif

@@ -7,15 +7,52 @@
 #include "mem.h"
 
 #define mpz_size_bytes(n) mpz_sizeinbase(n, 256)
-            
-size_t dlog_init_buffer(
-    char** lbuffer,
-    char** rbuffer,
-    mpz_t n, size_t index_size_bytes, size_t item_size_bytes
+
+size_t dlog_calc_mem(
+    mpz_t n,
+    size_t* index_size_limbs, size_t* index_size_bytes,
+    size_t* item_size_limbs, size_t* item_size_bytes,
+    size_t* n_partitions,
+    
+    mpz_t upper_k,
+    size_t mem_limit,
+    mpz_t curve_p
 )
 {
+    (*item_size_bytes) = mpz_size_bytes(curve_p);
+    (*item_size_limbs) = mpz_size(curve_p);
+    if (mem_limit && mem_limit < (*item_size_bytes) + 1)
+        return 0;
+
+    // Number of [n | p] items we have to allocate 
+    // as if we don't have memory limit.
+    mpz_sqrt(n, upper_k);
+    mpz_add_ui(n, n, 1);
+
+    // Calculate number of items given the memory limit
+    size_t n_limit;
+    if (mem_limit) {
+        for (
+            size_t index_size_bytes_limit = 1, index_upper_limit = 256; 
+            index_size_bytes_limit <= sizeof(size_t); 
+            ++index_size_bytes_limit, index_upper_limit *= 256
+        ) {
+            n_limit = mem_limit / 2 / (index_size_bytes_limit + (*item_size_bytes));
+            if (n_limit <= index_upper_limit - 1)
+                break;
+        }
+
+
+        if (mpz_cmp_ui(n, n_limit - 1) > 0)
+            mpz_set_ui(n, n_limit - 1);
+    }
+
+    // Set index size
+    (*index_size_limbs) = mpz_size(n);
+    (*index_size_bytes) = mpz_size_bytes(n);
+
     // Check if n fits in size_t -- argument size of malloc
-    if (mpz_size_bytes(n) > sizeof(size_t))
+    if ((*index_size_bytes) > sizeof(size_t))
         return 0;
 
     // Convert n from mpz_t to size_t
@@ -27,12 +64,45 @@ size_t dlog_init_buffer(
         n_size_t ^=  nitems_alloc_limbs[i];
     }
 
-    // Checks if size of n_size_t items fits in size_t
-    if (SIZE_MAX / (index_size_bytes + item_size_bytes) / 2 < n_size_t)
+    // Checks if size of n_size_t items fits in size_t 
+    // size_t is argument size of malloc
+    if (SIZE_MAX / ((*index_size_bytes) + (*item_size_bytes)) / 2 < n_size_t)
         return 0;
 
-    // Now we allocate
+    // Set number of partitions
+    mpz_t nn;
+    mpz_init(nn);
+    mpz_mul(nn, n, n);
+
+    mpz_t n_partitions_q_mpz;
+    mpz_t n_partitions_r_mpz;
+    mpz_init(n_partitions_q_mpz);
+    mpz_init(n_partitions_r_mpz);
+    mpz_tdiv_qr(n_partitions_q_mpz, n_partitions_r_mpz, upper_k, nn);
+
+    (*n_partitions) = (
+         mpz_get_ui(n_partitions_q_mpz) + 
+        (mpz_cmp_ui(n_partitions_r_mpz, 0) != 0)
+    );
+    
+    mpz_clear(nn);
+    mpz_clear(n_partitions_q_mpz);
+    mpz_clear(n_partitions_r_mpz);
+    return n_size_t;
+}
+
+int dlog_alloc_buffer(
+    char** lbuffer,
+    char** rbuffer,
+
+    size_t n_size_t, 
+    size_t index_size_bytes, size_t item_size_bytes
+)
+{
+    // Checks if we're going to limit our memory?
     size_t nbytes_alloc = (n_size_t + 1) * (index_size_bytes + item_size_bytes);
+
+    // Now we allocate
     (*lbuffer) = (char*) malloc(nbytes_alloc);
     (*rbuffer) = (char*) malloc(nbytes_alloc);
     #ifdef DLOG_VERBOSE
@@ -52,7 +122,7 @@ size_t dlog_init_buffer(
         return 0;
     }
 
-    return n_size_t;
+    return 1;
 }
 
 void* __thread__dlog_fill_buffer(
@@ -451,7 +521,6 @@ void dlog_fill_buffer_r(
     free(threads);
 }
 
-
 void dlog_sort_one_buffer(
     char* buffer,
 
@@ -715,10 +784,12 @@ int __dlog__(
     size_t index_size_limbs, size_t index_size_bytes,
     size_t item_size_limbs, size_t item_size_bytes,
 
-    unsigned int n_threads
+    unsigned int n_threads,
+    unsigned int is_update_lbuffer
 )
 {
     int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
+
     mpz_t exp_l; mpz_init(exp_l);
     mpz_t exp_r; mpz_init(exp_r);
     eccpt Y; ecc_init_pt(Y);
@@ -733,28 +804,30 @@ int __dlog__(
     //      Step 1: Filling the L & R buffers.
     // -------------------------------------------------------------------------------------
 
-    #ifdef DLOG_VERBOSE
-        printf("[debug] Filling L buffer...\n");
-        gettimeofday(&time_start_op, NULL);
-    #endif
+    if (is_update_lbuffer) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Filling L buffer...\n");
+            gettimeofday(&time_start_op, NULL);
+        #endif
 
-    dlog_fill_buffer_l(
-        lbuffer, 
+        dlog_fill_buffer_l(
+            lbuffer, 
 
-        curve, G, kG, 
-        
-        n, n_size_t, 
-        index_size_bytes, index_size_limbs,
-        item_size_bytes, item_size_limbs,
-        
-        n_threads
-    );
+            curve, G, kG, 
+            
+            n, n_size_t, 
+            index_size_bytes, index_size_limbs,
+            item_size_bytes, item_size_limbs,
+            
+            n_threads
+        );
 
-    #ifdef DLOG_VERBOSE
-        gettimeofday(&time_end_op, NULL);
-        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
-        printf("[debug] Filling L took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
-    #endif
+        #ifdef DLOG_VERBOSE
+            gettimeofday(&time_end_op, NULL);
+            timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+            printf("[debug] Filling L took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
+        #endif
+    }
 
     #ifdef DLOG_VERBOSE
         printf("[debug] Filling R buffer...\n");
@@ -783,26 +856,28 @@ int __dlog__(
     //      Step 2: Sorting the L & R buffers.
     // -------------------------------------------------------------------------------------
 
-    #ifdef DLOG_VERBOSE
-        printf("[debug] Sorting L buffer...\n");
-        gettimeofday(&time_start_op, NULL);
-    #endif
+    if (is_update_lbuffer) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Sorting L buffer...\n");
+            gettimeofday(&time_start_op, NULL);
+        #endif
 
-    dlog_sort_buffer(
-        lbuffer,
-    
-        n_size_t, 
-        index_size_bytes, 
-        item_size_bytes,
+        dlog_sort_buffer(
+            lbuffer,
+        
+            n_size_t, 
+            index_size_bytes, 
+            item_size_bytes,
 
-        n_threads
-    );
+            n_threads
+        );
 
-    #ifdef DLOG_VERBOSE
-        gettimeofday(&time_end_op, NULL);
-        timersub(&time_end_op, &time_start_op, &time_elapsed_op);
-        printf("[debug] Sorting L took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
-    #endif
+        #ifdef DLOG_VERBOSE
+            gettimeofday(&time_end_op, NULL);
+            timersub(&time_end_op, &time_start_op, &time_elapsed_op);
+            printf("[debug] Sorting L took %ld.%06ld seconds.\n", (long int)time_elapsed_op.tv_sec, (long int)time_elapsed_op.tv_usec);
+        #endif
+    }
 
     #ifdef DLOG_VERBOSE
         printf("[debug] Sorting R buffer...\n");
@@ -914,7 +989,15 @@ dlog_end:
 }
 
 
-int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
+int dlog(
+    ecc curve, 
+    mpz_t k, 
+    eccpt G, eccpt kG, 
+    mpz_t upper_k, 
+
+    size_t mem_limit,
+    unsigned int n_threads
+)
 {
     #ifdef DLOG_VERBOSE
         printf("[debug] curve: \n");
@@ -932,6 +1015,11 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         printf("[debug] upper_k = ");
         mpz_out_str(stdout, 10, upper_k);
         printf("\n");
+        printf("[debug] memory limit: %ld bytes = %f MB = %f GB\n", 
+                mem_limit, 
+                mem_limit / 1024.0 / 1024.0, 
+                mem_limit / 1024.0 / 1024.0 / 1024.0
+            );
         printf("[debug] n_threads = %d\n", n_threads);
     #endif
 
@@ -961,37 +1049,27 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
     //      to run the algorithm.
     // -------------------------------------------------------------------------------------
 
-    // Number of [n | p] items we have to allocate.
     mpz_t n;
     mpz_init(n);
-    mpz_sqrt(n, upper_k);
-    mpz_add_ui(n, n, 1);
 
-    size_t index_size_bytes = mpz_size_bytes(n);
-    size_t item_size_bytes  = mpz_size_bytes(curve->p);
-    size_t index_size_limbs = mpz_size(n);
-    size_t item_size_limbs  = mpz_size(curve->p);
+    size_t index_size_bytes;
+    size_t item_size_bytes;
+    size_t index_size_limbs;
+    size_t item_size_limbs;
+    size_t n_partitions;
 
-    #ifdef DLOG_VERBOSE
-        printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
-        printf("[debug] item_size_bytes  = %ld\n", item_size_bytes);
-        printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
-        printf("[debug] item_size_limbs  = %ld\n", item_size_limbs);
-    #endif
+    size_t n_size_t = dlog_calc_mem(
+        n,
+        &index_size_limbs, &index_size_bytes,
+        &item_size_limbs, &item_size_bytes,
+        &n_partitions,
 
-    // -------------------------------------------------------------------------------------
-    //      Allocating the amount of memory needed to hold the buffers.
-    // -------------------------------------------------------------------------------------
-
-    char* lbuffer;
-    char* rbuffer;
-    size_t n_size_t = dlog_init_buffer(
-        &lbuffer,
-        &rbuffer,
-        n, index_size_bytes, item_size_bytes
+        upper_k,
+        mem_limit,
+        curve->p
     );
 
-    // Allocation failed
+    // Memory calculation failed
     if (!n_size_t) {
         #ifdef DLOG_VERBOSE
             printf("[error] Cannot allocate memory for L & R buffers!\n");
@@ -1000,6 +1078,36 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         mpz_clear(n);
         return DLOG_CANNOT_ALLOCATE;
     }
+
+    #ifdef DLOG_VERBOSE
+        printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
+        printf("[debug] item_size_bytes = %ld\n", item_size_bytes);
+        printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
+        printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
+        printf("[debug] n_partitions = %ld\n", n_partitions);
+        printf("[debug] n_items = %ld\n", n_size_t);
+    #endif
+
+    // -------------------------------------------------------------------------------------
+    //      Allocating the amount of memory needed to hold the buffers.
+    // -------------------------------------------------------------------------------------
+
+    char* lbuffer;
+    char* rbuffer;
+    if (!dlog_alloc_buffer(
+        &lbuffer,
+        &rbuffer,
+        n_size_t, index_size_bytes, item_size_bytes
+    )) 
+    {
+        #ifdef DLOG_VERBOSE
+            printf("[error] Cannot allocate memory for L & R buffers!\n");
+        #endif
+
+        mpz_clear(n);
+        return DLOG_CANNOT_ALLOCATE;
+    };
+
 
     // -------------------------------------------------------------------------------------
     //      Start main operation.
@@ -1017,7 +1125,8 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         index_size_limbs, index_size_bytes,
         item_size_limbs, item_size_bytes,
 
-        n_threads
+        n_threads,
+        1
     );
 
     // -------------------------------------------------------------------------------------

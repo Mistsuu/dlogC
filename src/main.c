@@ -101,7 +101,7 @@ void main(int argc, char** argv)
     unsigned int NUM_THREADS = get_number_of_threads(argc, argv);
     mpz_t k;
     mpz_init(k);
-    if (dlog(curve, k, G, kG, n, NUM_THREADS) == DLOG_SUCCESS) {
+    if (dlog(curve, k, G, kG, n, (unsigned long)(4096)*1024*1024, NUM_THREADS) == DLOG_SUCCESS) {
         mpz_out_str(stdout, 10, k);
         printf("\n");
     }
