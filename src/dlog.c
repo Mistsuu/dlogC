@@ -644,96 +644,31 @@ int dlog_search_buffer(
         ? Calculate k from G and k*G where k < upper_k.
         ! k must be init-ed before put into this function.
 */
-int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
+int __dlog__(
+    ecc curve, 
+    mpz_t k, 
+    eccpt G, eccpt kG, 
+    
+    char* lbuffer, 
+    char* rbuffer,
+    
+    mpz_t n, size_t n_size_t,
+    size_t index_size_limbs, size_t index_size_bytes,
+    size_t item_size_limbs, size_t item_size_bytes,
+
+    unsigned int n_threads
+)
 {
-    #ifdef DLOG_VERBOSE
-        printf("[debug] curve: \n");
-        printf("[debug]    ");
-        ecc_printf(curve);
-        printf("\n");
-        printf("[debug] G: \n");
-        printf("[debug]    ");
-        ecc_printf_pt(G);
-        printf("\n");
-        printf("[debug] kG: \n");
-        printf("[debug]    ");
-        ecc_printf_pt(kG);
-        printf("\n");
-        printf("[debug] upper_k = ");
-        mpz_out_str(stdout, 10, upper_k);
-        printf("\n");
-        printf("[debug] n_threads = %d\n", n_threads);
-    #endif
-
-    // Create return code...
     int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
-
-    // Could have used the abs() version,
-    // but this is much better.
-    if (mpz_cmp_si(upper_k, 0) <= 0) {
-        #ifdef DLOG_VERBOSE
-            printf("[debug] Negative value of k is detected! Exiting...\n");
-        #endif
-        return DLOG_INVALID_UPPER_K;
-    }
-
-    // Doing multithread this case would
-    // have caused a memory error.
-    if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0) {
-        #ifdef DLOG_VERBOSE
-            printf("[debug] Setting n_threads = 1 because upper_k < n_threads ^ 2...\n");
-        #endif
-        n_threads = 1;
-    }
-
-    // -------------------------------------------------------------------------------------
-    //      Calculating the amount of memory needed for each data unit
-    //      to run the algorithm.
-    // -------------------------------------------------------------------------------------
-
-    // Number of [n | p] items we have to allocate.
-    mpz_t n;
-    mpz_init(n);
-    mpz_sqrt(n, upper_k);
-    mpz_add_ui(n, n, 1);
-
-    size_t index_size_bytes = mpz_size_bytes(n);
-    size_t item_size_bytes  = mpz_size_bytes(curve->p);
-    size_t index_size_limbs = mpz_size(n);
-    size_t item_size_limbs  = mpz_size(curve->p);
+    mpz_t exp_l; mpz_init(exp_l);
+    mpz_t exp_r; mpz_init(exp_r);
+    eccpt Y; ecc_init_pt(Y);
 
     #ifdef DLOG_VERBOSE
-        printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
-        printf("[debug] item_size_bytes  = %ld\n", item_size_bytes);
-        printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
-        printf("[debug] item_size_limbs  = %ld\n", item_size_limbs);
-
         struct timeval time_start_op; 
         struct timeval time_end_op; 
         struct timeval time_elapsed_op;
     #endif
-
-    // -------------------------------------------------------------------------------------
-    //      Allocating the amount of memory needed to hold the buffers.
-    // -------------------------------------------------------------------------------------
-
-    char* lbuffer;
-    char* rbuffer;
-    size_t n_size_t = dlog_init_buffer(
-        &lbuffer,
-        &rbuffer,
-        n, index_size_bytes, item_size_bytes
-    );
-
-    // Allocation failed
-    if (!n_size_t) {
-        #ifdef DLOG_VERBOSE
-            printf("[error] Cannot allocate memory for L & R buffers!\n");
-        #endif
-
-        dlog_ret_code = DLOG_CANNOT_ALLOCATE;
-        goto dlog_end_free_n;
-    }
 
     // -------------------------------------------------------------------------------------
     //      Step 1: Filling the L & R buffers.
@@ -798,8 +733,6 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         gettimeofday(&time_start_op, NULL);
     #endif
 
-    mpz_t exp_l; mpz_init(exp_l);
-    mpz_t exp_r; mpz_init(exp_r);
     int dlog_search_status = 
         dlog_search_buffer(
             exp_l, exp_r,
@@ -826,15 +759,12 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         #endif
 
         dlog_ret_code = DLOG_NOT_FOUND_DLOG;
-        goto dlog_end_free_bufs_and_nums;
+        goto dlog_end;
     }
 
     // -------------------------------------------------------------------------------------
     //      Deduce k from the search.
     // -------------------------------------------------------------------------------------
-
-    eccpt Y;
-    ecc_init_pt(Y);
 
     // -- Case 1: l*X = Y - r*n*X
     mpz_mul(k, exp_r, n);
@@ -850,7 +780,7 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         #endif
 
         dlog_ret_code = DLOG_SUCCESS;
-        goto dlog_end_free_all;
+        goto dlog_end;
     }
 
     // -- Case 2: -l*X = Y - r*n*X
@@ -866,26 +796,135 @@ int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_th
         #endif
 
         dlog_ret_code = DLOG_SUCCESS;
-        goto dlog_end_free_all;
+        goto dlog_end;
     }
 
     // -------------------------------------------------------------------------------------
     //      Cleanup.
     // -------------------------------------------------------------------------------------
 
-dlog_end_free_all:
-    ecc_free_pt(Y);
-
-dlog_end_free_bufs_and_nums:
+dlog_end:
     mpz_clear(exp_l);
     mpz_clear(exp_r);
+    ecc_free_pt(Y);
 
+    return dlog_ret_code;
+}
+
+
+int dlog(ecc curve, mpz_t k, eccpt G, eccpt kG, mpz_t upper_k, unsigned int n_threads)
+{
+    #ifdef DLOG_VERBOSE
+        printf("[debug] curve: \n");
+        printf("[debug]    ");
+        ecc_printf(curve);
+        printf("\n");
+        printf("[debug] G: \n");
+        printf("[debug]    ");
+        ecc_printf_pt(G);
+        printf("\n");
+        printf("[debug] kG: \n");
+        printf("[debug]    ");
+        ecc_printf_pt(kG);
+        printf("\n");
+        printf("[debug] upper_k = ");
+        mpz_out_str(stdout, 10, upper_k);
+        printf("\n");
+        printf("[debug] n_threads = %d\n", n_threads);
+    #endif
+
+    // Create return code...
+    int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
+
+    // Could have used the abs() version,
+    // but this is much better.
+    if (mpz_cmp_si(upper_k, 0) <= 0) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Negative value of k is detected! Exiting...\n");
+        #endif
+        return DLOG_INVALID_UPPER_K;
+    }
+
+    // Doing multithread this case would
+    // have caused a memory error.
+    if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Setting n_threads = 1 because upper_k < n_threads ^ 2...\n");
+        #endif
+        n_threads = 1;
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Calculating the amount of memory needed for each data unit
+    //      to run the algorithm.
+    // -------------------------------------------------------------------------------------
+
+    // Number of [n | p] items we have to allocate.
+    mpz_t n;
+    mpz_init(n);
+    mpz_sqrt(n, upper_k);
+    mpz_add_ui(n, n, 1);
+
+    size_t index_size_bytes = mpz_size_bytes(n);
+    size_t item_size_bytes  = mpz_size_bytes(curve->p);
+    size_t index_size_limbs = mpz_size(n);
+    size_t item_size_limbs  = mpz_size(curve->p);
+
+    #ifdef DLOG_VERBOSE
+        printf("[debug] index_size_bytes = %ld\n", index_size_bytes);
+        printf("[debug] item_size_bytes  = %ld\n", item_size_bytes);
+        printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
+        printf("[debug] item_size_limbs  = %ld\n", item_size_limbs);
+    #endif
+
+    // -------------------------------------------------------------------------------------
+    //      Allocating the amount of memory needed to hold the buffers.
+    // -------------------------------------------------------------------------------------
+
+    char* lbuffer;
+    char* rbuffer;
+    size_t n_size_t = dlog_init_buffer(
+        &lbuffer,
+        &rbuffer,
+        n, index_size_bytes, item_size_bytes
+    );
+
+    // Allocation failed
+    if (!n_size_t) {
+        #ifdef DLOG_VERBOSE
+            printf("[error] Cannot allocate memory for L & R buffers!\n");
+        #endif
+
+        mpz_clear(n);
+        return DLOG_CANNOT_ALLOCATE;
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Start main operation.
+    // -------------------------------------------------------------------------------------
+
+    int dlog_status_code = __dlog__(
+        curve,
+        
+        k,
+        G, kG,
+
+        lbuffer,
+        rbuffer,
+
+        n, n_size_t,
+        index_size_limbs, index_size_bytes,
+        item_size_limbs, item_size_bytes,
+
+        n_threads
+    );
+
+    // -------------------------------------------------------------------------------------
+    //      Cleaning up.
+    // -------------------------------------------------------------------------------------
     free(lbuffer);
     free(rbuffer);
-
-dlog_end_free_n:
     mpz_clear(n);
 
-dlog_end_ret:
-    return dlog_ret_code;
+    return dlog_status_code;
 }
