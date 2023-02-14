@@ -143,8 +143,8 @@ int dlog(
     eccpt G, eccpt kG, 
     mpz_t upper_k, 
 
-    size_t mem_limit,
-    unsigned int n_threads
+    unsigned int n_threads,
+    size_t mem_limit
 );
 
 #endif

@@ -953,7 +953,7 @@ int __dlog__(
         #ifdef DLOG_VERBOSE
             printf("[debug] Found k = ");
             mpz_out_str(stdout, 10, k);
-            printf("\n");
+            printf(".\n");
         #endif
 
         dlog_ret_code = DLOG_SUCCESS;
@@ -969,7 +969,7 @@ int __dlog__(
         #ifdef DLOG_VERBOSE
             printf("[debug] Found k = ");
             mpz_out_str(stdout, 10, k);
-            printf("\n");
+            printf(".\n");
         #endif
 
         dlog_ret_code = DLOG_SUCCESS;
@@ -995,8 +995,8 @@ int dlog(
     eccpt G, eccpt kG, 
     mpz_t upper_k, 
 
-    size_t mem_limit,
-    unsigned int n_threads
+    unsigned int n_threads,
+    size_t mem_limit
 )
 {
     #ifdef DLOG_VERBOSE
@@ -1112,22 +1112,51 @@ int dlog(
     // -------------------------------------------------------------------------------------
     //      Start main operation.
     // -------------------------------------------------------------------------------------
+    eccpt nnG;
+    ecc_init_pt(nnG);
+    ecc_mul(curve, nnG, G, n);
+    ecc_mul(curve, nnG, nnG, n);
 
-    int dlog_status_code = __dlog__(
-        curve,
-        k,
-        G, kG,
+    eccpt kG_innG;
+    ecc_init_pt_pt(kG_innG, kG);
 
-        lbuffer,
-        rbuffer,
+    mpz_t inn;
+    mpz_init(inn);
+    mpz_mul(inn, n, n);
 
-        n, n_size_t,
-        index_size_limbs, index_size_bytes,
-        item_size_limbs, item_size_bytes,
+    int dlog_status_code;
+    for (int n_partition = 0; n_partition < (int)n_partitions; ++n_partition) {
+        #ifdef DLOG_VERBOSE
+            printf("\n[debug] === Running partition %d === ", n_partition);
+            printf("(found k value in this partition will be added with ");
+            mpz_out_str(stdout, 10, inn);
+            printf("*%d to get the actual k)\n", n_partition);
+        #endif
 
-        n_threads,
-        1
-    );
+        dlog_status_code = __dlog__(
+            curve,
+            k,
+            G, kG_innG,
+
+            lbuffer,
+            rbuffer,
+
+            n, n_size_t,
+            index_size_limbs, index_size_bytes,
+            item_size_limbs, item_size_bytes,
+
+            n_threads,
+            n_partition == 0
+        );
+
+        if (dlog_status_code == DLOG_SUCCESS) {
+            mpz_mul_si(inn, inn, n_partition);
+            mpz_add(k, k, inn);
+            break;
+        }
+
+        ecc_sub(curve, kG_innG, kG_innG, nnG);
+    }
 
     // -------------------------------------------------------------------------------------
     //      Cleaning up.
@@ -1135,6 +1164,9 @@ int dlog(
     free(lbuffer);
     free(rbuffer);
     mpz_clear(n);
+    mpz_clear(inn);
+    ecc_free_pt(nnG);
+    ecc_free_pt(kG_innG);
 
     return dlog_status_code;
 }

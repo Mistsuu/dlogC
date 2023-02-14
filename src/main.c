@@ -52,6 +52,10 @@ unsigned int get_number_of_threads(int argc, char** argv)
 
 void main(int argc, char** argv)
 {
+    // Get value from arguments.
+    unsigned int NUM_THREADS = get_number_of_threads(argc, argv);
+
+    // Parse curve values from stdin.
     char* curve_a;
     char* curve_b;
     char* curve_p;
@@ -70,6 +74,7 @@ void main(int argc, char** argv)
     str_init_readline(&kGy);
     str_init_readline(&n_str);
 
+    // parse curve.
     ecc curve;
     ecc_init(
         curve, 
@@ -78,6 +83,7 @@ void main(int argc, char** argv)
         curve_p  // p
     );
 
+    // G
     eccpt G;
     ecc_init_pt_str(
         curve, G,
@@ -85,7 +91,8 @@ void main(int argc, char** argv)
         Gy,   // y
         NULL  // z
     );
-
+    
+    // k*G
     eccpt kG;
     ecc_init_pt_str(
         curve, kG,
@@ -98,10 +105,10 @@ void main(int argc, char** argv)
     mpz_t n;
     mpz_init_set_str(n, n_str, 10);
 
-    unsigned int NUM_THREADS = get_number_of_threads(argc, argv);
+    // dlog() start.
     mpz_t k;
     mpz_init(k);
-    if (dlog(curve, k, G, kG, n, (unsigned long)(4096)*1024*1024, NUM_THREADS) == DLOG_SUCCESS) {
+    if (dlog(curve, k, G, kG, n, NUM_THREADS, (unsigned long)(500)*1024*1024) == DLOG_SUCCESS) {
         mpz_out_str(stdout, 10, k);
         printf("\n");
     }
@@ -109,6 +116,7 @@ void main(int argc, char** argv)
         printf("None\n");
     }
 
+    // cleanup.
     mpz_clear(k);
     mpz_clear(n);
 
