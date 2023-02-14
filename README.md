@@ -42,6 +42,8 @@ You can run `./dlog <num_threads>` to specify the number of threads used in mult
 
 In the newer version, running `./dlog <num_threads> <memory_limit>` will run `./dlog` with limited memory. Suitable for machines where not enough RAM is available. The format of `<memory_limit>` is a `double` value followed by `M` - **megabytes** (*for example,* `4096M`) or `G` - **gigabytes** (*for example,* `1.25G`). If only a `double` value is given, the unit will be `G` by default.
 
+If you don't specify this part at all, the program will use any amount of memory as it likes.
+
 ### Output
 
 The output will either be a number *(a negative one is normal)*, or `None`, or some error data *(only happens in the case of memory error or thread creation error, which is not often as long as `<upper k bound>` is small enough that its square root fits 64-bits)*.
