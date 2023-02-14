@@ -1130,10 +1130,12 @@ int dlog(
     int dlog_status_code;
     for (int n_partition = 0; n_partition < (int)n_partitions; ++n_partition) {
         #ifdef DLOG_VERBOSE
-            printf("\n[debug] === Running partition %d === ", n_partition);
-            printf("(found k value in this partition will be added with ");
-            mpz_out_str(stdout, 10, inn);
-            printf("*%d to get the actual k)\n", n_partition);
+            if (n_partitions > 1) {
+                printf("\n[debug] === Running partition %d === ", n_partition);
+                printf("(found k value in this partition will be added with ");
+                mpz_out_str(stdout, 10, inn);
+                printf("*%d to get the actual k)\n", n_partition);
+            }
         #endif
 
         dlog_status_code = __dlog__(
