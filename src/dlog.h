@@ -21,21 +21,18 @@ size_t dlog_init_buffer(
 );
 
 typedef struct {
-    char* lbuffer;  
-    char* rbuffer;
+    char* _buffer;  
 
     size_t n_size_t; 
     size_t index_size_bytes; size_t index_size_limbs;
     size_t item_size_bytes; size_t item_size_limbs;
 
-    mp_limb_t* L0x; mp_limb_t* L0z;   // must be modified in-use
-    mp_limb_t* L1x; mp_limb_t* L1z;   // must be modified in-use
-    mp_limb_t* R0x; mp_limb_t* R0z;   // must be modified in-use
-    mp_limb_t* R1x; mp_limb_t* R1z;   // must be modified in-use
-    mp_limb_t* Gx; mp_limb_t* Gz;
-    mp_limb_t* nGx; mp_limb_t* nGz;
+    mp_limb_t* _0x; mp_limb_t* _0z;   // must be modified in-use
+    mp_limb_t* _1x; mp_limb_t* _1z;   // must be modified in-use
+    mp_limb_t* dGx; mp_limb_t* dGz;
 
-    mp_limb_t* i_l; mp_limb_t* i_r;
+    mp_limb_t* i;
+    int is_inc_i;
 
     mp_limb_t* curve_a;
     mp_limb_t* curve_b;
@@ -46,9 +43,19 @@ void* __thread__dlog_fill_buffer(
     void* vargs
 );
 
-void dlog_fill_buffer(
-    char* lbuffer,
-    char* rbuffer,
+void dlog_fill_buffer_l(
+    char* lbuffer, 
+    ecc curve, eccpt G, eccpt kG, 
+
+    mpz_t n, size_t n_size_t, 
+    size_t index_size_bytes, size_t index_size_limbs,
+    size_t item_size_bytes, size_t item_size_limbs,
+    
+    unsigned int n_threads
+);
+
+void dlog_fill_buffer_r(
+    char* rbuffer, 
     ecc curve, eccpt G, eccpt kG, 
 
     mpz_t n, size_t n_size_t, 
@@ -59,8 +66,7 @@ void dlog_fill_buffer(
 );
 
 void dlog_sort_buffer(
-    char* lbuffer,
-    char* rbuffer,
+    char* _buffer,
 
     size_t n_size_t,
     size_t index_size_bytes,
@@ -68,7 +74,6 @@ void dlog_sort_buffer(
 
     unsigned int n_threads
 );
-
 
 typedef struct {
     mp_limb_t* exp_l_limbs;     // Must be index_size_limbs + 1 limbs allocated.
