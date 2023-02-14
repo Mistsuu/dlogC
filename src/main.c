@@ -50,10 +50,40 @@ unsigned int get_number_of_threads(int argc, char** argv)
     return (unsigned int) NUM_THREADS;
 }
 
+size_t get_mem_limit(int argc, char** argv)
+{   
+    size_t MEM_LIMIT = DEFAULT_MEM_LIMIT;
+    if (argc >= 3) {
+        char* unit = NULL;
+        double MEM_LIMIT_PER_UNIT = strtod(argv[2], &unit);
+
+        if (MEM_LIMIT_PER_UNIT == 0) {
+            MEM_LIMIT = DEFAULT_MEM_LIMIT;
+        }
+        else if ((*unit) == 'M') {
+            if (SIZE_MAX / (1024 * 1024) < MEM_LIMIT_PER_UNIT)
+                MEM_LIMIT = DEFAULT_MEM_LIMIT;
+            else
+                MEM_LIMIT = (size_t) (MEM_LIMIT_PER_UNIT * 1024 * 1024);
+        }
+        else if ((*unit) == 'G' || (*unit) == 0) {
+            if (SIZE_MAX / (1024 * 1024 * 1024) < MEM_LIMIT_PER_UNIT)
+                MEM_LIMIT = DEFAULT_MEM_LIMIT;
+            else
+                MEM_LIMIT = (size_t) (MEM_LIMIT_PER_UNIT * 1024 * 1024) * 1024;
+        }
+        else {
+            MEM_LIMIT = DEFAULT_MEM_LIMIT;
+        }
+    }
+    return MEM_LIMIT;
+}
+
 void main(int argc, char** argv)
 {
     // Get value from arguments.
     unsigned int NUM_THREADS = get_number_of_threads(argc, argv);
+    size_t       MEM_LIMIT   = get_mem_limit(argc, argv);
 
     // Parse curve values from stdin.
     char* curve_a;
@@ -108,7 +138,7 @@ void main(int argc, char** argv)
     // dlog() start.
     mpz_t k;
     mpz_init(k);
-    if (dlog(curve, k, G, kG, n, NUM_THREADS, (unsigned long)(500)*1024*1024) == DLOG_SUCCESS) {
+    if (dlog(curve, k, G, kG, n, NUM_THREADS, MEM_LIMIT) == DLOG_SUCCESS) {
         mpz_out_str(stdout, 10, k);
         printf("\n");
     }

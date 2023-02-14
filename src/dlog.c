@@ -1015,11 +1015,14 @@ int dlog(
         printf("[debug] upper_k = ");
         mpz_out_str(stdout, 10, upper_k);
         printf("\n");
-        printf("[debug] memory limit: %ld bytes = %f MB = %f GB\n", 
-                mem_limit, 
-                mem_limit / 1024.0 / 1024.0, 
-                mem_limit / 1024.0 / 1024.0 / 1024.0
-            );
+        if (mem_limit)
+            printf("[debug] memory limit: %ld bytes = %f MB = %f GB\n", 
+                    mem_limit, 
+                    mem_limit / 1024.0 / 1024.0, 
+                    mem_limit / 1024.0 / 1024.0 / 1024.0
+                );
+        else
+            printf("[debug] no memory limit is set.\n");
         printf("[debug] n_threads = %d\n", n_threads);
     #endif
 

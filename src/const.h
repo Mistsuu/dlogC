@@ -11,5 +11,6 @@
 #define DLOG_INVALID_UPPER_K     3
 
 #define DEFAULT_NUM_THREADS      4
+#define DEFAULT_MEM_LIMIT        0
 
 #endif
