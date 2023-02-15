@@ -23,7 +23,7 @@ size_t dlog_calc_mem(
     (*item_size_limbs) = mpz_size(curve_p);
     if (mem_limit && mem_limit < ((*item_size_bytes) + 1) * 4) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] Requested limited memory is not enough to run this algorithm.\n");
+            printf("[debug] Requested limited memory is not enough to run this algorithm. At least %ld bytes is required.\n", ((*item_size_bytes) + 1) * 4);
         #endif
         return 0;
     }
@@ -1082,7 +1082,7 @@ int dlog(
         printf("[debug] index_size_limbs = %ld\n", index_size_limbs);
         printf("[debug] item_size_limbs = %ld\n", item_size_limbs);
         printf("[debug] n_partitions = %ld\n", n_partitions);
-        printf("[debug] n_items = %ld\n", n_size_t);
+        printf("[debug] n_items / partition = %ld\n", n_size_t);
     #endif
 
     // Doing multithread this case would
@@ -1134,7 +1134,7 @@ int dlog(
     for (int n_partition = 0; n_partition < (int)n_partitions; ++n_partition) {
         #ifdef DLOG_VERBOSE
             if (n_partitions > 1) {
-                printf("\n[debug] === Running partition %d === ", n_partition);
+                printf("\n[debug] === Running partition %d/%ld === ", n_partition+1, n_partitions);
                 printf("(found k value in this partition will be added with ");
                 mpz_out_str(stdout, 10, inn);
                 printf("*%d to get the actual k)\n", n_partition);
