@@ -21,8 +21,12 @@ size_t dlog_calc_mem(
 {
     (*item_size_bytes) = mpz_size_bytes(curve_p);
     (*item_size_limbs) = mpz_size(curve_p);
-    if (mem_limit && mem_limit < (*item_size_bytes) + 1)
+    if (mem_limit && mem_limit < ((*item_size_bytes) + 1) * 4) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Requested limited memory is not enough to run this algorithm.\n");
+        #endif
         return 0;
+    }
 
     // Number of [n | p] items we have to allocate 
     // as if we don't have memory limit.
@@ -41,7 +45,6 @@ size_t dlog_calc_mem(
             if (n_limit <= index_upper_limit - 1)
                 break;
         }
-
 
         if (mpz_cmp_ui(n, n_limit - 1) > 0)
             mpz_set_ui(n, n_limit - 1);
