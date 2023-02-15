@@ -704,8 +704,8 @@ int dlog_search_buffer(
     size_t n_last_thread_size_t = n_per_thread_size_t + n_size_t % n_threads;
 
     for (unsigned int i = 0; i < n_threads; ++i) {
-        thread_args[i].exp_l_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
-        thread_args[i].exp_r_limbs = (mp_limb_t*) malloc(sizeof(mp_limb_t) * (index_size_limbs+1));
+        thread_args[i].exp_l_limbs = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (index_size_limbs+1));
+        thread_args[i].exp_r_limbs = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (index_size_limbs+1));
 
         thread_args[i].index_size_bytes = index_size_bytes;
         thread_args[i].index_size_limbs = index_size_limbs;
@@ -1002,6 +1002,9 @@ int dlog(
     size_t mem_limit
 )
 {
+    // Create return code...
+    int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
+
     #ifdef DLOG_VERBOSE
         printf("[debug] curve: \n");
         printf("[debug]    ");
@@ -1029,9 +1032,6 @@ int dlog(
         printf("[debug] n_threads = %d\n", n_threads);
     #endif
 
-    // Create return code...
-    int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
-
     // Could have used the abs() version,
     // but this is much better.
     if (mpz_cmp_si(upper_k, 0) <= 0) {
@@ -1039,15 +1039,6 @@ int dlog(
             printf("[debug] Negative value of k is detected! Exiting...\n");
         #endif
         return DLOG_INVALID_UPPER_K;
-    }
-
-    // Doing multithread this case would
-    // have caused a memory error.
-    if (mpz_cmp_ui(upper_k, n_threads * n_threads) < 0) {
-        #ifdef DLOG_VERBOSE
-            printf("[debug] Setting n_threads = 1 because upper_k < n_threads ^ 2...\n");
-        #endif
-        n_threads = 1;
     }
 
     // -------------------------------------------------------------------------------------
@@ -1093,6 +1084,15 @@ int dlog(
         printf("[debug] n_partitions = %ld\n", n_partitions);
         printf("[debug] n_items = %ld\n", n_size_t);
     #endif
+
+    // Doing multithread this case would
+    // have caused a memory error.
+    if (n_size_t < n_threads) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] Setting n_threads = 1 because some thread will be empty...\n");
+        #endif
+        n_threads = 1;
+    }
 
     // -------------------------------------------------------------------------------------
     //      Allocating the amount of memory needed to hold the buffers.

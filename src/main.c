@@ -7,6 +7,7 @@
 #include "num.h"
 #include "dlog.h"
 #include "const.h"
+#include "mem.h"
 
 const unsigned int BLOCK_BUFFER_SIZE = 1024;
 int str_init_readline(char** pbuffer)
@@ -14,7 +15,7 @@ int str_init_readline(char** pbuffer)
     char c = 's';
     int buffer_size = BLOCK_BUFFER_SIZE;
     int str_len = 0;
-    (*pbuffer) = (char*) malloc(buffer_size);
+    (*pbuffer) = (char*) malloc_exit_when_null(buffer_size);
 
     ssize_t nbytes_read;
     while (c != '\0') {
