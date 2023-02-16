@@ -225,6 +225,8 @@ void* __thread__dlog_fill_buffer(
     ecc_free_xtemp(T);
     free(V0);
     free(V1);
+
+    return NULL;
 }
 
 void dlog_fill_buffer_l(
