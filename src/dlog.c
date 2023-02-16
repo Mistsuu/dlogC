@@ -1002,9 +1002,6 @@ int dlog(
     size_t mem_limit
 )
 {
-    // Create return code...
-    int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
-
     #ifdef DLOG_VERBOSE
         printf("[debug] curve: \n");
         printf("[debug]    ");
@@ -1130,7 +1127,7 @@ int dlog(
     mpz_init(inn);
     mpz_mul(inn, n, n);
 
-    int dlog_status_code;
+    int dlog_ret_code = DLOG_NOT_FOUND_DLOG;
     for (int n_partition = 0; n_partition < (int)n_partitions; ++n_partition) {
         #ifdef DLOG_VERBOSE
             if (n_partitions > 1) {
@@ -1141,7 +1138,7 @@ int dlog(
             }
         #endif
 
-        dlog_status_code = __dlog__(
+        dlog_ret_code = __dlog__(
             curve,
             k,
             G, kG_innG,
@@ -1157,7 +1154,7 @@ int dlog(
             n_partition == 0
         );
 
-        if (dlog_status_code == DLOG_SUCCESS) {
+        if (dlog_ret_code == DLOG_SUCCESS) {
             mpz_mul_si(inn, inn, n_partition);
             mpz_add(k, k, inn);
             break;
@@ -1176,5 +1173,5 @@ int dlog(
     ecc_free_pt(nnG);
     ecc_free_pt(kG_innG);
 
-    return dlog_status_code;
+    return dlog_ret_code;
 }
