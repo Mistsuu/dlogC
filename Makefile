@@ -11,7 +11,7 @@ CC              = gcc
 CFLAGS.release  = -I$(LIBRARY_DIR) -O2 -ggdb 
 CFLAGS.memcheck = -I$(LIBRARY_DIR) -O2 -ggdb -fsanitize=address
 CFLAGS.verbose  = -I$(LIBRARY_DIR) -O2 -ggdb -D DLOG_VERBOSE=1
-CFLAGS 			= $(CFLAGS.$(BUILD))
+CFLAGS          = $(CFLAGS.$(BUILD))
 LIBS            = -lgmp -lpthread
 
 # Requirements and stuffs
