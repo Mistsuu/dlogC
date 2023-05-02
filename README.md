@@ -77,99 +77,63 @@ Which gives the output:
 If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for more detail)*, it will produce some outputs like this:
 
 ```
-[debug] curve: 
-[debug]    Elliptic Curve y^2 = x^3 + 448019786388741247*x + 544225411105375163 in GF(593010448435692503)
+[debug] p: 
+[debug]    17524524814163177
 [debug] G: 
-[debug]    (437471552757133390 : 354281835126765881 : 1)
+[debug]    14484073937158643
 [debug] kG: 
-[debug]    (295738136557598210 : 89525692852745488 : 1)
-[debug] upper_k = 593010448361862286
-[debug] memory limit: 4294967296 bytes = 4096.000000 MB = 4.000000 GB
+[debug]    16341616837220933
+[debug] upper_k = 17524524814163176
+[debug] memory limit: 1073741824 bytes = 1024.000000 MB = 1.000000 GB
 [debug] n_threads = 8
 [debug] index_size_bytes = 4
-[debug] item_size_bytes = 8
+[debug] item_size_bytes = 7
 [debug] index_size_limbs = 1
 [debug] item_size_limbs = 1
-[debug] n_partitions = 19
-[debug] n_items = 178956969
-[debug] size buffer: 4294967280 bytes = 4095.999985 MB = 4.000000 GB
+[debug] n_partitions = 8
+[debug] n_items / partition = 48806445
+[debug] size buffer: 1073741812 bytes = 1023.999989 MB = 1.000000 GB
 
-[debug] === Running partition 0 === (found k value in this partition will be added with 32025596753666961*0 to get the actual k)
+[debug] === Running partition 1/8 === (found k value in this partition will be added with 2382069073538025*0 to get the actual k)
 [debug] Filling L buffer...
-[debug] Filling L took 20.307818 seconds.
+[debug] Filling L took 0.690344 seconds.
 [debug] Filling R buffer...
-[debug] Filling R took 21.101883 seconds.
+[debug] Filling R took 0.748650 seconds.
 [debug] Sorting L buffer...
-[debug] Sorting L took 62.114992 seconds.
+[debug] Sorting L took 15.774451 seconds.
 [debug] Sorting R buffer...
-[debug] Sorting R took 62.804649 seconds.
+[debug] Sorting R took 15.809021 seconds.
 [debug] Searching in L & R buffers...
-[debug] Searching took 4.806363 seconds.
+[debug] Searching took 1.191961 seconds.
 [debug] Cannot search for equal values in L & R buffers!
 
-[debug] === Running partition 1 === (found k value in this partition will be added with 32025596753666961*1 to get the actual k)
+[debug] === Running partition 2/8 === (found k value in this partition will be added with 2382069073538025*1 to get the actual k)
 [debug] Filling R buffer...
-[debug] Filling R took 20.896676 seconds.
+[debug] Filling R took 0.771460 seconds.
 [debug] Sorting R buffer...
-[debug] Sorting R took 60.835373 seconds.
+[debug] Sorting R took 16.296818 seconds.
 [debug] Searching in L & R buffers...
-[debug] Searching took 4.849460 seconds.
+[debug] Searching took 1.207998 seconds.
 [debug] Cannot search for equal values in L & R buffers!
 
-[debug] === Running partition 2 === (found k value in this partition will be added with 32025596753666961*2 to get the actual k)
+[debug] === Running partition 3/8 === (found k value in this partition will be added with 2382069073538025*2 to get the actual k)
 [debug] Filling R buffer...
-[debug] Filling R took 22.212721 seconds.
+[debug] Filling R took 0.725180 seconds.
 [debug] Sorting R buffer...
-[debug] Sorting R took 62.251165 seconds.
+[debug] Sorting R took 15.734189 seconds.
 [debug] Searching in L & R buffers...
-[debug] Searching took 4.489302 seconds.
+[debug] Searching took 1.193694 seconds.
 [debug] Cannot search for equal values in L & R buffers!
 
-[debug] === Running partition 3 === (found k value in this partition will be added with 32025596753666961*3 to get the actual k)
+[debug] === Running partition 4/8 === (found k value in this partition will be added with 2382069073538025*3 to get the actual k)
 [debug] Filling R buffer...
-[debug] Filling R took 20.863485 seconds.
+[debug] Filling R took 0.708008 seconds.
 [debug] Sorting R buffer...
-[debug] Sorting R took 61.216875 seconds.
+[debug] Sorting R took 16.147236 seconds.
 [debug] Searching in L & R buffers...
-[debug] Searching took 4.551580 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 4 === (found k value in this partition will be added with 32025596753666961*4 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.377466 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.615065 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.581498 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 5 === (found k value in this partition will be added with 32025596753666961*5 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.770146 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.968580 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.491920 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 6 === (found k value in this partition will be added with 32025596753666961*6 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.651545 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.693792 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.452649 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 7 === (found k value in this partition will be added with 32025596753666961*7 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.949573 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.580475 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 1.156795 seconds.
-[debug] Found k = 9996949289195947.
-234176126564864674
+[debug] Searching took 1.195337 seconds.
+[debug] Found k = 1620728061601860.
+8766935282215935
 ```
 
 You can see some input examples provided in the `examples/` folder.
@@ -204,7 +168,7 @@ This code divides the process into 3 sub-operations:
 
 #### Fill `L` & `R` 
 
-Filling `L` and `R` with the above points. This part can be space-optimized by storing each point like this:
+Filling `L` and `R` with the mentioned values.
 
 ```
 +---------+-------------------------+

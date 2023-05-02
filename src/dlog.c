@@ -1027,8 +1027,8 @@ int dlog(
     // -------------------------------------------------------------------------------------
     mpz_t _nnG;
     mpz_init(_nnG);
-    mpz_mul(_nnG, G, n);
-    mpz_mul(_nnG, _nnG, n);
+    mpz_powm(_nnG, G, n, p);
+    mpz_powm(_nnG, _nnG, n, p);
     mpz_invert(_nnG, _nnG, p);
 
     mpz_t kG_innG;
