@@ -15,6 +15,7 @@ Utilizes **GMP version 6.2.1**.
 ```
 git clone https://github.com/Mistsuu/BabyStepGiantStepC
 cd BabyStepGiantStepC
+git checkout baby-Fp
 make -j16
 ```
 
