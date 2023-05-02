@@ -951,7 +951,6 @@ int __dlog__(
     // -- Case 1: l*X = Y - r*n*X
     mpz_mul(k, exp_r, n);
     mpz_add(k, k, exp_l);
-    mpz_mod(k, k, curve->p);
     ecc_mul(curve, Y, G, k);
     if (mpz_cmp(Y->x, kG->x) == 0 && mpz_cmp(Y->y, kG->y) == 0)
     {
