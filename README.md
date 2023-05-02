@@ -1,5 +1,7 @@
 # Baby Step Giant Step for Elliptic Curves in F_p Parallelized, but is in C.
 
+*(you can checkout branch `baby-Fp` for baby-step-giant-step algorithm in `Fp` instead)*
+
 ## Introduction
 
 A child project spawned from [baby-giant-Fp-parallel](https://github.com/Mistsuu/baby-giant-Fp-parallel), and it's is in **C**.
