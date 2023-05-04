@@ -1,4 +1,4 @@
-# You can change this to release|memcheck|verbose
+# You can change this to release|memcheck|verbose|static
 BUILD = release
 
 # Settings for folders
@@ -11,6 +11,7 @@ CC              = gcc
 CFLAGS.release  = -I$(LIBRARY_DIR) -O2 -ggdb 
 CFLAGS.memcheck = -I$(LIBRARY_DIR) -O2 -ggdb -fsanitize=address
 CFLAGS.verbose  = -I$(LIBRARY_DIR) -O2 -ggdb -D DLOG_VERBOSE=1
+CFLAGS.static   = -I$(LIBRARY_DIR) -O2 -ggdb -static
 CFLAGS          = $(CFLAGS.$(BUILD))
 LIBS            = -lgmp -lpthread
 

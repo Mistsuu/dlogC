@@ -178,7 +178,7 @@ You can see some input examples provided in the `examples/` folder.
 
 ## Compile modes
 
-Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck` which creates different kind of builds:
+Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck`, `static` which creates different kind of builds:
 
 - `release`: Using `dlog` will produce no debug output. *(default)*
 - `verbose`: Using `dlog` will produce debug output such as:
@@ -186,6 +186,7 @@ Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memch
   - Time took for each sub-operations.
   - And many more...
 - `memcheck`: Which just compiles the code with `-fsanitize=address`. Helpful in looking for memory leaks in the code.
+- `static`: Creates a static version of `release` build.
 
 ## Comparisons with the [parent project](https://github.com/Mistsuu/baby-giant-Fp-parallel)
 
