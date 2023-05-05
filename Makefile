@@ -5,6 +5,7 @@ BUILD = release
 OBJECT_DIR  = obj
 LIBRARY_DIR = src
 SOURCE_DIR  = src
+SHARED_DIR  = so
 
 # Compilers options
 CC              = gcc
@@ -19,6 +20,7 @@ LIBS            = -lgmp -lpthread
 FULLDEPS := $(shell find $(LIBRARY_DIR) -name '*.h')
 FULLOBJS := $(shell find $(SOURCE_DIR) -name '*.c' | sed -e "s/^$(SOURCE_DIR)/$(OBJECT_DIR)/" | sed -e "s/\\.c$$/.o/")
 
+# For creating a user interface binary
 dlog: $(FULLOBJS) $(OBJECT_DIR)/main.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
@@ -26,9 +28,18 @@ $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
 
 $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c $(FULLDEPS) | $(OBJECT_DIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -fPIC -c -o $@ $< $(CFLAGS)
 
 # For commands
-.PHONY: clean run dbg
+.PHONY: clean libbsgsfp
 clean:
-	rm -f $(SOURCE_DIR)/*.o $(OBJECT_DIR)/*.o ./dlog
+	rm -f $(SOURCE_DIR)/*.o $(OBJECT_DIR)/*.o $(SHARED_DIR)/*.so ./dlog
+
+# For creating shared library :)
+libbsgsfp: $(SHARED_DIR)/libbsgsfp.so
+
+$(SHARED_DIR)/libbsgsfp.so: $(FULLOBJS) | $(SHARED_DIR)
+	$(CC) -shared -o $@ $^ $(CFLAGS) $(LIBS)
+
+$(SHARED_DIR):
+	mkdir -p $(SHARED_DIR)
