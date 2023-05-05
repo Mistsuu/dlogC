@@ -5,3 +5,4 @@ dlog
 obj
 .gdb_history
 *grind.out.*
+sharedlib/*.so
