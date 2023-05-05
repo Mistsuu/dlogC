@@ -26,39 +26,29 @@ int sdlog(
 )
 {
     ecc curve;
-    mpz_t curve_a, curve_b, curve_p;
-    mpz_init_set_str(curve_a, str_curve_a, 10);
-    mpz_init_set_str(curve_b, str_curve_b, 10);
-    mpz_init_set_str(curve_p, str_curve_p, 10);
     ecc_init(
         curve, 
-        curve_a, // a 
-        curve_b, // b
-        curve_p  // p
+        str_curve_a, // a 
+        str_curve_b, // b
+        str_curve_p  // p
     );
 
     mpz_t k;
     mpz_init(k);
 
     eccpt G;
-    mpz_t Gx, Gy;
-    mpz_init_set_str(G, str_Gx, 10);
-    mpz_init_set_str(G, str_Gy, 10);
     ecc_init_pt_str(
         curve, G,
-        Gx,   // x
-        Gy,   // y
-        NULL  // z
+        str_Gx,   // x
+        str_Gy,   // y
+        NULL      // z
     );
 
     eccpt kG;
-    mpz_t kGx, kGy;
-    mpz_init_set_str(kGx, str_kGx, 10);
-    mpz_init_set_str(kGy, str_kGy, 10);
     ecc_init_pt_str(
         curve, kG,
-        kGx,
-        kGy,
+        str_kGx,
+        str_kGy,
         NULL
     );
 
@@ -93,14 +83,7 @@ int sdlog(
 
     // Cleanup.
 sdlog_cleanup:
-    mpz_clear(curve_a);
-    mpz_clear(curve_b);
-    mpz_clear(curve_p);
     mpz_clear(k);
-    mpz_clear(Gx);
-    mpz_clear(Gy);
-    mpz_clear(kGx);
-    mpz_clear(kGy);
     mpz_clear(upper_k);
 
     ecc_free_pt(G);
