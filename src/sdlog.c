@@ -1,0 +1,118 @@
+#include "sdlog.h"
+#include "dlog.h"
+#include "num.h"
+#include "const.h"
+#include "que2.h"
+#include "mem.h"
+
+int sdlog(
+    // Curve parameters
+    char* str_curve_a,
+    char* str_curve_b,
+    char* str_curve_p,
+
+    // To be overwritten
+    char** pstr_k,
+
+    char* str_Gx,
+    char* str_Gy,
+    char* str_kGx,
+    char* str_kGy,
+    char* str_upper_k,
+
+    // Configs
+    unsigned int n_threads,
+    size_t mem_limit
+)
+{
+    ecc curve;
+    mpz_t curve_a, curve_b, curve_p;
+    mpz_init_set_str(curve_a, str_curve_a, 10);
+    mpz_init_set_str(curve_b, str_curve_b, 10);
+    mpz_init_set_str(curve_p, str_curve_p, 10);
+    ecc_init(
+        curve, 
+        curve_a, // a 
+        curve_b, // b
+        curve_p  // p
+    );
+
+    mpz_t k;
+    mpz_init(k);
+
+    eccpt G;
+    mpz_t Gx, Gy;
+    mpz_init_set_str(G, str_Gx, 10);
+    mpz_init_set_str(G, str_Gy, 10);
+    ecc_init_pt_str(
+        curve, G,
+        Gx,   // x
+        Gy,   // y
+        NULL  // z
+    );
+
+    eccpt kG;
+    mpz_t kGx, kGy;
+    mpz_init_set_str(kGx, str_kGx, 10);
+    mpz_init_set_str(kGy, str_kGy, 10);
+    ecc_init_pt_str(
+        curve, kG,
+        kGx,
+        kGy,
+        NULL
+    );
+
+    mpz_t upper_k;
+    mpz_init_set_str(upper_k, str_upper_k, 10);
+
+    // Calling the inner dlog().
+    int dlog_success = (dlog(
+                            curve,
+                            k,
+                            G,
+                            kG,
+                            upper_k,
+                            n_threads,
+                            mem_limit
+                        ) == DLOG_SUCCESS); 
+
+    // Returns "None" if cannot find.
+    if (!dlog_success) {
+        *pstr_k = (char*) malloc_exit_when_null(sizeof(char) * 4);
+        *pstr_k[0] = 'N';
+        *pstr_k[1] = 'o';
+        *pstr_k[2] = 'n';
+        *pstr_k[3] = 'e';
+        goto sdlog_cleanup;
+    }
+
+    // Convert k to base-10 string
+    size_t str_k_len = mpz_sizeinbase(k, 10) + 2;
+    *pstr_k = (char*) malloc_exit_when_null(sizeof(char) * str_k_len);
+    mpz_get_str(*pstr_k, 10, k);
+
+    // Cleanup.
+sdlog_cleanup:
+    mpz_clear(curve_a);
+    mpz_clear(curve_b);
+    mpz_clear(curve_p);
+    mpz_clear(k);
+    mpz_clear(Gx);
+    mpz_clear(Gy);
+    mpz_clear(kGx);
+    mpz_clear(kGy);
+    mpz_clear(upper_k);
+
+    ecc_free_pt(G);
+    ecc_free_pt(kG);
+    ecc_free(curve);
+
+    return dlog_success;
+}
+
+void sdlog_free(
+    char* str_k
+)
+{
+    free(str_k);
+}
