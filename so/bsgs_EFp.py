@@ -170,6 +170,7 @@ if __name__ == '__main__':
         discrete_log_babystep_giantstep_EFp(
             curve,
             G, kG,
-            593010448361862286
+            593010448361862286,
+            mem_limit=4*1024*1024*1024
         )
     )
