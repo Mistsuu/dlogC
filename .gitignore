@@ -1,7 +1,17 @@
+# Debug history 
 */.gdb_history
+.gdb_history
+
+# VSCode stuffs
 .vscode
+
+# Folder for testing weird stuffs
 misc
+
+# Binaries
 dlog
 obj
-.gdb_history
+so/*.so
+
+# Valgrind outputs
 *grind.out.*
