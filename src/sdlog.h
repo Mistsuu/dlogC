@@ -16,8 +16,10 @@ int sdlog(
 
     char* str_Gx,
     char* str_Gy,
+    char* str_Gz,
     char* str_kGx,
     char* str_kGy,
+    char* str_kGz,
     char* str_upper_k,
 
     // Configs

@@ -16,8 +16,10 @@ int sdlog(
 
     char* str_Gx,
     char* str_Gy,
+    char* str_Gz,
     char* str_kGx,
     char* str_kGy,
+    char* str_kGz,
     char* str_upper_k,
 
     // Configs
@@ -41,7 +43,7 @@ int sdlog(
         curve, G,
         str_Gx,   // x
         str_Gy,   // y
-        NULL      // z
+        str_Gz    // z
     );
 
     eccpt kG;
@@ -49,7 +51,7 @@ int sdlog(
         curve, kG,
         str_kGx,
         str_kGy,
-        NULL
+        str_kGz
     );
 
     mpz_t upper_k;
