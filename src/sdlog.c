@@ -5,6 +5,14 @@
 #include "que2.h"
 #include "mem.h"
 
+void user_interrupt_handler(
+    int signum
+)
+{
+    printf("[libbsgsfp] Caught SIGINT! Exiting in peace...\n");
+    exit(-1);
+}
+
 int sdlog(
     // Field parameter
     char* str_p,
@@ -21,6 +29,9 @@ int sdlog(
     size_t mem_limit
 )
 {
+    // Register user's interrupt :)
+    signal(SIGINT, user_interrupt_handler);
+
     mpz_t p;
     mpz_init_set_str(p, str_p, 10);
     mpz_t k;
