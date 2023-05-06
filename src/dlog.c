@@ -400,9 +400,9 @@ void dlog_fill_buffer_r(
     ecc_sub(curve, kG_nnG, kG, kG_nnG);
 
     // [ n | (k - n*n)G ] -> rbuffer
-    mpn2bytes(rbuffer, index_size_bytes, mpz_limbs_read(n), index_size_limbs);
+    mpn2bytes(rbuffer, index_size_bytes, mpz_limbs_read(n), mpz_size(n));
     rbuffer += index_size_bytes;
-    mpn2bytes(rbuffer, item_size_bytes, mpz_limbs_read(kG_nnG->x), item_size_limbs);
+    mpn2bytes(rbuffer, item_size_bytes, mpz_limbs_read(kG_nnG->x), mpz_size(kG_nnG->x));
     rbuffer += item_size_bytes;
 
     // -------------------------------------------------------------------------------------

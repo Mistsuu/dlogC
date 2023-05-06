@@ -32,16 +32,16 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
 {
     // If I don't do this, 
     // mpn_get_str() will return some crazy stuffs :'<
-    if (mpn_zero_p(s1p, s1n)) {
+    if (!s1n || mpn_zero_p(s1p, s1n)) {
         memset(str, 0, len);
         return;
     }
-
+    
     // According to the doc,
     // "The most significant limb of the input {s1p, s1n} must be non-zero."
     // Ignore it and you'll get a very nasty SIGSEGV :(
     mp_size_t actual_len;
-    while (s1n >= 0 && !s1p[s1n-1])
+    while (s1n > 0 && !s1p[s1n - 1])
         s1n--;
     if (s1n > 0)
         actual_len = mpn_get_str(str, 256, (mp_limb_t *)s1p, s1n);
@@ -56,7 +56,6 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
         exit(-1);
     }
     
-    // Zero the parts that aren't written
     memmove(str+len-actual_len, str, actual_len);
     memset(str, 0, len-actual_len);
 }
