@@ -342,9 +342,9 @@ void dlog_fill_buffer_r(
     mpz_mod(kG_nnG, kG_nnG, p);
 
     // [ n | (k - n*n)G ] -> rbuffer
-    mpn2bytes(rbuffer, index_size_bytes, mpz_limbs_read(n), index_size_limbs);
+    mpn2bytes(rbuffer, index_size_bytes, mpz_limbs_read(n), mpz_size(n));
     rbuffer += index_size_bytes;
-    mpn2bytes(rbuffer, item_size_bytes, mpz_limbs_read(kG_nnG), item_size_limbs);
+    mpn2bytes(rbuffer, item_size_bytes, mpz_limbs_read(kG_nnG), mpz_size(kG_nnG));
     rbuffer += item_size_bytes;
 
     // -------------------------------------------------------------------------------------
