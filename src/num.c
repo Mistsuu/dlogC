@@ -37,17 +37,26 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
         return;
     }
 
-    mp_size_t actual_len = mpn_get_str(str, 256, (mp_limb_t *)s1p, s1n);
-    if (actual_len > len) { // todo: god i hope i could delete this shit
+    // According to the doc,
+    // "The most significant limb of the input {s1p, s1n} must be non-zero."
+    // Ignore it and you'll get a very nasty SIGSEGV :(
+    mp_size_t actual_len;
+    while (s1n >= 0 && !s1p[s1n-1])
+        s1n--;
+    if (s1n > 0)
+        actual_len = mpn_get_str(str, 256, (mp_limb_t *)s1p, s1n);
+
+    // todo: i'm glad that i didn't delete this shit
+    if (actual_len > len) {
         printf("[error] omg plz, whyyyyy mpn_get_str cannot fit in mpn2bytes: actual_len=%ld, len=%ld???????\n", actual_len, len);
         printf("[error] s1p: \n");
-
         for (mp_size_t i = 0; i < s1n; ++i) {
             printf("       0x%016lx\n", s1p[i]);
         }
         exit(-1);
     }
     
-    memmove(str + len - actual_len, str, actual_len);
-    memset(str, 0, len - actual_len);
+    // Zero the parts that aren't written
+    memmove(str+len-actual_len, str, actual_len);
+    memset(str, 0, len-actual_len);
 }
