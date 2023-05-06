@@ -36,6 +36,7 @@ int sdlog(
     size_t mem_limit
 )
 {
+    // Register user's interrupt :)
     signal(SIGINT, user_interrupt_handler);
 
     ecc curve;
