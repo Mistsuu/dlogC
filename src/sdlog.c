@@ -9,7 +9,7 @@ void user_interrupt_handler(
     int signum
 )
 {
-    printf("[libbsgsfp] Caught SIGINT! Exiting in peace...\n");
+    printf("[libbsgsefp] Caught SIGINT! Exiting in peace...\n");
     exit(-1);
 }
 
