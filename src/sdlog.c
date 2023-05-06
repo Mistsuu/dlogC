@@ -45,11 +45,12 @@ int sdlog(
 
     // Returns "None" if cannot find.
     if (!dlog_success) {
-        *pstr_k = (char*) malloc_exit_when_null(sizeof(char) * 4);
-        *pstr_k[0] = 'N';
-        *pstr_k[1] = 'o';
-        *pstr_k[2] = 'n';
-        *pstr_k[3] = 'e';
+        *pstr_k = (char*) malloc_exit_when_null(sizeof(char) * 5);
+        (*pstr_k)[0] = 'N';
+        (*pstr_k)[1] = 'o';
+        (*pstr_k)[2] = 'n';
+        (*pstr_k)[3] = 'e';
+        (*pstr_k)[4] = '\0';
         goto sdlog_cleanup;
     }
 
