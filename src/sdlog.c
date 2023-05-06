@@ -5,6 +5,15 @@
 #include "que2.h"
 #include "mem.h"
 
+void user_interrupt_handler(
+    int signum
+)
+{
+    printf("[libbsgsfp] Caught SIGINT! Exiting in peace...\n");
+    exit(-1);
+}
+
+
 int sdlog(
     // Curve parameters
     char* str_curve_a,
@@ -27,6 +36,8 @@ int sdlog(
     size_t mem_limit
 )
 {
+    signal(SIGINT, user_interrupt_handler);
+
     ecc curve;
     ecc_init(
         curve, 

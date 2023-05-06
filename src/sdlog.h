@@ -4,6 +4,11 @@
 #include <gmp.h>
 #include <stdint.h>
 #include <string.h>
+#include <signal.h>
+
+void user_interrupt_handler(
+    int signum
+);
 
 int sdlog(
     // Curve parameters
