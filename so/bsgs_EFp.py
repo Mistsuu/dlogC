@@ -6,6 +6,7 @@ import ctypes
 libbsgsefp = ctypes.CDLL('./libbsgsefp.so')
 
 from collections import namedtuple
+from concurrent.futures import ProcessPoolExecutor
 
 # ============================== Exposed functions ==============================
 """
@@ -68,7 +69,7 @@ ECC      = namedtuple('ECC', ['a', 'b', 'p'])
 ECCPoint = namedtuple('ECCPoint', ['x', 'y'])
 ECCInf   = None
 
-def discrete_log_babystep_giantstep_EFp(
+def _discrete_log_babystep_giantstep_EFp(
     curve: ECC,
     G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
     upper_k: int, 
@@ -85,16 +86,16 @@ def discrete_log_babystep_giantstep_EFp(
         Gx = 0
         Gy = 0
         Gz = 0
-    Gx = int(G.x)
-    Gy = int(G.y)
+    Gx = int(G.x) % curve_p
+    Gy = int(G.y) % curve_p
     Gz = 1
 
     if kG == ECCInf:
         kGx = 0
         kGy = 0
         kGz = 0
-    kGx = int(kG.x)
-    kGy = int(kG.y)
+    kGx = int(kG.x) % curve_p
+    kGy = int(kG.y) % curve_p
     kGz = 1
 
     upper_k = int(upper_k)
@@ -148,6 +149,25 @@ def discrete_log_babystep_giantstep_EFp(
     sdlog_free(str_k)
 
     return k
+
+def discrete_log_babystep_giantstep_EFp(
+    curve: ECC,
+    G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
+    upper_k: int, 
+    ncores: int = 4,
+    mem_limit: int = None
+):
+    with ProcessPoolExecutor(1) as executor:
+        future = executor.submit(
+            _discrete_log_babystep_giantstep_EFp,
+            curve,
+            G, kG,
+            upper_k,
+            ncores,
+            mem_limit
+        ) 
+        
+        return future.result()
     
 if __name__ == '__main__':
     curve = ECC(
