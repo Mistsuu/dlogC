@@ -128,20 +128,6 @@ void ecc_normalize_z_pt(ecc curve, eccpt point)
     mpz_clear(z_inv);
 }
 
-int ecc_eq_pt(ecc curve, eccpt pointP, eccpt pointQ)
-{
-    if (mpz_cmp_si(pointP->z, 1) != 0 && mpz_cmp_si(pointP->z, 0) != 0)
-        ecc_normalize_z_pt(curve, pointP);
-    if (mpz_cmp_si(pointQ->z, 1) != 0 && mpz_cmp_si(pointQ->z, 0) != 0)
-        ecc_normalize_z_pt(curve, pointQ);
-    if (mpz_cmp(pointP->z, pointQ->z) != 0)
-        return 0;
-    return (
-        mpz_cmp(pointP->x, pointQ->x) == 0 && 
-        mpz_cmp(pointP->y, pointQ->y) == 0
-    );
-}
-
 int ecc_verify_pt(ecc curve, eccpt point)
 {
     // infinity point
@@ -347,6 +333,25 @@ void ecc_sub_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 }
 
 /*
+    ? Checks if P = Q.
+    ! (Required every input is already init-ed)
+    ! (Only call if we don't want to check P, Q on curve.)
+*/
+int ecc_eq_noverify(ecc curve, eccpt pointP, eccpt pointQ)
+{
+    if (mpz_cmp_si(pointP->z, 1) != 0 && mpz_cmp_si(pointP->z, 0) != 0)
+        ecc_normalize_z_pt(curve, pointP);
+    if (mpz_cmp_si(pointQ->z, 1) != 0 && mpz_cmp_si(pointQ->z, 0) != 0)
+        ecc_normalize_z_pt(curve, pointQ);
+    if (mpz_cmp(pointP->z, pointQ->z) != 0)
+        return 0;
+    return (
+        mpz_cmp(pointP->x, pointQ->x) == 0 && 
+        mpz_cmp(pointP->y, pointQ->y) == 0
+    );
+}
+
+/*
     ? Calculate R = P + Q.
     ! (Required every input is already init-ed)
 */
@@ -383,6 +388,17 @@ void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
     return ecc_mul_noverify(curve, pointR, pointP, k);
 }
 
+/*
+    ? Checks if P = Q.
+    ! (Required every input is already init-ed)
+*/
+int ecc_eq(ecc curve, eccpt pointP, eccpt pointQ)
+{
+    assert(ecc_verify_pt(curve, pointP));
+    assert(ecc_verify_pt(curve, pointQ));
+    return ecc_eq_noverify(curve, pointP, pointQ);
+}
+
 // ---------------------------------------- pairing ------------------------------------------
 
 /*
@@ -396,6 +412,7 @@ void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
     ?     - den where div(den) = [P+Q] + [-P-Q] + 2*[O]
 
     ! (Required every input is already init-ed)
+    ! (Only call if we don't want to check P, Q, R on curve.)
 */
 void ecc_weil_gPQ(ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR, mpz_t n)
 {
@@ -415,6 +432,7 @@ void ecc_weil_gPQ(ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR, 
     ?         [2kP] + [P] - [(2k+1)P] - [O]
 
     ! (Required every input is already init-ed)
+    ! (Only call if we don't want to check P, R on curve.)
 */
 void ecc_weil_fP(ecc curve, mpz_t f, eccpt pointP, eccpt pointR, mpz_t n)
 {
@@ -443,9 +461,9 @@ void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, m
     do {
         ecc_random_pt(curve, pointS);
     } while (
-        ecc_eq_pt(curve, pointS, pointP)   == 1 ||
-        ecc_eq_pt(curve, pointS, pointQ)   == 1 ||
-        ecc_eq_pt(curve, pointS, pointP_Q) == 1
+        ecc_eq_noverify(curve, pointS, pointP)   == 1 ||
+        ecc_eq_noverify(curve, pointS, pointQ)   == 1 ||
+        ecc_eq_noverify(curve, pointS, pointP_Q) == 1
     );
 
     // ===============================================================

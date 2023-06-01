@@ -48,9 +48,14 @@ void ecc_printf_pt     (eccpt point);
 void ecc_free_pt       (eccpt point);
 void ecc_add_noverify  (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
 void ecc_mul_noverify  (ecc curve, eccpt pointR, eccpt pointP, mpz_t k);
+void ecc_sub_noverify  (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
+int  ecc_eq_noverify   (ecc curve, eccpt pointP, eccpt pointQ);
 void ecc_add           (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
 void ecc_sub           (ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ);
 void ecc_mul           (ecc curve, eccpt pointR, eccpt pointP, mpz_t k);
+int  ecc_eq            (ecc curve, eccpt pointP, eccpt pointQ);
+void ecc_weil_fP       (ecc curve, mpz_t f, eccpt pointP, eccpt pointR, mpz_t n);
+void ecc_weil_gPQ      (ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR, mpz_t n);
 void ecc_weil_pairing  (ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n);
 
 #endif
