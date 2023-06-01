@@ -121,8 +121,10 @@ void ecc_normalize_z_pt(ecc curve, eccpt point)
         mpz_set_ui(point->z, 1);
         mpz_mul(point->x, point->x, z_inv);
         mpz_mod(point->x, point->x, curve->p);
-        mpz_mul(point->y, point->y, z_inv);
-        mpz_mod(point->y, point->y, curve->p);
+        if (mpz_cmp_si(point->y, UNDEFINED_COORDINATE) != 0) {
+            mpz_mul(point->y, point->y, z_inv);
+            mpz_mod(point->y, point->y, curve->p);
+        }
     }
 
     mpz_clear(z_inv);
@@ -225,10 +227,11 @@ void ecc_add_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     mpz_init(Ry);
     
     if (mpz_cmp(pointP->x, pointQ->x) == 0) {
-        // R = infinity if P == -Q.
+        // P == -Q
+        // R = infinity.
         if (mpz_cmp(pointP->y, pointQ->y) != 0) {
             ecc_set_pt_inf(pointR);
-            return;
+            goto ecc_add_noverify_cleanup;
         }
 
         // P == Q
@@ -274,6 +277,7 @@ void ecc_add_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     mpz_set(pointR->y, Ry);
     mpz_set_si(pointR->z, 1);
 
+ecc_add_noverify_cleanup:
     mpz_clear(h);
     mpz_clear(h_den);
     mpz_clear(Rx);
@@ -319,6 +323,19 @@ void ecc_mul_noverify(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 }
 
 /*
+    ? Calculate R = -P.
+    ! (Required every input is already init-ed)
+    ! (Only call if we don't want to check P on curve.)
+*/
+void ecc_neg_noverify(ecc curve, eccpt pointR, eccpt pointP)
+{
+    mpz_set(pointR->x, pointP->x);
+    mpz_set(pointR->z, pointP->z);
+    mpz_sub(pointR->y, curve->p, pointP->y); // invert Y coordinate
+    mpz_mod(pointR->y, pointR->y, curve->p); // put value in [0, p)
+}
+
+/*
     ? Calculate R = P - Q.
     ! (Required every input is already init-ed)
     ! (Only call if we don't want to check P, Q on curve.)
@@ -326,8 +343,8 @@ void ecc_mul_noverify(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 void ecc_sub_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 {
     eccpt point_Q;
-    ecc_init_pt_pt(point_Q, pointQ);
-    mpz_sub(point_Q->y, curve->p, point_Q->y);          // invert Y coordinate
+    ecc_init_pt(point_Q);
+    ecc_neg_noverify(curve, point_Q, pointQ);
     ecc_add_noverify(curve, pointR, pointP, point_Q);
     ecc_free_pt(point_Q);
 }
@@ -357,11 +374,22 @@ int ecc_eq_noverify(ecc curve, eccpt pointP, eccpt pointQ)
 */
 void ecc_add(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 {
-    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
-    assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
     assert(ecc_verify_pt(curve, pointP));
     assert(ecc_verify_pt(curve, pointQ));
+    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
+    assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
     return ecc_add_noverify(curve, pointR, pointP, pointQ);
+}
+
+/*
+    ? Calculate R = -P.
+    ! (Required every input is already init-ed)
+*/
+void ecc_neg(ecc curve, eccpt pointR, eccpt pointP)
+{
+    assert(ecc_verify_pt(curve, pointP));
+    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
+    return ecc_neg_noverify(curve, pointR, pointP);
 }
 
 /*
@@ -370,10 +398,10 @@ void ecc_add(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 */
 void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 {
-    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
-    assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
     assert(ecc_verify_pt(curve, pointP));
     assert(ecc_verify_pt(curve, pointQ));
+    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
+    assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
     return ecc_sub_noverify(curve, pointR, pointP, pointQ);
 }
 
@@ -383,8 +411,8 @@ void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 */
 void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 {
-    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
     assert(ecc_verify_pt(curve, pointP));
+    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
     return ecc_mul_noverify(curve, pointR, pointP, k);
 }
 
@@ -396,6 +424,8 @@ int ecc_eq(ecc curve, eccpt pointP, eccpt pointQ)
 {
     assert(ecc_verify_pt(curve, pointP));
     assert(ecc_verify_pt(curve, pointQ));
+    assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
+    assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
     return ecc_eq_noverify(curve, pointP, pointQ);
 }
 
@@ -404,7 +434,7 @@ int ecc_eq(ecc curve, eccpt pointP, eccpt pointQ)
 /*
     ? Evaluate g = gPQ(R).
     ? gPQ(R) is a function whose coefficients are based on 
-    ? the coordinates of P and Q
+    ? the coordinates of P and Q.
     ? that div(gPQ) = [P] + [Q] - [P+Q] - [O]
 
     ? This function is created by dividing 2 smaller functions:
@@ -414,15 +444,84 @@ int ecc_eq(ecc curve, eccpt pointP, eccpt pointQ)
     ! (Required every input is already init-ed)
     ! (Only call if we don't want to check P, Q, R on curve.)
 */
-void ecc_weil_gPQ(ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR, mpz_t n)
+void ecc_weil_gPQ(ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR)
 {
+    mpz_t h, h_den;
+    mpz_t g_num, g_den;
+    mpz_init(h);
+    mpz_init(h_den);
+    mpz_init(g_num);
+    mpz_init(g_den);
 
+    if (mpz_cmp(pointP->x, pointQ->x) == 0) {
+        // P = -Q
+        // this is the case where slope = inf
+        //   gPQ(R) = R.x - P.x
+        // div(gPQ) = [P] + [-P] - 2[O]
+        if (mpz_cmp(pointP->y, pointQ->y) != 0) {
+            mpz_sub(g, pointR->x, pointP->x);
+            mpz_mod(g, g, curve->p);
+            goto ecc_weil_gPQ_cleanup;
+        }
+
+        // P == Q
+        // h = (3x_P^2 + a) / 2y_P
+        mpz_set(h, pointP->x);                  // x_P
+        mpz_mul(h, h, h);                       // x_P^2
+        mpz_mul_si(h, h, 3);                    // 3x_P^2
+        mpz_add(h, h, curve->a);                // 3x_P^2 + a
+
+        mpz_set(h_den, pointP->y);              // y_P
+        mpz_mul_si(h_den, h_den, 2);            // 2y_P
+        mpz_invert(h_den, h_den, curve->p);     // 1/(2y_P) mod p
+    }
+    else {
+        // P != Q
+        // h = (y_Q - y_P) / (x_Q - x_P)
+        mpz_set(h, pointQ->y);                  // y_Q
+        mpz_sub(h, h, pointP->y);               // y_Q - y_P
+
+        mpz_set(h_den, pointQ->x);              // x_Q
+        mpz_sub(h_den, h_den, pointP->x);       // x_Q - x_P
+        mpz_invert(h_den, h_den, curve->p);     // 1/(x_Q - x_P) mod p
+    }
+
+    mpz_mul(h, h, h_den);
+    mpz_mod(h, h, curve->p);
+
+    // num = R.y - P.y - h(R.x - P.x) 
+    //    => root at P, Q,-P-Q 
+    //    => poles at 3*O
+    mpz_sub(g_num, pointP->x, pointR->x);
+    mpz_mul(g_num, g_num, h);
+    mpz_add(g_num, g_num, pointR->y);
+    mpz_sub(g_num, g_num, pointP->y);
+
+    // den = R.x - (P+Q).x         
+    //    => root at P+Q, -P-Q 
+    //    => poles at 2*O
+    mpz_mul(g_den, h, h);
+    mpz_sub(g_den, curve->p, g_den);
+    mpz_add(g_den, g_den, pointR->x);
+    mpz_add(g_den, g_den, pointP->x);
+    mpz_add(g_den, g_den, pointQ->x);
+
+    // g = g_num / g_den
+    mpz_invert(g, g_den, curve->p);
+    mpz_mul(g, g, g_num);
+    mpz_mod(g, g, curve->p);
+
+ecc_weil_gPQ_cleanup:
+    mpz_clear(h);
+    mpz_clear(h_den);
+    mpz_clear(g_num);
+    mpz_clear(g_den);
 }
 
 /*
     ? Evaluate f = fP(R).
     ? fP is a function whose coefficients are based on 
-    ? coordinates of P
+    ? coordinates of P.
     ? that div(fP) = n[P] - n[O] 
     ? with n is a number such that nP = O.
 
@@ -433,10 +532,34 @@ void ecc_weil_gPQ(ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR, 
 
     ! (Required every input is already init-ed)
     ! (Only call if we don't want to check P, R on curve.)
+    ! (and n is a positive number)
 */
 void ecc_weil_fP(ecc curve, mpz_t f, eccpt pointP, eccpt pointR, mpz_t n)
 {
+    eccpt pointT;
+    ecc_init_pt_pt(pointT, pointP);
+    mpz_set_ui(f, 1);
 
+    mpz_t g;
+    mpz_init(g);
+
+    size_t nbits = mpz_sizeinbase(n, 2);
+    for (int i = (int)nbits - 2; i >= 0; --i) {
+        ecc_weil_gPQ(curve, g, pointT, pointT, pointR);
+        ecc_add_noverify(curve, pointT, pointT, pointT);
+        mpz_mul(f, f, f);
+        mpz_mul(f, f, g);
+        mpz_mod(f, f, curve->p);
+        if (mpz_tstbit(n, (mp_bitcnt_t)i)) {
+            ecc_weil_gPQ(curve, g, pointT, pointP, pointR);
+            ecc_add_noverify(curve, pointT, pointT, pointP);
+            mpz_mul(f, f, g);
+            mpz_mod(f, f, curve->p);
+        }
+    }
+
+    mpz_clear(g);
+    ecc_free_pt(pointT);
 }
 
 /*
@@ -445,6 +568,7 @@ void ecc_weil_fP(ecc curve, mpz_t f, eccpt pointP, eccpt pointR, mpz_t n)
     ! (Required every input is already init-ed)
     ! (Only call if we don't want to check P, Q on curve.)
     ! (and also P.z and Q.z == 1)
+    ! (and n is a positive number)
 */
 void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
 {
@@ -473,8 +597,8 @@ void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, m
 
     // setup -S
     eccpt point_S;
-    ecc_init_pt_pt(point_S, pointS);
-    mpz_sub(point_S->y, curve->p, point_S->y);
+    ecc_init_pt(point_S);
+    ecc_neg_noverify(curve, point_S, pointS);
     
     // setup P-S
     eccpt pointP_S;
@@ -486,12 +610,12 @@ void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, m
     ecc_init_pt(pointQS);
     ecc_add_noverify(curve, pointQS, pointQ, pointS);
 
-    mpz_t fP__QS;
-    mpz_t fP__S;
-    mpz_t fQ___S;
-    mpz_t fQ__P_S;
-    mpz_init(fP__QS);
-    mpz_init(fP__S);
+    mpz_t fP__QS;       // fP(Q + S)
+    mpz_t fP__S;        // fP(S)
+    mpz_t fQ___S;       // fQ(-S)
+    mpz_t fQ__P_S;      // fQ(P - S)
+    mpz_init(fP__QS);   
+    mpz_init(fP__S);    
     mpz_init(fQ___S);
     mpz_init(fQ__P_S);
     ecc_weil_fP(curve, fP__QS,  pointP, pointQS,  n);
@@ -500,26 +624,26 @@ void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, m
     ecc_weil_fP(curve, fQ__P_S, pointQ, pointP_S, n);
 
     // ===============================================================
-    // -- Step 3: Compute Weil's pairing
+    // -- Step 3: Compute Weil Pairing
+    // --            fP(Q + S) * fQ(-S) 
+    // -- e(P, Q) = --------------------
+    // --            fP(S) * fQ(P - S)
     // ===============================================================
-    mpz_t ePQ_num;
-    mpz_t ePQ_den;
-    mpz_t ePQ;
-    mpz_init(ePQ_num);
-    mpz_init(ePQ_den);
-    mpz_init(ePQ);
-    mpz_mul(ePQ_num, fP__QS, fQ___S);
-    mpz_mul(ePQ_den, fP__S,  fQ__P_S);
-    mpz_invert(ePQ, ePQ_den, curve->p);
-    mpz_mul(ePQ, ePQ, ePQ_num);
-    mpz_mod(ePQ, ePQ, curve->p);
+    mpz_t E_num;
+    mpz_t E_den;
+    mpz_init(E_num);
+    mpz_init(E_den);
+    mpz_mul(E_num, fP__QS, fQ___S);
+    mpz_mul(E_den, fP__S,  fQ__P_S);
+    mpz_invert(E, E_den, curve->p);
+    mpz_mul(E, E, E_num);
+    mpz_mod(E, E, curve->p);
 
     // ===============================================================
     // -- Step 4: Clean up.
     // ===============================================================
-    mpz_clear(ePQ_num);
-    mpz_clear(ePQ_den);
-    mpz_clear(ePQ);
+    mpz_clear(E_num);
+    mpz_clear(E_den);
     mpz_clear(fP__QS);
     mpz_clear(fP__S);
     mpz_clear(fQ___S);
@@ -540,6 +664,7 @@ void ecc_weil_pairing(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
 {
     assert(ecc_verify_pt(curve, pointP));
     assert(ecc_verify_pt(curve, pointQ));
+    assert(mpz_cmp_si(n, 0) > 0);
 
     // make sure
     //     P * n = O

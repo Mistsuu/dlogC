@@ -4,6 +4,7 @@
 #include "ecc_x.h"
 #include "num.h"
 #include "dlog.h"
+#include "rand.h"
 
 void test3()
 {
@@ -73,8 +74,57 @@ void test4()
     ecc_free(curve);
 }
 
+void test5()
+{
+    mpz_t num;
+    mpz_t p;
+    mpz_init(num);
+    mpz_init_set_str(p, "13276420418771432419898581447951", 10);
+    mpz_dev_urandomm(num, p);
+
+    mpz_out_str(stdout, 10, num);
+    printf("\n");
+    printf("bitlen = %ld\n", mpz_sizeinbase(num, 2));
+
+    mpz_clear(num);
+    mpz_clear(p);
+}
+
+void test6()
+{
+    ecc curve;
+    eccpt G;
+    ecc_init(
+        curve, 
+        "1986076773346522069111732327339",    // a 
+        "808177731529494834911895879646",     // b
+        "13276420418771432419898581447951"    // p
+    );
+
+    mpz_t n;
+    mpz_init_set_str(n, "13276420418771430444004808657717", 10);
+
+    ecc_init_pt(G);
+    ecc_random_pt(curve, G);
+    ecc_printf_pt(G);
+    printf("\n");
+
+    mpz_t E;
+    mpz_init(E);
+    ecc_weil_pairing(curve, E, G, G, n);
+    mpz_out_str(stdout, 10, E);
+    printf("\n");
+
+    mpz_clear(n);
+    mpz_clear(E);
+    ecc_free_pt(G);
+    ecc_free(curve);
+}
+
 int main()
 {
     // test3();
-    test4();
+    // test4();
+    // test5();
+    test6();
 }
