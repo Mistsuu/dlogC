@@ -109,14 +109,19 @@ void test6()
     ecc_printf_pt(G);
     printf("\n");
 
+    eccpt Z;
+    ecc_init_pt(Z);
+    ecc_set_pt_inf(Z);
+
     mpz_t E;
     mpz_init(E);
-    ecc_weil_pairing(curve, E, G, G, n);
+    ecc_weil_pairing(curve, E, G, Z, n);
     mpz_out_str(stdout, 10, E);
     printf("\n");
 
     mpz_clear(n);
     mpz_clear(E);
+    ecc_free_pt(Z);
     ecc_free_pt(G);
     ecc_free(curve);
 }

@@ -573,6 +573,15 @@ void ecc_weil_fP(ecc curve, mpz_t f, eccpt pointP, eccpt pointR, mpz_t n)
 void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
 {
     // ===============================================================
+    // -- Step 0: If any of the points are infinity
+    // -- just return 1.
+    // ===============================================================
+    if (mpz_cmp_ui(pointP->z, 0) || mpz_cmp_ui(pointQ->z, 0)) {
+        mpz_set_ui(E, 1);
+        return;
+    }
+
+    // ===============================================================
     // -- Step 1: Choose a random point S that 
     // -- S != P, S != Q and S != P-Q
     // ===============================================================
