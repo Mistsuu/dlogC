@@ -171,26 +171,26 @@ def discrete_log_babystep_giantstep_EFp(
     
 if __name__ == '__main__':
     curve = ECC(
-        a=448019786388741247,
-        b=544225411105375163,
-        p=593010448435692503
+        a=0x060c94d30d478908,
+        b=0x038b5c123bb48b94,
+        p=0x06d8fefeca5d4ca3
     )
 
     G = ECCPoint(
-        x=437471552757133390,
-        y=354281835126765881
+        x=0x064c29405844b615,
+        y=0x039e6125d48aac3d
     )
 
     kG = ECCPoint(
-        x=295738136557598210,
-        y=89525692852745488
+        x=78069856179243048,
+        y=373302913259898234
     )
 
     print(
         discrete_log_babystep_giantstep_EFp(
             curve,
             G, kG,
-            593010448361862286,
+            0x06d8fefe8066085f,
             mem_limit=4*1024*1024*1024
         )
     )
