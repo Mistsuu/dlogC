@@ -119,6 +119,8 @@ void ecc_normalize_z_pt(ecc curve, eccpt point)
         mpz_set_ui(point->z, 1);
         mpz_mul(point->x, point->x, z_inv);
         mpz_mod(point->x, point->x, curve->p);
+        mpz_mul(point->y, point->y, z_inv);
+        mpz_mod(point->y, point->y, curve->p);
     }
 
     mpz_clear(z_inv);
