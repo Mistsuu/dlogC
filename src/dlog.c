@@ -272,11 +272,11 @@ void dlog_fill_buffer_l(
 
     __args_thread__dlog_fill_buffer* thread_args = (__args_thread__dlog_fill_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_fill_buffer) * n_threads);
 
-    mp_limb_t* Gx = mpz_limbs_init_cpy(G->x, item_size_limbs);
-    mp_limb_t* Gz = mpz_limbs_init_cpy(G->z, item_size_limbs);
-    mp_limb_t* curve_a = mpz_limbs_init_cpy(curve->a, item_size_limbs);
-    mp_limb_t* curve_b = mpz_limbs_init_cpy(curve->b, item_size_limbs);
-    mp_limb_t* curve_p = mpz_limbs_init_cpy(curve->p, item_size_limbs);
+    mp_limb_t* Gx = mpn_init_cpyz(G->x, item_size_limbs);
+    mp_limb_t* Gz = mpn_init_cpyz(G->z, item_size_limbs);
+    mp_limb_t* curve_a = mpn_init_cpyz(curve->a, item_size_limbs);
+    mp_limb_t* curve_b = mpn_init_cpyz(curve->b, item_size_limbs);
+    mp_limb_t* curve_p = mpn_init_cpyz(curve->p, item_size_limbs);
 
     eccpt n_per_threadG;
     ecc_init_pt(n_per_threadG);
@@ -303,13 +303,13 @@ void dlog_fill_buffer_l(
         thread_args[i].curve_b = curve_b;
         thread_args[i].curve_p = curve_p;
 
-        thread_args[i].i = mpz_limbs_init_cpy(iL, index_size_limbs);
+        thread_args[i].i = mpn_init_cpyz(iL, index_size_limbs);
         thread_args[i].is_inc_i = 1;
 
-        thread_args[i]._0x = mpz_limbs_init_cpy(L0->x, item_size_limbs);
-        thread_args[i]._0z = mpz_limbs_init_cpy(L0->z, item_size_limbs);
-        thread_args[i]._1x = mpz_limbs_init_cpy(L1->x, item_size_limbs);
-        thread_args[i]._1z = mpz_limbs_init_cpy(L1->z, item_size_limbs);
+        thread_args[i]._0x = mpn_init_cpyz(L0->x, item_size_limbs);
+        thread_args[i]._0z = mpn_init_cpyz(L0->z, item_size_limbs);
+        thread_args[i]._1x = mpn_init_cpyz(L1->x, item_size_limbs);
+        thread_args[i]._1z = mpn_init_cpyz(L1->z, item_size_limbs);
 
         ecc_add(curve, L0, L0, n_per_threadG);      // L0 <- L0 + n_per_thread*G
         ecc_add(curve, L1, L1, n_per_threadG);      // L1 <- L1 + n_per_thread*G
@@ -421,11 +421,11 @@ void dlog_fill_buffer_r(
 
     __args_thread__dlog_fill_buffer* thread_args = (__args_thread__dlog_fill_buffer*) malloc_exit_when_null(sizeof(__args_thread__dlog_fill_buffer) * n_threads);
 
-    mp_limb_t* nGx = mpz_limbs_init_cpy(nG->x, item_size_limbs);
-    mp_limb_t* nGz = mpz_limbs_init_cpy(nG->z, item_size_limbs);
-    mp_limb_t* curve_a = mpz_limbs_init_cpy(curve->a, item_size_limbs);
-    mp_limb_t* curve_b = mpz_limbs_init_cpy(curve->b, item_size_limbs);
-    mp_limb_t* curve_p = mpz_limbs_init_cpy(curve->p, item_size_limbs);
+    mp_limb_t* nGx = mpn_init_cpyz(nG->x, item_size_limbs);
+    mp_limb_t* nGz = mpn_init_cpyz(nG->z, item_size_limbs);
+    mp_limb_t* curve_a = mpn_init_cpyz(curve->a, item_size_limbs);
+    mp_limb_t* curve_b = mpn_init_cpyz(curve->b, item_size_limbs);
+    mp_limb_t* curve_p = mpn_init_cpyz(curve->p, item_size_limbs);
 
     eccpt n_per_threadG;
     eccpt nn_per_threadG;
@@ -456,13 +456,13 @@ void dlog_fill_buffer_r(
         thread_args[i].curve_b = curve_b;
         thread_args[i].curve_p = curve_p;
 
-        thread_args[i].i = mpz_limbs_init_cpy(iR, index_size_limbs);
+        thread_args[i].i = mpn_init_cpyz(iR, index_size_limbs);
         thread_args[i].is_inc_i = 0;
 
-        thread_args[i]._0x = mpz_limbs_init_cpy(R0->x, item_size_limbs);
-        thread_args[i]._0z = mpz_limbs_init_cpy(R0->z, item_size_limbs);
-        thread_args[i]._1x = mpz_limbs_init_cpy(R1->x, item_size_limbs);
-        thread_args[i]._1z = mpz_limbs_init_cpy(R1->z, item_size_limbs);
+        thread_args[i]._0x = mpn_init_cpyz(R0->x, item_size_limbs);
+        thread_args[i]._0z = mpn_init_cpyz(R0->z, item_size_limbs);
+        thread_args[i]._1x = mpn_init_cpyz(R1->x, item_size_limbs);
+        thread_args[i]._1z = mpn_init_cpyz(R1->z, item_size_limbs);
 
         ecc_add(curve, R0, R0, nn_per_threadG);     // R0 <- R0 + n*n_per_thread*G
         ecc_add(curve, R1, R1, nn_per_threadG);     // R1 <- R1 + n*n_per_thread*G

@@ -1,6 +1,8 @@
 #include "ecc.h"
 #include "num.h"
 #include "const.h"
+#include "calc.h"
+#include "rand.h"
 
 // ---------------------------------------- ecc ------------------------------------------
 
@@ -146,9 +148,12 @@ int ecc_verify_pt(ecc curve, eccpt point)
     mpz_mod(point_y2, point_y2, curve->p); // x^3 + ax + b mod p
 
     // use legendre symbol if y not here
+    // recover y if we can solve for y^2.
     int result = 0;
     if (mpz_cmp_si(point->y, UNDEFINED_COORDINATE) == 0) {
         result = mpz_legendre(point_y2, curve->p) >= 0;
+        if (result)
+            mpz_sqrtm(point->y, point_y2, curve->p);
     }
     else {
         mpz_t point_y2_2;
@@ -161,6 +166,15 @@ int ecc_verify_pt(ecc curve, eccpt point)
 
     mpz_clear(point_y2);
     return result;
+}
+
+void ecc_random_pt(ecc curve, eccpt point)
+{
+    mpz_set_ui(point->z, 1);
+    mpz_set_si(point->y, UNDEFINED_COORDINATE);
+    do {
+        mpz_dev_urandomm(point->x, curve->p);
+    } while (!ecc_verify_pt(curve, point));
 }
 
 void ecc_printf_pt(eccpt point)
@@ -345,4 +359,16 @@ void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
     assert(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0);
     assert(ecc_verify_pt(curve, pointP));
     return ecc_mul_noverify(curve, pointR, pointP, k);
+}
+
+// ---------------------------------------- pairing ------------------------------------------
+
+/*
+    ? Calculate Weil's pairing E = e(P, Q),
+    ? where P, Q has order n.
+    ! (Required every input is already init-ed)
+*/
+void ecc_weil_pairing(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
+{
+
 }
