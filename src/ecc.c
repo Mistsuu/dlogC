@@ -128,6 +128,20 @@ void ecc_normalize_z_pt(ecc curve, eccpt point)
     mpz_clear(z_inv);
 }
 
+int ecc_eq_pt(ecc curve, eccpt pointP, eccpt pointQ)
+{
+    if (mpz_cmp_si(pointP->z, 1) != 0 && mpz_cmp_si(pointP->z, 0) != 0)
+        ecc_normalize_z_pt(curve, pointP);
+    if (mpz_cmp_si(pointQ->z, 1) != 0 && mpz_cmp_si(pointQ->z, 0) != 0)
+        ecc_normalize_z_pt(curve, pointQ);
+    if (mpz_cmp(pointP->z, pointQ->z) != 0)
+        return 0;
+    return (
+        mpz_cmp(pointP->x, pointQ->x) == 0 && 
+        mpz_cmp(pointP->y, pointQ->y) == 0
+    );
+}
+
 int ecc_verify_pt(ecc curve, eccpt point)
 {
     // infinity point
@@ -196,7 +210,6 @@ void ecc_free_pt(eccpt point)
     mpz_clear(point->y);
     mpz_clear(point->z);
 }
-
 
 // ---------------------------------------- arithemetics ------------------------------------------
 
@@ -320,6 +333,20 @@ void ecc_mul_noverify(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 }
 
 /*
+    ? Calculate R = P - Q.
+    ! (Required every input is already init-ed)
+    ! (Only call if we don't want to check P, Q on curve.)
+*/
+void ecc_sub_noverify(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
+{
+    eccpt point_Q;
+    ecc_init_pt_pt(point_Q, pointQ);
+    mpz_sub(point_Q->y, curve->p, point_Q->y);          // invert Y coordinate
+    ecc_add_noverify(curve, pointR, pointP, point_Q);
+    ecc_free_pt(point_Q);
+}
+
+/*
     ? Calculate R = P + Q.
     ! (Required every input is already init-ed)
 */
@@ -342,12 +369,7 @@ void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     assert(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0);
     assert(ecc_verify_pt(curve, pointP));
     assert(ecc_verify_pt(curve, pointQ));
-
-    eccpt _pointQ;
-    ecc_init_pt_pt(_pointQ, pointQ);
-    mpz_sub(_pointQ->y, curve->p, _pointQ->y);          // invert Y coordinate
-    ecc_add_noverify(curve, pointR, pointP, _pointQ);
-    ecc_free_pt(_pointQ);
+    return ecc_sub_noverify(curve, pointR, pointP, pointQ);
 }
 
 /*
@@ -364,11 +386,154 @@ void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 // ---------------------------------------- pairing ------------------------------------------
 
 /*
+    ? Evaluate g = gPQ(R).
+    ? gPQ(R) is a function whose coefficients are based on 
+    ? the coordinates of P and Q
+    ? that div(gPQ) = [P] + [Q] - [P+Q] - [O]
+
+    ? This function is created by dividing 2 smaller functions:
+    ?     - num where div(num) = [P] + [Q] + [-P-Q] - 3*[O]
+    ?     - den where div(den) = [P+Q] + [-P-Q] + 2*[O]
+
+    ! (Required every input is already init-ed)
+*/
+void ecc_weil_gPQ(ecc curve, mpz_t g, eccpt pointP, eccpt pointQ, eccpt pointR, mpz_t n)
+{
+
+}
+
+/*
+    ? Evaluate f = fP(R).
+    ? fP is a function whose coefficients are based on 
+    ? coordinates of P
+    ? that div(fP) = n[P] - n[O] 
+    ? with n is a number such that nP = O.
+
+    ? The function is evaluated based on smaller functions g, built up
+    ? recursively using 2 functions whose div are:
+    ?         2[kP]       - [2kP]     - [O]
+    ?         [2kP] + [P] - [(2k+1)P] - [O]
+
+    ! (Required every input is already init-ed)
+*/
+void ecc_weil_fP(ecc curve, mpz_t f, eccpt pointP, eccpt pointR, mpz_t n)
+{
+
+}
+
+/*
+    ? Calculate Weil's pairing E = e(P, Q),
+    ? where P, Q has order n.
+    ! (Required every input is already init-ed)
+    ! (Only call if we don't want to check P, Q on curve.)
+    ! (and also P.z and Q.z == 1)
+*/
+void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
+{
+    // ===============================================================
+    // -- Step 1: Choose a random point S that 
+    // -- S != P, S != Q and S != P-Q
+    // ===============================================================
+    eccpt pointS;
+    eccpt pointP_Q;
+    ecc_init_pt(pointS);
+    ecc_init_pt(pointP_Q);
+    ecc_sub_noverify(curve, pointP_Q, pointP, pointQ);
+
+    do {
+        ecc_random_pt(curve, pointS);
+    } while (
+        ecc_eq_pt(curve, pointS, pointP)   == 1 ||
+        ecc_eq_pt(curve, pointS, pointQ)   == 1 ||
+        ecc_eq_pt(curve, pointS, pointP_Q) == 1
+    );
+
+    // ===============================================================
+    // -- Step 2: Compute outputs of 
+    // -- fP(Q + S), fP(S), fQ(-S), fQ(P - S)
+    // ===============================================================
+
+    // setup -S
+    eccpt point_S;
+    ecc_init_pt_pt(point_S, pointS);
+    mpz_sub(point_S->y, curve->p, point_S->y);
+    
+    // setup P-S
+    eccpt pointP_S;
+    ecc_init_pt(pointP_S);
+    ecc_sub_noverify(curve, pointP_S, pointP, pointS);
+
+    // setup Q+S
+    eccpt pointQS;
+    ecc_init_pt(pointQS);
+    ecc_add_noverify(curve, pointQS, pointQ, pointS);
+
+    mpz_t fP__QS;
+    mpz_t fP__S;
+    mpz_t fQ___S;
+    mpz_t fQ__P_S;
+    mpz_init(fP__QS);
+    mpz_init(fP__S);
+    mpz_init(fQ___S);
+    mpz_init(fQ__P_S);
+    ecc_weil_fP(curve, fP__QS,  pointP, pointQS,  n);
+    ecc_weil_fP(curve, fP__S,   pointP, pointS,   n);
+    ecc_weil_fP(curve, fQ___S,  pointQ, point_S,  n);
+    ecc_weil_fP(curve, fQ__P_S, pointQ, pointP_S, n);
+
+    // ===============================================================
+    // -- Step 3: Compute Weil's pairing
+    // ===============================================================
+    mpz_t ePQ_num;
+    mpz_t ePQ_den;
+    mpz_t ePQ;
+    mpz_init(ePQ_num);
+    mpz_init(ePQ_den);
+    mpz_init(ePQ);
+    mpz_mul(ePQ_num, fP__QS, fQ___S);
+    mpz_mul(ePQ_den, fP__S,  fQ__P_S);
+    mpz_invert(ePQ, ePQ_den, curve->p);
+    mpz_mul(ePQ, ePQ, ePQ_num);
+    mpz_mod(ePQ, ePQ, curve->p);
+
+    // ===============================================================
+    // -- Step 4: Clean up.
+    // ===============================================================
+    mpz_clear(ePQ_num);
+    mpz_clear(ePQ_den);
+    mpz_clear(ePQ);
+    mpz_clear(fP__QS);
+    mpz_clear(fP__S);
+    mpz_clear(fQ___S);
+    mpz_clear(fQ__P_S);
+    ecc_free_pt(pointQS);
+    ecc_free_pt(point_S);
+    ecc_free_pt(pointP_S);
+    ecc_free_pt(pointS);
+    ecc_free_pt(pointP_Q);
+}
+
+/*
     ? Calculate Weil's pairing E = e(P, Q),
     ? where P, Q has order n.
     ! (Required every input is already init-ed)
 */
 void ecc_weil_pairing(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
 {
+    assert(ecc_verify_pt(curve, pointP));
+    assert(ecc_verify_pt(curve, pointQ));
 
+    // make sure
+    //     P * n = O
+    //     Q * n = O
+    eccpt pointT;
+    ecc_init_pt(pointT);
+
+    ecc_mul_noverify(curve, pointT, pointP, n);
+    assert(mpz_cmp_si(pointT->z, 0) == 0);
+    ecc_mul_noverify(curve, pointT, pointQ, n);
+    assert(mpz_cmp_si(pointT->z, 0) == 0);
+
+    ecc_free_pt(pointT);
+    return ecc_weil_pairing_noverify(curve, E, pointP, pointQ, n);
 }
