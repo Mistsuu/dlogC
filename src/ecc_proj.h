@@ -3,4 +3,6 @@
 
 #include <gmp.h>
 
+typedef mp_limb_t* ecc_ptemp[8];
+
 #endif

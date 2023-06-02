@@ -11,8 +11,7 @@ def xADD(X1, X2, Y1, Y2, Z1, Z2, a, b3):
     t2 = Z1*Z2
     t3 = X1+Y1
     t4 = X2+Y2
-    t5 = t3*t4
-    t3 = t5   
+    t3 = t3*t4
     t4 = t0+t1
     t3 = t3-t4
     t4 = X1+Z1

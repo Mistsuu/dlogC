@@ -83,6 +83,8 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
             - {Dp, n} = -{dp, n}^-1 mod R
             - {rp, n} (return value)
             - {tp, 6*n} (for temporary placement)
+
+        There must be no overlap between {rp, n} and the arguments.
 */
 void mpn_montgomery_mulmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_t* s2p, const mp_limb_t* dp, const mp_limb_t* Dp, mp_size_t n, mp_limb_t* tp)
 {
@@ -92,6 +94,39 @@ void mpn_montgomery_mulmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_
     mp_limb_t carry;
 
     mpn_mul_n(t1p, s1p, s2p, n);
+    mpn_mul_n(t2p, t1p, Dp,  n);
+    mpn_mul_n(t3p, t2p, dp,  n);
+    carry = mpn_add_n(t3p, t3p, t1p, 2*n);
+    mpn_copyd(rp, &t3p[n], n);
+    if (carry || mpn_cmp(rp, dp, n) >= 0)
+        mpn_sub_n(rp, rp, dp, n);
+}
+
+/*
+    mpn_montgomery_sqrmod_n:
+        This function performs a map:
+            (s1 * R mod d) * (s1 * R mod d) -> (s1*s1 * R mod d)
+        where R is a number satisfying:
+            - is 2^(n * mp_bits_per_limb) 
+            - gcd(R, d) == 1 (just put an odd number)
+
+        Argument size should be:
+            - {s1p, n}
+            - {dp, n}
+            - {Dp, n} = -{dp, n}^-1 mod R
+            - {rp, n} (return value)
+            - {tp, 6*n} (for temporary placement)
+
+        There must be no overlap between {rp, n} and the arguments.
+*/
+void mpn_montgomery_sqrmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_t* dp, const mp_limb_t* Dp, mp_size_t n, mp_limb_t* tp)
+{
+    mp_limb_t* t1p = tp;
+    mp_limb_t* t2p = &t1p[2*n];
+    mp_limb_t* t3p = &t2p[2*n];
+    mp_limb_t carry;
+
+    mpn_sqr  (t1p, s1p, n);
     mpn_mul_n(t2p, t1p, Dp,  n);
     mpn_mul_n(t3p, t2p, dp,  n);
     carry = mpn_add_n(t3p, t3p, t1p, 2*n);
