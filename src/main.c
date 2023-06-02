@@ -2,6 +2,7 @@
 #include <gmp.h>
 #include "ecc.h"
 #include "ecc_x.h"
+#include "ecc_proj.h"
 #include "ex_mpn.h"
 #include "ex_mpz.h"
 #include "dlog.h"
@@ -161,8 +162,8 @@ void test8()
     mpz_t x;
     mpz_t y;
     mpz_t p;
-    mpz_t P; // = p^-1 mod R
-    mpz_t R; // = P^-1 mod R
+    mpz_t P; // = -p^-1 mod R
+    mpz_t R;
     size_t n;
     mpz_init(x);
     mpz_init(y);
@@ -198,6 +199,84 @@ void test8()
     printf("R = "); mpz_out_str(stdout, 10, R); printf("\n");
 }
 
+void test9()
+{
+    ecc curve;
+    size_t n;
+    ecc_init(
+        curve, 
+        "1986076773346522069111732327339",    // a 
+        "808177731529494834911895879646",     // b
+        "13276420418771432419898581447951"    // p
+    );
+    n = mpz_size(curve->p);
+
+    mpz_t R;
+    mpz_t P;  // = -p^-1 mod R
+    mpz_t b3; // = 3*b
+    mpz_init(R);
+    mpz_init(P);
+    mpz_init_set(b3, curve->b);
+    mpz_set_ui(R, 1);
+    mpz_mul_2exp(R, R, n*mp_bits_per_limb);
+    mpz_invert(P, curve->p, R);
+    mpz_sub(P, R, P);
+    mpz_mul_ui(b3, b3, 3);
+    mpz_mod(b3, b3, curve->p);
+
+    eccpt G;
+    ecc_init_pt(G);
+    ecc_random_pt(curve, G);
+    printf("G = ");
+    ecc_printf_pt(G);
+    printf("\n");
+
+    mpz_t k_;
+    mpz_init(k_);
+    mpz_dev_urandomm(k_, curve->p);
+    printf("k = ");
+    mpz_out_str(stdout, 10, k_);
+    printf("\n");
+
+    eccpt kG;
+    ecc_init_pt(kG);
+    ecc_mul_noverify(curve, kG, G, k_);
+    printf("kG = ");
+    ecc_printf_pt(kG);
+    printf("\n");
+
+    mp_limb_t* Rx = mpn_init_zero(n);
+    mp_limb_t* Ry = mpn_init_zero(n);
+    mp_limb_t* Rz = mpn_init_zero(n);
+    mp_limb_t* Px = mpn_init_cpyz(G->x, n);
+    mp_limb_t* Py = mpn_init_cpyz(G->y, n);
+    mp_limb_t* Pz = mpn_init_cpyz(G->z, n);
+    mp_limb_t* k  = mpn_init_cpyz(k_, n);
+    mp_limb_t* curve_a  = mpn_init_cpyz(curve->a, n);
+    mp_limb_t* curve_b3 = mpn_init_cpyz(b3, n);
+    mp_limb_t* curve_p  = mpn_init_cpyz(curve->p, n);
+    mp_limb_t* curve_P  = mpn_init_cpyz(P, n);
+
+    ecc_ptemp T;
+    ecc_init_ptemp(T, n);
+
+    ecc_pmul(
+        Rx, Ry, Rz,
+        Px, Py, Pz,
+        k, 
+        curve_a,
+        curve_b3,
+        curve_p,
+        curve_P,
+        n,
+        T
+    );
+
+    printf("("); mpn_printf(Rx, n); printf(" : ");
+    mpn_printf(Ry, n); printf(" : ");
+    mpn_printf(Rz, n); printf(")\n");
+}
+
 int main()
 {
     // test3();
@@ -205,5 +284,6 @@ int main()
     // test5();
     // test6();
     // test7();
-    test8();
+    // test8();
+    test9();
 }

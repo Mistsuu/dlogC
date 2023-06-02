@@ -4,14 +4,17 @@
 
 void ecc_init_ptemp(ecc_ptemp T, mp_size_t n)
 {
-    T[0] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[1] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[2] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[3] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[4] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[5] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[6] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[7] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n));
+    T[0]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[1]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[2]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[3]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[4]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[5]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[6]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[7]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n));
+    T[8]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[9]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    T[10] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
 }
 
 void ecc_free_ptemp(ecc_ptemp T)
@@ -206,128 +209,135 @@ void ecc_pdbl(
 }
 
 void ecc_pmul(
-    mp_limb_t* Rx, mp_limb_t* Rz,       // Rx, Rz must have n limbs allocated
-    mp_limb_t* Px, mp_limb_t* Pz,       // Px, Pz must have n limbs allocated
+    mp_limb_t* Rx, mp_limb_t* Ry, mp_limb_t* Rz,       // Rx, Ry, Rz must have n limbs allocated
+    mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
 
-    mp_limb_t* k,                       // k must have n limbs allocated
+    mp_limb_t* k,                                      // k must have n limbs allocated
 
-    mp_limb_t* curve_a,                 // curve_a must have n limbs allocated
-    mp_limb_t* curve_b,                 // curve_b must have n limbs allocated
-    mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
-    mp_size_t n,                        // number of limbs in curve->p
+    mp_limb_t* curve_a,                                // curve_a must have n limbs allocated
+    mp_limb_t* curve_b3,                               // curve_b3 must have n limbs allocated
+    mp_limb_t* curve_p,                                // curve_p must have n limbs allocated
+    mp_limb_t* curve_P,                                // curve_p must have n limbs allocated
+    mp_size_t n,                                       // number of limbs in curve->p
     
-    ecc_ptemp T                         // temporary variables, allocated with ecc_init_ptemp(T, n).
+    ecc_ptemp T                                        // temporary variables, allocated with ecc_init_ptemp(T, n).
 )
 {
-    // int i = n-1;
-    // int j = 0;
-    // mp_limb_t k_limb;
+    int i = n-1;
+    int j = 0;
+    mp_limb_t k_limb;
 
-    // /* ---------- Find the first bit of k != 0 ---------- */
-    // while (i>=0 && !k[i])
-    //     i--;
+    /* ---------- Find the first bit of k != 0 ---------- */
+    while (i>=0 && !k[i])
+        i--;
 
-    // if (i < 0) {
-    //     mpn_zero(Rx, n);
-    //     mpn_zero(Rz, n);
-    //     return;
-    // }
+    if (i < 0) {
+        mpn_zero(Rx, n);
+        mpn_zero(Ry, n);
+        mpn_zero(Rz, n);
+        return;
+    }
 
-    // k_limb = k[i];
-    // while (k_limb) {
-    //     k_limb >>= 1;
-    //     j++;
-    // }
+    k_limb = k[i];
+    while (k_limb) {
+        k_limb >>= 1;
+        j++;
+    }
 
-    // j -= 2;
+    j -= 2;
 
-    // /* ---------- Initialize ---------- */
-    // // R0 = P
-    // mpn_copyi(Rx, Px, n);
-    // mpn_copyi(Rz, Pz, n);
+    /* ---------- Initialize ---------- */
+    // R0 = P
+    mpn_copyi(Rx, Px, n);
+    mpn_copyi(Ry, Py, n);
+    mpn_copyi(Rz, Pz, n);
 
-    // // R1 = P*2
-    // mp_limb_t* Tx = T[7];
-    // mp_limb_t* Tz = T[8];
-    // ecc_pdbl(
-    //     Tx, Tz,
-    //     Px, Pz,
+    // R1 = P*2
+    mp_limb_t* Tx = T[8];
+    mp_limb_t* Ty = T[9];
+    mp_limb_t* Tz = T[10];
+    ecc_pdbl(
+        Tx, Ty, Tz,
+        Px, Py, Pz,
 
-    //     curve_a,
-    //     curve_b,
-    //     curve_p,
-    //     n,
+        curve_a,
+        curve_b3,
+        curve_p,
+        curve_P,
+        n,
 
-    //     T
-    // );
+        T
+    );
 
-    // /* ---------- Doing ladder ---------- */
-    // while (i>=0) {
-    //     k_limb = k[i];
-    //     while (j>=0) {
-    //         if ((k_limb >> j) & 1) {
-    //             // R0 <- R1 + R0
-    //             ecc_padd(
-    //                 Rx, Rz,
-    //                 Rx, Rz,
-    //                 Tx, Tz,
-    //                 Px, Pz,
+    /* ---------- Doing ladder ---------- */
+    while (i>=0) {
+        k_limb = k[i];
+        while (j>=0) {
+            if ((k_limb >> j) & 1) {
+                // R0 <- R1 + R0
+                ecc_padd(
+                    Rx, Ry, Rz,
+                    Tx, Ty, Tz,
+                    Px, Py, Pz,
 
-    //                 curve_a,
-    //                 curve_b,
-    //                 curve_p,
-    //                 n,
+                    curve_a,
+                    curve_b3,
+                    curve_p,
+                    curve_P,
+                    n,
 
-    //                 T
-    //             );
+                    T
+                );
 
-    //             // R1 <- 2*R1
-    //             ecc_pdbl(
-    //                 Tx, Tz,
-    //                 Tx, Tz,
+                // R1 <- 2*R1
+                ecc_pdbl(
+                    Tx, Ty, Tz,
+                    Tx, Ty, Tz,
 
-    //                 curve_a,
-    //                 curve_b,
-    //                 curve_p,
-    //                 n,
+                    curve_a,
+                    curve_b3,
+                    curve_p,
+                    curve_P,
+                    n,
 
-    //                 T
-    //             );
-    //         }
-    //         else {
-    //             // R1 <- R1 + R0
-    //             ecc_padd(
-    //                 Tx, Tz,
-    //                 Tx, Tz,
-    //                 Rx, Rz,
-    //                 Px, Pz,
+                    T
+                );
+            }
+            else {
+                // R1 <- R1 + R0
+                ecc_padd(
+                    Tx, Ty, Tz,
+                    Rx, Ry, Rz,
+                    Px, Py, Pz,
 
-    //                 curve_a,
-    //                 curve_b,
-    //                 curve_p,
-    //                 n,
+                    curve_a,
+                    curve_b3,
+                    curve_p,
+                    curve_P,
+                    n,
 
-    //                 T
-    //             );
+                    T
+                );
 
-    //             // R0 <- 2*R0
-    //             ecc_pdbl(
-    //                 Rx, Rz,
-    //                 Rx, Rz,
+                // R0 <- 2*R0
+                ecc_pdbl(
+                    Rx, Ry, Rz,
+                    Rx, Ry, Rz,
 
-    //                 curve_a,
-    //                 curve_b,
-    //                 curve_p,
-    //                 n,
+                    curve_a,
+                    curve_b3,
+                    curve_p,
+                    curve_P,
+                    n,
 
-    //                 T
-    //             );
-    //         }
-    //         j--;
-    //     }
-    //     i--;
-    //     j = mp_bits_per_limb-1;
-    // }
+                    T
+                );
+            }
+            j--;
+        }
+        i--;
+        j = mp_bits_per_limb-1;
+    }
 
-    // // R <- R0 (already done)
+    // R <- R0 (already done)
 }
