@@ -253,7 +253,7 @@ void test9()
     printf("\n");
     
     eccpt GG;
-    ecc_init_pt(kG);
+    ecc_init_pt(GG);
     ecc_add_noverify(curve, GG, G, G);
     printf("2G = ");
     ecc_printf_pt(GG);
@@ -296,17 +296,17 @@ void test9()
     //     T
     // );
 
-    ecc_padd(
-        Rx, Ry, Rz,
-        Px, Py, Pz,
-        Qx, Qy, Qz,
-        curve_a,
-        curve_b3,
-        curve_p,
-        curve_P,
-        n,
-        T
-    );
+    // ecc_padd(
+    //     Rx, Ry, Rz,
+    //     Px, Py, Pz,
+    //     Qx, Qy, Qz,
+    //     curve_a,
+    //     curve_b3,
+    //     curve_p,
+    //     curve_P,
+    //     n,
+    //     T
+    // );
 
     ecc_pdbl(
         Rx, Ry, Rz,
