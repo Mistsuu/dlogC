@@ -21,4 +21,16 @@ void mpn_montgomery_mulmod_n(
     mp_limb_t* tp
 );
 
+#define mpn_montgomery_addmod_n(rp, s1p, s2p, dp, n)            \
+do {                                                            \
+    if (mpn_add_n(rp, s1p, s2p, n) || mpn_cmp(rp, dp, n) >= 0)  \
+        mpn_sub_n(rp, rp, dp, n);                               \
+} while(0)
+
+#define mpn_montgomery_submod_n(rp, s1p, s2p, dp, n) \
+do {                                                 \
+    if (mpn_sub_n(rp, s1p, s2p, n))                  \
+        mpn_add_n(rp, rp, dp, n);                    \
+} while(0)
+
 #endif

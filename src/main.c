@@ -188,7 +188,7 @@ void test8()
     mp_limb_t* tp = mpn_init_zero(6*n);
     mp_limb_t* zp = mpn_init_zero(2*n);
 
-    mpn_montgomery_mulmod_n(rp, xp, yp, pp, Pp, n, tp);
+    mpn_montgomery_addmod_n(rp, xp, yp, pp, n);
 
     printf("x = "); mpn_printf(xp, n); printf("\n");
     printf("y = "); mpn_printf(yp, n); printf("\n");
