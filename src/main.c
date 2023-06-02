@@ -231,6 +231,13 @@ void test9()
     ecc_printf_pt(G);
     printf("\n");
 
+    eccpt S;
+    ecc_init_pt(S);
+    ecc_random_pt(curve, S);
+    printf("S = ");
+    ecc_printf_pt(S);
+    printf("\n");
+
     mpz_t k_;
     mpz_init(k_);
     mpz_dev_urandomm(k_, curve->p);
@@ -244,6 +251,20 @@ void test9()
     printf("kG = ");
     ecc_printf_pt(kG);
     printf("\n");
+    
+    eccpt GG;
+    ecc_init_pt(kG);
+    ecc_add_noverify(curve, GG, G, G);
+    printf("2G = ");
+    ecc_printf_pt(GG);
+    printf("\n");
+
+    eccpt STmtp;
+    ecc_init_pt(STmtp); 
+    ecc_add_noverify(curve, STmtp, G, S);
+    printf("G + S = ");
+    ecc_printf_pt(STmtp);
+    printf("\n");
 
     mp_limb_t* Rx = mpn_init_zero(n);
     mp_limb_t* Ry = mpn_init_zero(n);
@@ -251,6 +272,9 @@ void test9()
     mp_limb_t* Px = mpn_init_cpyz(G->x, n);
     mp_limb_t* Py = mpn_init_cpyz(G->y, n);
     mp_limb_t* Pz = mpn_init_cpyz(G->z, n);
+    mp_limb_t* Qx = mpn_init_cpyz(S->x, n);
+    mp_limb_t* Qy = mpn_init_cpyz(S->y, n);
+    mp_limb_t* Qz = mpn_init_cpyz(S->z, n);
     mp_limb_t* k  = mpn_init_cpyz(k_, n);
     mp_limb_t* curve_a  = mpn_init_cpyz(curve->a, n);
     mp_limb_t* curve_b3 = mpn_init_cpyz(b3, n);
@@ -260,10 +284,22 @@ void test9()
     ecc_ptemp T;
     ecc_init_ptemp(T, n);
 
-    ecc_pmul(
+    // ecc_pmul(
+    //     Rx, Ry, Rz,
+    //     Px, Py, Pz,
+    //     k,
+    //     curve_a,
+    //     curve_b3,
+    //     curve_p,
+    //     curve_P,
+    //     n,
+    //     T
+    // );
+
+    ecc_padd(
         Rx, Ry, Rz,
         Px, Py, Pz,
-        k, 
+        Qx, Qy, Qz,
         curve_a,
         curve_b3,
         curve_p,
@@ -272,8 +308,19 @@ void test9()
         T
     );
 
-    printf("("); mpn_printf(Rx, n); printf(" : ");
-    mpn_printf(Ry, n); printf(" : ");
+    ecc_pdbl(
+        Rx, Ry, Rz,
+        Px, Py, Pz,
+        curve_a,
+        curve_b3,
+        curve_p,
+        curve_P,
+        n,
+        T
+    );
+
+    printf("("); mpn_printf(Rx, n); printf(", ");
+    mpn_printf(Ry, n); printf(", ");
     mpn_printf(Rz, n); printf(")\n");
 }
 
