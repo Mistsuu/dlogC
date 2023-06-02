@@ -83,8 +83,6 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
             - {Dp, n} = -{dp, n}^-1 mod R
             - {rp, n} (return value)
             - {tp, 6*n} (for temporary placement)
-
-        There must be no overlap between {rp, n} and the arguments.
 */
 void mpn_montgomery_mulmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_t* s2p, const mp_limb_t* dp, const mp_limb_t* Dp, mp_size_t n, mp_limb_t* tp)
 {
