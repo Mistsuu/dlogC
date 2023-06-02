@@ -35,9 +35,9 @@ do {                                                            \
         mpn_sub_n(rp, rp, dp, n);                               \
 } while(0)
 
-#define mpn_montgomery_lshiftmod_n(rp, s1p, dp, n, count)          \
+#define mpn_montgomery_lshift1mod_n(rp, s1p, dp, n)                \
 do {                                                               \
-    if (mpn_lshift(rp, s1p, n, count) || mpn_cmp(rp, dp, n) >= 0)  \
+    if (mpn_lshift(rp, s1p, n, 1) || mpn_cmp(rp, dp, n) >= 0)      \
         mpn_sub_n(rp, rp, dp, n);                                  \
 } while(0)
 

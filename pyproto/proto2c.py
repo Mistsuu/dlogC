@@ -49,7 +49,7 @@ for line in lines:
             )
         else:
             result.append(
-                f'mpn_montgomery_lshiftmod_n({var_left}, {op1}, curve_p, n, 1);\n'
+                f'mpn_montgomery_lshift1mod_n({var_left}, {op1}, curve_p, n);\n'
             )
         continue
 
