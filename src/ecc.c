@@ -1,8 +1,8 @@
 #include "ecc.h"
-#include "num.h"
+#include "ex_mpn.h"
 #include "const.h"
 #include "ex_mpz.h"
-#include "rand.h"
+#include "ex_mpz.h"
 
 // ---------------------------------------- ecc ------------------------------------------
 

@@ -1,3 +1,43 @@
+#include "ex_mpz.h"
+#include "mem.h"
+
+// =================================================================================
+//                                 MEMORY STUFFS
+// =================================================================================
+
+#define mpz_size_bytes(n) mpz_sizeinbase(n, 256)
+void mpz_dev_urandomm(mpz_t rop, const mpz_t n)
+{
+    FILE *fptr = fopen("/dev/urandom", "r");
+    if (!fptr) {
+        printf("[error] Error! Cannot read from random source!\n");
+        exit(-1);
+    }
+
+    // Read random bytes
+    // to mp_limb_t.
+    size_t item_size_limbs = mpz_size(n);
+    mp_limb_t* tmp_limbs; 
+    tmp_limbs = (mp_limb_t*) malloc_exit_when_null(item_size_limbs * sizeof(mp_limb_t));
+    if (fread(tmp_limbs, sizeof(mp_limb_t), item_size_limbs, fptr) != item_size_limbs) {
+        printf("[error] Error! Memory source is insufficient!\n");
+        exit(-1);
+    }
+
+    // Convert to mpz_t
+    mpz_t tmp;
+    mpz_set(rop, mpz_roinit_n(tmp, tmp_limbs, item_size_limbs));
+    mpz_mod(rop, rop, n);
+
+    // Free memory.
+    free(tmp_limbs);
+    fclose(fptr);
+}
+
+// =================================================================================
+//                                 ARITHMETICS STUFFS
+// =================================================================================
+
 /* Source code taken from https://gmplib.org/list-archives/gmp-discuss/2007-May/002772.html */
 
 /* mpz_sqrtm -- modular square roots using Shanks-Tonelli
@@ -20,8 +60,6 @@ You should have received a copy of the GNU Lesser General Public License along
 with the GNU MP Library; see the file COPYING.LIB.  If not, write to the Free
 Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
 USA. */
-
-#include "ex_mpz.h"
 
 /* Solve the modular equatioon x^2 = n (mod p) using the Shanks-Tonelli
  * algorihm. x will be placed in q and 1 returned if the algorithm is
@@ -90,4 +128,3 @@ int mpz_sqrtm(mpz_t q, const mpz_t n, const mpz_t p) {
         mpz_mod(q, q, p);               /* r = r * w^(2^(s-i-1)) (mod p)    */
     }
 }
-

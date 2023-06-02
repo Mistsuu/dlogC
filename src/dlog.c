@@ -1,7 +1,7 @@
 #include "dlog.h"
 #include "ecc.h"
 #include "ecc_x.h"
-#include "num.h"
+#include "ex_mpn.h"
 #include "const.h"
 #include "que2.h"
 #include "mem.h"

@@ -1,5 +1,9 @@
-#include "num.h"
+#include "ex_mpn.h"
 #include "mem.h"
+
+// =================================================================================
+//                                 MEMORY STUFFS
+// =================================================================================
 
 void mpn_printf(mp_limb_t* mpn_in, mp_size_t mpn_len)
 {
@@ -59,3 +63,7 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
     memmove(str+len-actual_len, str, actual_len);
     memset(str, 0, len-actual_len);
 }
+
+// =================================================================================
+//                                 ARITHMETICS STUFFS
+// =================================================================================

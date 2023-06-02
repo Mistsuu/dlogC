@@ -2,7 +2,7 @@
 #include <gmp.h>
 #include "ecc.h"
 #include "ecc_x.h"
-#include "num.h"
+#include "ex_mpn.h"
 #include "dlog.h"
 #include "const.h"
 

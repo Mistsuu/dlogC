@@ -1,5 +1,5 @@
 #include "ecc_x.h"
-#include "num.h"
+#include "ex_mpn.h"
 #include "mem.h"
 
 void ecc_init_xtemp(ecc_xtemp T, mp_size_t n)
