@@ -29,11 +29,11 @@ void test3()
     
     for (int _ = 0; _ < 10000000; ++_)
     {
-        mpn_tdiv_qr(
-            _z, _T, 0,
-            _z, 2*n,
-            _p, n
-        );
+        // mpn_tdiv_qr(
+        //     _z, _T, 0,
+        //     _z, 2*n,
+        //     _p, n
+        // );
 
         mpn_gcdext( 
             _A, _B, &t,
@@ -42,7 +42,13 @@ void test3()
         );
     }
 
-    free(_p);
+    free(_p); 
+    free(_x); 
+    free(_y); 
+    free(_z); 
+    free(_T); 
+    free(_A); 
+    free(_B); 
     mpz_clear(p);
 }
 
@@ -126,10 +132,33 @@ void test6()
     ecc_free(curve);
 }
 
+void test7()
+{
+    int n = 4;
+
+    // Check what is the percentage of
+    // squaring / multiplying.
+    mp_limb_t* _x = mpn_init_zero(n);
+    mp_limb_t* _y = mpn_init_zero(n);
+    mp_limb_t* _z = mpn_init_zero(2*n);
+    mpn_random(_x, n);
+    mpn_random(_y, n);
+    
+    for (int _ = 0; _ < 100000000; ++_) {
+        // mpn_mul_n(_z, _x, _y, n);
+        // mpn_sqr(_z, _x, n);
+    }
+
+    free(_x); 
+    free(_y); 
+    free(_z); 
+}
+
 int main()
 {
-    // test3();
+    test3();
     // test4();
     // test5();
-    test6();
+    // test6();
+    // test7();
 }
