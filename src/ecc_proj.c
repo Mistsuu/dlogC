@@ -12,9 +12,6 @@ void ecc_init_ptemp(ecc_ptemp T, mp_size_t n)
     T[5]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
     T[6]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
     T[7]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n));
-    T[8]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[9]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
-    T[10] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
 }
 
 void ecc_free_ptemp(ecc_ptemp T)
@@ -36,8 +33,8 @@ void ecc_padd(
     mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
     mp_limb_t* Qx, mp_limb_t* Qy, mp_limb_t* Qz,       // Qx, Qy, Qz must have n limbs allocated
 
-    mp_limb_t* curve_a,                                // curve_a must have n limbs allocated
-    mp_limb_t* curve_b3,                               // curve_b3 must have n limbs allocated
+    mp_limb_t* curve_aR,                               // curve_aR must have n limbs allocated
+    mp_limb_t* curve_b3R,                              // curve_b3R must have n limbs allocated
     mp_limb_t* curve_p,                                // curve_p must have n limbs allocated
     mp_limb_t* curve_P,                                // curve_P must have n limbs allocated
     mp_size_t n,                                       // number of limbs in curve->p
@@ -85,9 +82,9 @@ void ecc_padd(
     // t5 = t5-X3
     mpn_montgomery_submod_n(T[5], T[5], Rx, curve_p, n);
     // Z3 = a*t4
-    mpn_montgomery_mulmod_n(Rz, curve_a, T[4], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(Rz, curve_aR, T[4], curve_p, curve_P, n, T[7]);
     // X3 = b3*t2
-    mpn_montgomery_mulmod_n(Rx, curve_b3, T[2], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(Rx, curve_b3R, T[2], curve_p, curve_P, n, T[7]);
     // Z3 = X3+Z3
     mpn_montgomery_addmod_n(Rz, Rx, Rz, curve_p, n);
     // X3 = t1-Z3
@@ -101,15 +98,15 @@ void ecc_padd(
     // t1 = t1+t0
     mpn_montgomery_addmod_n(T[1], T[1], T[0], curve_p, n);
     // t2 = a*t2
-    mpn_montgomery_mulmod_n(T[2], curve_a, T[2], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(T[2], curve_aR, T[2], curve_p, curve_P, n, T[7]);
     // t4 = b3*t4
-    mpn_montgomery_mulmod_n(T[4], curve_b3, T[4], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(T[4], curve_b3R, T[4], curve_p, curve_P, n, T[7]);
     // t1 = t1+t2
     mpn_montgomery_addmod_n(T[1], T[1], T[2], curve_p, n);
     // t2 = t0-t2
     mpn_montgomery_submod_n(T[2], T[0], T[2], curve_p, n);
     // t2 = a*t2
-    mpn_montgomery_mulmod_n(T[2], curve_a, T[2], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(T[2], curve_aR, T[2], curve_p, curve_P, n, T[7]);
     // t4 = t4+t2
     mpn_montgomery_addmod_n(T[4], T[4], T[2], curve_p, n);
     // t0 = t1*t4
@@ -134,8 +131,8 @@ void ecc_pdbl(
     mp_limb_t* Rx, mp_limb_t* Ry, mp_limb_t* Rz,       // Rx, Ry, Rz must have n limbs allocated
     mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
 
-    mp_limb_t* curve_a,                                // curve_a must have n limbs allocated
-    mp_limb_t* curve_b3,                               // curve_b3 must have n limbs allocated
+    mp_limb_t* curve_aR,                               // curve_aR must have n limbs allocated
+    mp_limb_t* curve_b3R,                              // curve_b3R must have n limbs allocated
     mp_limb_t* curve_p,                                // curve_p must have n limbs allocated
     mp_limb_t* curve_P,                                // curve_P must have n limbs allocated
     mp_size_t n,                                       // number of limbs in curve->p
@@ -158,9 +155,9 @@ void ecc_pdbl(
     // Z3 = Z3+Z3
     mpn_montgomery_lshift1mod_n(Rz, Rz, curve_p, n);
     // X3 = a*Z3
-    mpn_montgomery_mulmod_n(Rx, curve_a, Rz, curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(Rx, curve_aR, Rz, curve_p, curve_P, n, T[7]);
     // Y3 = b3*t2
-    mpn_montgomery_mulmod_n(Ry, curve_b3, T[2], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(Ry, curve_b3R, T[2], curve_p, curve_P, n, T[7]);
     // Y3 = X3+Y3
     mpn_montgomery_addmod_n(Ry, Rx, Ry, curve_p, n);
     // X3 = t1-Y3
@@ -172,13 +169,13 @@ void ecc_pdbl(
     // X3 = t3*X3
     mpn_montgomery_mulmod_n(Rx, T[3], Rx, curve_p, curve_P, n, T[7]);
     // Z3 = b3*Z3
-    mpn_montgomery_mulmod_n(Rz, curve_b3, Rz, curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(Rz, curve_b3R, Rz, curve_p, curve_P, n, T[7]);
     // t2 = a*t2
-    mpn_montgomery_mulmod_n(T[2], curve_a, T[2], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(T[2], curve_aR, T[2], curve_p, curve_P, n, T[7]);
     // t3 = t0-t2
     mpn_montgomery_submod_n(T[3], T[0], T[2], curve_p, n);
     // t3 = a*t3
-    mpn_montgomery_mulmod_n(T[3], curve_a, T[3], curve_p, curve_P, n, T[7]);
+    mpn_montgomery_mulmod_n(T[3], curve_aR, T[3], curve_p, curve_P, n, T[7]);
     // t3 = t3+Z3
     mpn_montgomery_addmod_n(T[3], T[3], Rz, curve_p, n);
     // Z3 = t0+t0
@@ -214,8 +211,8 @@ void ecc_pmul(
 
     mp_limb_t* k,                                      // k must have n limbs allocated
 
-    mp_limb_t* curve_a,                                // curve_a must have n limbs allocated
-    mp_limb_t* curve_b3,                               // curve_b3 must have n limbs allocated
+    mp_limb_t* curve_aR,                               // curve_aR must have n limbs allocated
+    mp_limb_t* curve_b3R,                              // curve_b3R must have n limbs allocated
     mp_limb_t* curve_p,                                // curve_p must have n limbs allocated
     mp_limb_t* curve_P,                                // curve_p must have n limbs allocated
     mp_size_t n,                                       // number of limbs in curve->p
@@ -253,15 +250,18 @@ void ecc_pmul(
     mpn_copyi(Rz, Pz, n);
 
     // R1 = P*2
-    mp_limb_t* Tx = T[8];
-    mp_limb_t* Ty = T[9];
-    mp_limb_t* Tz = T[10];
+    mp_limb_t* Tx = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    mp_limb_t* Ty = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    mp_limb_t* Tz = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    mp_limb_t* Wx = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    mp_limb_t* Wy = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
+    mp_limb_t* Wz = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
     ecc_pdbl(
         Tx, Ty, Tz,
         Px, Py, Pz,
 
-        curve_a,
-        curve_b3,
+        curve_aR,
+        curve_b3R,
         curve_p,
         curve_P,
         n,
@@ -276,62 +276,74 @@ void ecc_pmul(
             if ((k_limb >> j) & 1) {
                 // R0 <- R1 + R0
                 ecc_padd(
+                    Wx, Wy, Wz,
                     Rx, Ry, Rz,
                     Tx, Ty, Tz,
-                    Px, Py, Pz,
 
-                    curve_a,
-                    curve_b3,
+                    curve_aR,
+                    curve_b3R,
                     curve_p,
                     curve_P,
                     n,
 
                     T
                 );
+                mpn_copyd(Rx, Wx, n);
+                mpn_copyd(Ry, Wy, n);
+                mpn_copyd(Rz, Wz, n);
 
                 // R1 <- 2*R1
                 ecc_pdbl(
-                    Tx, Ty, Tz,
+                    Wx, Wy, Wz,
                     Tx, Ty, Tz,
 
-                    curve_a,
-                    curve_b3,
+                    curve_aR,
+                    curve_b3R,
                     curve_p,
                     curve_P,
                     n,
 
                     T
                 );
+                mpn_copyd(Tx, Wx, n);
+                mpn_copyd(Ty, Wy, n);
+                mpn_copyd(Tz, Wz, n);
             }
             else {
                 // R1 <- R1 + R0
                 ecc_padd(
+                    Wx, Wy, Wz,
                     Tx, Ty, Tz,
                     Rx, Ry, Rz,
-                    Px, Py, Pz,
 
-                    curve_a,
-                    curve_b3,
+                    curve_aR,
+                    curve_b3R,
                     curve_p,
                     curve_P,
                     n,
 
                     T
                 );
+                mpn_copyd(Tx, Wx, n);
+                mpn_copyd(Ty, Wy, n);
+                mpn_copyd(Tz, Wz, n);
 
                 // R0 <- 2*R0
                 ecc_pdbl(
-                    Rx, Ry, Rz,
+                    Wx, Wy, Wz,
                     Rx, Ry, Rz,
 
-                    curve_a,
-                    curve_b3,
+                    curve_aR,
+                    curve_b3R,
                     curve_p,
                     curve_P,
                     n,
 
                     T
                 );
+                mpn_copyd(Rx, Wx, n);
+                mpn_copyd(Ry, Wy, n);
+                mpn_copyd(Rz, Wz, n);
             }
             j--;
         }

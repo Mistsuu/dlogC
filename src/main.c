@@ -237,17 +237,23 @@ void test9()
     n = mpz_size(curve->p);
 
     mpz_t R;
-    mpz_t P;  // = -p^-1 mod R
-    mpz_t b3; // = 3*b
+    mpz_t P;   // = -p^-1 mod R
+    mpz_t b3R; // = 3*b
+    mpz_t aR;
     mpz_init(R);
     mpz_init(P);
-    mpz_init_set(b3, curve->b);
+    mpz_init(aR);
+    mpz_init_set(b3R, curve->b);
+    mpz_init_set(aR, curve->a);
     mpz_set_ui(R, 1);
     mpz_mul_2exp(R, R, n*mp_bits_per_limb);
     mpz_invert(P, curve->p, R);
     mpz_sub(P, R, P);
-    mpz_mul_ui(b3, b3, 3);
-    mpz_mod(b3, b3, curve->p);
+    mpz_mul(aR, aR, R);
+    mpz_mod(aR, aR, curve->p);
+    mpz_mul_ui(b3R, b3R, 3);
+    mpz_mul(b3R, b3R, R);
+    mpz_mod(b3R, b3R, curve->p);
 
     eccpt G;
     ecc_init_pt(G);
@@ -296,48 +302,48 @@ void test9()
     mp_limb_t* Qy = mpn_init_cpyz(S->y, n);
     mp_limb_t* Qz = mpn_init_cpyz(S->z, n);
     mp_limb_t* k  = mpn_init_cpyz(k_, n);
-    mp_limb_t* curve_a  = mpn_init_cpyz(curve->a, n);
-    mp_limb_t* curve_b3 = mpn_init_cpyz(b3, n);
-    mp_limb_t* curve_p  = mpn_init_cpyz(curve->p, n);
-    mp_limb_t* curve_P  = mpn_init_cpyz(P, n);
+    mp_limb_t* curve_aR  = mpn_init_cpyz(aR, n);
+    mp_limb_t* curve_b3R = mpn_init_cpyz(b3R, n);
+    mp_limb_t* curve_p   = mpn_init_cpyz(curve->p, n);
+    mp_limb_t* curve_P   = mpn_init_cpyz(P, n);
 
     ecc_ptemp T;
     ecc_init_ptemp(T, n);
 
-    // ecc_pmul(
-    //     Rx, Ry, Rz,
-    //     Px, Py, Pz,
-    //     k,
-    //     curve_a,
-    //     curve_b3,
-    //     curve_p,
-    //     curve_P,
-    //     n,
-    //     T
-    // );
-
-    // ecc_padd(
-    //     Rx, Ry, Rz,
-    //     Px, Py, Pz,
-    //     Qx, Qy, Qz,
-    //     curve_a,
-    //     curve_b3,
-    //     curve_p,
-    //     curve_P,
-    //     n,
-    //     T
-    // );
-
-    ecc_pdbl(
+    ecc_pmul(
         Rx, Ry, Rz,
         Px, Py, Pz,
-        curve_a,
-        curve_b3,
+        k,
+        curve_aR,
+        curve_b3R,
         curve_p,
         curve_P,
         n,
         T
     );
+
+    // ecc_padd(
+    //     Rx, Ry, Rz,
+    //     Px, Py, Pz,
+    //     Qx, Qy, Qz,
+    //     curve_aR,
+    //     curve_b3R,
+    //     curve_p,
+    //     curve_P,
+    //     n,
+    //     T
+    // );
+
+    // ecc_pdbl(
+    //     Rx, Ry, Rz,
+    //     Px, Py, Pz,
+    //     curve_aR,
+    //     curve_b3R,
+    //     curve_p,
+    //     curve_P,
+    //     n,
+    //     T
+    // );
 
     mpnpt_sage_printf(Rx, Ry, Rz);
 }

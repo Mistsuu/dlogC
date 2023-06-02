@@ -20,8 +20,8 @@ py2cmap = {
     "X3": "Rx",
     "Y3": "Ry",
     "Z3": "Rz",
-    "a": "curve_a",
-    "b3": "curve_b3",
+    "a": "curve_aR",
+    "b3": "curve_b3R",
 }
 mul_overlap_replace = 'T[6]'
 mul_temp_replace = 'T[7]'
