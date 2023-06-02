@@ -199,6 +199,22 @@ void test8()
     printf("R = "); mpz_out_str(stdout, 10, R); printf("\n");
 }
 
+#define eccpt_sage_printf(P)                      \
+do {                                              \
+    printf("E(");                                 \
+    mpz_out_str(stdout, 10, P->x); printf(", ");  \
+    mpz_out_str(stdout, 10, P->y); printf(", ");  \
+    mpz_out_str(stdout, 10, P->z); printf(")\n"); \
+} while (0)
+
+#define mpnpt_sage_printf(Px, Py, Pz)   \
+do {                                    \
+    printf("E(");                       \
+    mpn_printf(Px, n); printf(", ");    \
+    mpn_printf(Py, n); printf(", ");    \
+    mpn_printf(Pz, n); printf(")\n");   \
+} while (0)
+
 void test9()
 {
     ecc curve;
@@ -237,15 +253,13 @@ void test9()
     ecc_init_pt(G);
     ecc_random_pt(curve, G);
     printf("G = ");
-    ecc_printf_pt(G);
-    printf("\n");
+    eccpt_sage_printf(G);
 
     eccpt S;
     ecc_init_pt(S);
     ecc_random_pt(curve, S);
     printf("S = ");
-    ecc_printf_pt(S);
-    printf("\n");
+    eccpt_sage_printf(S);
 
     mpz_t k_;
     mpz_init(k_);
@@ -258,22 +272,19 @@ void test9()
     ecc_init_pt(kG);
     ecc_mul_noverify(curve, kG, G, k_);
     printf("kG = ");
-    ecc_printf_pt(kG);
-    printf("\n");
+    eccpt_sage_printf(kG);
     
     eccpt GG;
     ecc_init_pt(GG);
     ecc_add_noverify(curve, GG, G, G);
     printf("2G = ");
-    ecc_printf_pt(GG);
-    printf("\n");
+    eccpt_sage_printf(GG);
 
     eccpt STmtp;
     ecc_init_pt(STmtp); 
     ecc_add_noverify(curve, STmtp, G, S);
     printf("G + S = ");
-    ecc_printf_pt(STmtp);
-    printf("\n");
+    eccpt_sage_printf(STmtp);
 
     mp_limb_t* Rx = mpn_init_zero(n);
     mp_limb_t* Ry = mpn_init_zero(n);
@@ -328,9 +339,7 @@ void test9()
         T
     );
 
-    printf("\nE("); mpn_printf(Rx, n); printf(", ");
-    mpn_printf(Ry, n); printf(", ");
-    mpn_printf(Rz, n); printf(")\n\n");
+    mpnpt_sage_printf(Rx, Ry, Rz);
 }
 
 int main()
