@@ -1,5 +1,5 @@
-#ifndef CALC_H
-#define CALC_H
+#ifndef EXMPZ_H
+#define EXMPZ_H
 
 #include <gmp.h>
 

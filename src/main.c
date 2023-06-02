@@ -25,21 +25,23 @@ void test3()
 
     mpn_random(_x, n);
     mpn_random(_y, n);
-    mpn_mul_n(_z, _x, _y, n);
+    // mpn_mul_n(_z, _x, _y, n);
     
     for (int _ = 0; _ < 10000000; ++_)
     {
+        // mpn_add_n(_z, _x, _y, n);
+        mpn_mul_n(_z, _x, _y, n);
         // mpn_tdiv_qr(
         //     _z, _T, 0,
         //     _z, 2*n,
         //     _p, n
         // );
 
-        mpn_gcdext( 
-            _A, _B, &t,
-            _x, n,
-            _p, n
-        );
+        // mpn_gcdext( 
+        //     _A, _B, &t,
+        //     _x, n,
+        //     _p, n
+        // );
     }
 
     free(_p); 

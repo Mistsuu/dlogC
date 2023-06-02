@@ -21,7 +21,7 @@ with the GNU MP Library; see the file COPYING.LIB.  If not, write to the Free
 Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301,
 USA. */
 
-#include "calc.h"
+#include "ex_mpz.h"
 
 /* Solve the modular equatioon x^2 = n (mod p) using the Shanks-Tonelli
  * algorihm. x will be placed in q and 1 returned if the algorithm is

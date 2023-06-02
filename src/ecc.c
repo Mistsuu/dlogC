@@ -1,7 +1,7 @@
 #include "ecc.h"
 #include "num.h"
 #include "const.h"
-#include "calc.h"
+#include "ex_mpz.h"
 #include "rand.h"
 
 // ---------------------------------------- ecc ------------------------------------------

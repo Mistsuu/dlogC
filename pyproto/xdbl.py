@@ -1,24 +1,39 @@
 #   
 #   This formula is not made by me! It is based on this website that you can
 #   look for similar ones:
-#       https://hyperelliptic.org/EFD/g1p/auto-code/shortw/xz/doubling/dbl-2002-it-2.op3
-#       https://hyperelliptic.org/EFD/g1p/auto-shortw-xz.html
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html#doubling-dbl-2015-rcb
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html
 #    
 
-def xDBL(Px, Pz, a, b):
-    T1 = Px**2          # 2N
-    T2 = Pz**2          # 2N
-    T3 = a*T2           # 3N
-    T4 = T1-T3          # 3N -- can take absolute
-    T5 = T4**2          # 6N
-    T6 = b*T2           # 3N
-    T7 = Px*Pz          # 2N
-    T8 = T6*T7          # 5N
-    T9 = 8*T8           # 5N+1
-    Rx = T5-T9          # N -- mod n
-    T10 = T1+T3         # 3N+1
-    T11 = T7*T10        # 5N+1
-    T12 = T6*T2         # 5N
-    T13 = T11+T12       # 5N+2
-    Rz = 4*T13          # 5N+3 -> N -- mod n
-    return (Rx, Rz)
+def xDBL(X1, Y1, Z1, a, b3):
+    t0 = X1**2
+    t1 = Y1**2
+    t2 = Z1**2
+    t3 = X1*Y1
+    t3 = t3+t3
+    Z3 = X1*Z1
+    Z3 = Z3+Z3
+    X3 = a*Z3
+    Y3 = b3*t2
+    Y3 = X3+Y3
+    X3 = t1-Y3
+    Y3 = t1+Y3
+    Y3 = X3*Y3
+    X3 = t3*X3
+    Z3 = b3*Z3
+    t2 = a*t2
+    t3 = t0-t2
+    t3 = a*t3
+    t3 = t3+Z3
+    Z3 = t0+t0
+    t0 = Z3+t0
+    t0 = t0+t2
+    t0 = t0*t3
+    Y3 = Y3+t0
+    t2 = Y1*Z1
+    t2 = t2+t2
+    t0 = t2*t3
+    X3 = X3-t0
+    Z3 = t2*t1
+    Z3 = Z3+Z3
+    Z3 = Z3+Z3

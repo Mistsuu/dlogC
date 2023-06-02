@@ -1,25 +1,49 @@
 #
 #   This formula is not made by me! It is based on this website that you can
 #   look for similar ones:
-#       https://hyperelliptic.org/EFD/g1p/auto-code/shortw/xz/diffadd/dadd-2002-it-3.op3
-#       https://hyperelliptic.org/EFD/g1p/auto-shortw-xz.html
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html#addition-add-2015-rcb
+#       https://hyperelliptic.org/EFD/g1p/auto-shortw-projective.html
 #       
 
-def xADD(Px, Pz, Qx, Qz, P_Qx, P_Qz, a, b):
-    T1 = Px*Qx          # 2N
-    T2 = Pz*Qz          # 2N
-    T3 = Px*Qz          # 2N
-    T4 = Pz*Qx          # 2N
-    T5 = a*T2           # 3N
-    T6 = T1-T5          # 3N -- can take absolute
-    T7 = T6**2          # 6N
-    T8 = b*T2           # 3N
-    T9 = 4*T8           # 3N+1
-    T10 = T3+T4         # 2N+1
-    T11 = T9*T10        # 5N+2
-    T12 = T7-T11        # 6N -> N -- mod n
-    Rx = P_Qz*T12       # 2N -> N -- mod n
-    T13 = T3-T4         # 2N -- can take absolute
-    T14 = T13**2        # 4N
-    Rz = P_Qx*T14       # 5N -> N -- mod n
-    return (Rx, Rz)
+def xADD(X1, X2, Y1, Y2, Z1, Z2, a, b3):
+    t0 = X1*X2
+    t1 = Y1*Y2
+    t2 = Z1*Z2
+    t3 = X1+Y1
+    t4 = X2+Y2
+    t5 = t3*t4
+    t3 = t5   
+    t4 = t0+t1
+    t3 = t3-t4
+    t4 = X1+Z1
+    t5 = X2+Z2
+    t4 = t4*t5
+    t5 = t0+t2
+    t4 = t4-t5
+    t5 = Y1+Z1
+    X3 = Y2+Z2
+    t5 = t5*X3
+    X3 = t1+t2
+    t5 = t5-X3
+    Z3 = a*t4 
+    X3 = b3*t2
+    Z3 = X3+Z3
+    X3 = t1-Z3
+    Z3 = t1+Z3
+    Y3 = X3*Z3
+    t1 = t0+t0
+    t1 = t1+t0
+    t2 = a*t2
+    t4 = b3*t4
+    t1 = t1+t2
+    t2 = t0-t2
+    t2 = a*t2
+    t4 = t4+t2
+    t0 = t1*t4
+    Y3 = Y3+t0
+    t0 = t5*t4
+    X3 = t3*X3
+    X3 = X3-t0
+    t0 = t3*t1
+    Z3 = t5*Z3
+    Z3 = Z3+t0
