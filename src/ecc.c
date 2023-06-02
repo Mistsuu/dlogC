@@ -2,7 +2,6 @@
 #include "ex_mpn.h"
 #include "const.h"
 #include "ex_mpz.h"
-#include "ex_mpz.h"
 
 // ---------------------------------------- ecc ------------------------------------------
 

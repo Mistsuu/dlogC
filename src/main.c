@@ -3,8 +3,8 @@
 #include "ecc.h"
 #include "ecc_x.h"
 #include "ex_mpn.h"
-#include "dlog.h"
 #include "ex_mpz.h"
+#include "dlog.h"
 
 void test3()
 {
@@ -156,11 +156,54 @@ void test7()
     free(_z); 
 }
 
+void test8()
+{
+    mpz_t x;
+    mpz_t y;
+    mpz_t p;
+    mpz_t P; // = p^-1 mod R
+    mpz_t R; // = P^-1 mod R
+    size_t n;
+    mpz_init(x);
+    mpz_init(y);
+    mpz_init(p);
+    mpz_init(P);
+    mpz_init(R);
+
+    mpz_set_str(p, "21272169233168579221109700210286068195545041594730488403677158434097465979633", 10);
+    n = mpz_size(p);
+
+    mpz_dev_urandomm(x, p);
+    mpz_dev_urandomm(y, p);
+    mpz_set_ui(R, 1);
+    mpz_mul_2exp(R, R, n*mp_bits_per_limb);
+    mpz_invert(P, p, R);
+    mpz_sub(P, R, P);
+
+    mp_limb_t* xp = mpn_init_cpyz(x, n);
+    mp_limb_t* yp = mpn_init_cpyz(y, n);
+    mp_limb_t* pp = mpn_init_cpyz(p, n);
+    mp_limb_t* Pp = mpn_init_cpyz(P, n);
+    mp_limb_t* rp = mpn_init_zero(n);
+    mp_limb_t* tp = mpn_init_zero(6*n);
+    mp_limb_t* zp = mpn_init_zero(2*n);
+
+    mpn_montgomery_mulmod_n(rp, xp, yp, pp, Pp, n, tp);
+
+    printf("x = "); mpn_printf(xp, n); printf("\n");
+    printf("y = "); mpn_printf(yp, n); printf("\n");
+    printf("p = "); mpn_printf(pp, n); printf("\n");
+    printf("P = "); mpn_printf(Pp, n); printf("\n");
+    printf("r = "); mpn_printf(rp, n); printf("\n");
+    printf("R = "); mpz_out_str(stdout, 10, R); printf("\n");
+}
+
 int main()
 {
-    test3();
+    // test3();
     // test4();
     // test5();
     // test6();
     // test7();
+    test8();
 }

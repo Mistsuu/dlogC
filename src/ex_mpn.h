@@ -13,4 +13,12 @@ mp_limb_t* mpn_init_cpyz(mpz_t x, size_t n);
 mp_limb_t* mpn_init_zero(size_t n);
 void       mpn2bytes    (unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_t s1n);
 
+void mpn_montgomery_mulmod_n(
+    mp_limb_t* rp, 
+    const mp_limb_t* s1p, const mp_limb_t* s2p, 
+    const mp_limb_t* dp, const mp_limb_t* Dp, 
+    mp_size_t n, 
+    mp_limb_t* tp
+);
+
 #endif
