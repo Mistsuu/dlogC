@@ -209,6 +209,15 @@ void test9()
         "808177731529494834911895879646",     // b
         "13276420418771432419898581447951"    // p
     );
+    // Code to generate curve in Sagemath
+
+    printf("***************** SAGEMATH DEBUG CODE *****************\n");
+    printf("a = "); mpz_out_str(stdout, 10, curve->a); printf("\n");
+    printf("b = "); mpz_out_str(stdout, 10, curve->b); printf("\n");
+    printf("p = "); mpz_out_str(stdout, 10, curve->p); printf("\n");
+    printf("E = EllipticCurve(GF(p), [a, b])\n");
+    printf("*******************************************************\n\n");
+
     n = mpz_size(curve->p);
 
     mpz_t R;
@@ -319,9 +328,9 @@ void test9()
         T
     );
 
-    printf("("); mpn_printf(Rx, n); printf(", ");
+    printf("\nE("); mpn_printf(Rx, n); printf(", ");
     mpn_printf(Ry, n); printf(", ");
-    mpn_printf(Rz, n); printf(")\n");
+    mpn_printf(Rz, n); printf(")\n\n");
 }
 
 int main()
