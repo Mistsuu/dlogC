@@ -23,9 +23,11 @@ py2cmap = {
     "a": "curve_aR",
     "b3": "curve_b3R",
 }
-mul_overlap_replace = 'T[6]'
-mul_temp_replace = 'T[7]'
-assert mul_overlap_replace not in py2cmap
+
+# mul_overlap_replace = 'T[6]'
+# assert mul_overlap_replace not in py2cmap
+
+mul_temp_replace = 'T[6]'
 assert mul_temp_replace not in py2cmap
 
 def map_to_Cvar(token):
@@ -37,7 +39,7 @@ result = []
 for line in lines:
     result.append(f'// {line}\n')
     var_left, expr_right = line.split(' = ')
-    var_left = map_to_Cvar(var_left)
+    op3 = map_to_Cvar(var_left)
 
     if len(tokens := expr_right.split('+')) == 2:
         op1 = map_to_Cvar(tokens[0])
@@ -45,11 +47,11 @@ for line in lines:
 
         if op1 != op2:
             result.append(
-                f'mpn_montgomery_addmod_n({var_left}, {op1}, {op2}, curve_p, n);\n'
+                f'mpn_montgomery_addmod_n({op3}, {op1}, {op2}, curve_p, n);\n'
             )
         else:
             result.append(
-                f'mpn_montgomery_lshift1mod_n({var_left}, {op1}, curve_p, n);\n'
+                f'mpn_montgomery_lshift1mod_n({op3}, {op1}, curve_p, n);\n'
             )
         continue
 
@@ -57,7 +59,7 @@ for line in lines:
         op1 = map_to_Cvar(tokens[0])
         op2 = map_to_Cvar(tokens[-1])
         result.append(
-            f'mpn_montgomery_submod_n({var_left}, {op1}, {op2}, curve_p, n);\n'
+            f'mpn_montgomery_submod_n({op3}, {op1}, {op2}, curve_p, n);\n'
         )
         continue
 
@@ -72,18 +74,22 @@ for line in lines:
         #     mp_limb_t* tp
         # );
 
-        # mpn_montgomery_mulmod_n does not allow rp == s1p or s2p
-        if var_left != op1:
-            result.append(
-                f'mpn_montgomery_mulmod_n({var_left}, {op1}, {op2}, curve_p, curve_P, n, {mul_temp_replace});\n'
-            )
-        else:
-            result.extend([
-                f'mpn_montgomery_mulmod_n({mul_overlap_replace}, {op1}, {op2}, curve_p, curve_P, n, {mul_temp_replace});\n',
-                f'mpn_copyd({var_left}, {mul_overlap_replace}, n);\n',
-            ])
+        # if multiply does not allow overlap
+        # use this.
+        # if op3 == op1 or op3 == op2:
+        #     if var_left in py2cmap:
+        #         py2cmap[var_left], mul_overlap_replace = mul_overlap_replace, op3
+        #         op3 = py2cmap[var_left]
+        #     else:
+        #         result.extend([
+        #             f'mpn_montgomery_mulmod_n({mul_overlap_replace}, {op1}, {op2}, curve_p, curve_P, n, {mul_temp_replace});\n',
+        #             f'mpn_copyd({op3}, {mul_overlap_replace}, n);\n',
+        #         ])
+        #         continue
 
-
+        result.append(
+            f'mpn_montgomery_mulmod_n({op3}, {op1}, {op2}, curve_p, curve_P, n, {mul_temp_replace});\n'
+        )
         continue
 
     if len(tokens := expr_right.split('*')) == 3:
@@ -100,7 +106,7 @@ for line in lines:
         # );
 
         result.append(
-            f'mpn_montgomery_sqrmod_n({var_left}, {op1}, curve_p, curve_P, n, {mul_temp_replace});\n'
+            f'mpn_montgomery_sqrmod_n({op3}, {op1}, curve_p, curve_P, n, {mul_temp_replace});\n'
         )
         continue
     
