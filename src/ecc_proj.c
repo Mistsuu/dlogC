@@ -94,7 +94,7 @@ void ecc_padd(
     // Y3 = X3*Z3
     mpn_montgomery_mulmod_n(Ry, Rx, Rz, curve_p, curve_P, n, T[7]);
     // t1 = t0+t0
-    mpn_montgomery_addmod_n(T[1], T[0], T[0], curve_p, n);
+    mpn_montgomery_lshiftmod_n(T[1], T[0], curve_p, n, 1);
     // t1 = t1+t0
     mpn_montgomery_addmod_n(T[1], T[1], T[0], curve_p, n);
     // t2 = a*t2
@@ -149,11 +149,11 @@ void ecc_pdbl(
     // t3 = X1*Y1
     mpn_montgomery_mulmod_n(T[3], Px, Py, curve_p, curve_P, n, T[7]);
     // t3 = t3+t3
-    mpn_montgomery_addmod_n(T[3], T[3], T[3], curve_p, n);
+    mpn_montgomery_lshiftmod_n(T[3], T[3], curve_p, n, 1);
     // Z3 = X1*Z1
     mpn_montgomery_mulmod_n(Rz, Px, Pz, curve_p, curve_P, n, T[7]);
     // Z3 = Z3+Z3
-    mpn_montgomery_addmod_n(Rz, Rz, Rz, curve_p, n);
+    mpn_montgomery_lshiftmod_n(Rz, Rz, curve_p, n, 1);
     // X3 = a*Z3
     mpn_montgomery_mulmod_n(Rx, curve_a, Rz, curve_p, curve_P, n, T[7]);
     // Y3 = b3*t2
@@ -179,7 +179,7 @@ void ecc_pdbl(
     // t3 = t3+Z3
     mpn_montgomery_addmod_n(T[3], T[3], Rz, curve_p, n);
     // Z3 = t0+t0
-    mpn_montgomery_addmod_n(Rz, T[0], T[0], curve_p, n);
+    mpn_montgomery_lshiftmod_n(Rz, T[0], curve_p, n, 1);
     // t0 = Z3+t0
     mpn_montgomery_addmod_n(T[0], Rz, T[0], curve_p, n);
     // t0 = t0+t2
@@ -192,7 +192,7 @@ void ecc_pdbl(
     // t2 = Y1*Z1
     mpn_montgomery_mulmod_n(T[2], Py, Pz, curve_p, curve_P, n, T[7]);
     // t2 = t2+t2
-    mpn_montgomery_addmod_n(T[2], T[2], T[2], curve_p, n);
+    mpn_montgomery_lshiftmod_n(T[2], T[2], curve_p, n, 1);
     // t0 = t2*t3
     mpn_montgomery_mulmod_n(T[0], T[2], T[3], curve_p, curve_P, n, T[7]);
     // X3 = X3-t0
@@ -200,9 +200,9 @@ void ecc_pdbl(
     // Z3 = t2*t1
     mpn_montgomery_mulmod_n(Rz, T[2], T[1], curve_p, curve_P, n, T[7]);
     // Z3 = Z3+Z3
-    mpn_montgomery_addmod_n(Rz, Rz, Rz, curve_p, n);
+    mpn_montgomery_lshiftmod_n(Rz, Rz, curve_p, n, 1);
     // Z3 = Z3+Z3
-    mpn_montgomery_addmod_n(Rz, Rz, Rz, curve_p, n);
+    mpn_montgomery_lshiftmod_n(Rz, Rz, curve_p, n, 1);
 }
 
 void ecc_pmul(

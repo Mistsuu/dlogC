@@ -42,9 +42,15 @@ for line in lines:
     if len(tokens := expr_right.split('+')) == 2:
         op1 = map_to_Cvar(tokens[0])
         op2 = map_to_Cvar(tokens[-1])
-        result.append(
-            f'mpn_montgomery_addmod_n({var_left}, {op1}, {op2}, curve_p, n);\n'
-        )
+
+        if op1 != op2:
+            result.append(
+                f'mpn_montgomery_addmod_n({var_left}, {op1}, {op2}, curve_p, n);\n'
+            )
+        else:
+            result.append(
+                f'mpn_montgomery_lshiftmod_n({var_left}, {op1}, curve_p, n, 1);\n'
+            )
         continue
 
     if len(tokens := expr_right.split('-')) == 2:
