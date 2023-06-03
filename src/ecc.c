@@ -18,7 +18,7 @@ void ecc_init(ecc curve, const char* a_str, const char* b_str, const char* p_str
     // 40 checks for prime should be enough?
     assertf(
         mpz_probab_prime_p(curve->p, BASESIZE_PRIME_CHECKER), 
-        "[" SHARED_LIB_NAME "] ERR: curve->p must be a prime number!"
+        "curve->p must be a prime number!"
     );
 
     // Reduce a, b mod p so they are not unecessarily big
@@ -87,7 +87,7 @@ void ecc_init_pt_str(ecc curve, eccpt point, const char* x_str, const char* y_st
     //    but this could be useful for debug.
     assertf(
         ecc_verify_pt(curve, point),
-        "[" SHARED_LIB_NAME "] ERR: Point is not on curve." 
+        "Point is not on curve." 
     );
 }
 
@@ -378,10 +378,10 @@ int ecc_eq_noverify(ecc curve, eccpt pointP, eccpt pointQ)
 */
 void ecc_add(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 {
-    assertf(ecc_verify_pt(curve, pointP), "[" SHARED_LIB_NAME "] ERR: Cannot add points if one of the points is not on curve.");
-    assertf(ecc_verify_pt(curve, pointQ), "[" SHARED_LIB_NAME "] ERR: Cannot add points if one of the points is not on curve.");
-    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot add points if one of the Y-coordinates is undefined.");
-    assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot add points if one of the Y-coordinates is undefined.");
+    assertf(ecc_verify_pt(curve, pointP), "Cannot add points if one of the points is not on curve.");
+    assertf(ecc_verify_pt(curve, pointQ), "Cannot add points if one of the points is not on curve.");
+    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot add points if one of the Y-coordinates is undefined.");
+    assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "Cannot add points if one of the Y-coordinates is undefined.");
     return ecc_add_noverify(curve, pointR, pointP, pointQ);
 }
 
@@ -391,8 +391,8 @@ void ecc_add(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 */
 void ecc_neg(ecc curve, eccpt pointR, eccpt pointP)
 {
-    assertf(ecc_verify_pt(curve, pointP), "[" SHARED_LIB_NAME "] ERR: Cannot negate point if point is not on curve.");
-    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot negate point if point's Y-coordinate is undefined.");
+    assertf(ecc_verify_pt(curve, pointP), "Cannot negate point if point is not on curve.");
+    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot negate point if point's Y-coordinate is undefined.");
     return ecc_neg_noverify(curve, pointR, pointP);
 }
 
@@ -402,10 +402,10 @@ void ecc_neg(ecc curve, eccpt pointR, eccpt pointP)
 */
 void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 {
-    assertf(ecc_verify_pt(curve, pointP), "[" SHARED_LIB_NAME "] ERR: Cannot subtract points if one of the points is not on curve.");
-    assertf(ecc_verify_pt(curve, pointQ), "[" SHARED_LIB_NAME "] ERR: Cannot subtract points if one of the points is not on curve.");
-    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot subtract points if one of the Y-coordinates is undefined.");
-    assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot subtract points if one of the Y-coordinates is undefined.");
+    assertf(ecc_verify_pt(curve, pointP), "Cannot subtract points if one of the points is not on curve.");
+    assertf(ecc_verify_pt(curve, pointQ), "Cannot subtract points if one of the points is not on curve.");
+    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot subtract points if one of the Y-coordinates is undefined.");
+    assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "Cannot subtract points if one of the Y-coordinates is undefined.");
     return ecc_sub_noverify(curve, pointR, pointP, pointQ);
 }
 
@@ -415,8 +415,8 @@ void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
 */
 void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 {
-    assertf(ecc_verify_pt(curve, pointP), "[" SHARED_LIB_NAME "] ERR: Cannot multiply point if point is not on curve.");
-    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot multiply point if point's Y-coordinate is undefined.");
+    assertf(ecc_verify_pt(curve, pointP), "Cannot multiply point if point is not on curve.");
+    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot multiply point if point's Y-coordinate is undefined.");
     return ecc_mul_noverify(curve, pointR, pointP, k);
 }
 
@@ -426,10 +426,10 @@ void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 */
 int ecc_eq(ecc curve, eccpt pointP, eccpt pointQ)
 {
-    assertf(ecc_verify_pt(curve, pointP), "[" SHARED_LIB_NAME "] ERR: Can't compare points if one of the points is not on curve.");
-    assertf(ecc_verify_pt(curve, pointQ), "[" SHARED_LIB_NAME "] ERR: Can't compare points if one of the points is not on curve.");
-    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot compare points if one of the Y-coordinates is undefined.");
-    assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "[" SHARED_LIB_NAME "] ERR: Cannot compare points if one of the Y-coordinates is undefined.");
+    assertf(ecc_verify_pt(curve, pointP), "Can't compare points if one of the points is not on curve.");
+    assertf(ecc_verify_pt(curve, pointQ), "Can't compare points if one of the points is not on curve.");
+    assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot compare points if one of the Y-coordinates is undefined.");
+    assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "Cannot compare points if one of the Y-coordinates is undefined.");
     return ecc_eq_noverify(curve, pointP, pointQ);
 }
 
@@ -675,9 +675,9 @@ void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, m
 */
 void ecc_weil_pairing(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
 {
-    assertf(ecc_verify_pt(curve, pointP), "[" SHARED_LIB_NAME "] ERR: Cannot compute Weil Pairing if one of two points is not on curve!");
-    assertf(ecc_verify_pt(curve, pointQ), "[" SHARED_LIB_NAME "] ERR: Cannot compute Weil Pairing if one of two points is not on curve!");
-    assertf(mpz_cmp_si(n, 0) > 0, "[" SHARED_LIB_NAME "] ERR: Please provide a positive value n to compute Weil Pairing!");
+    assertf(ecc_verify_pt(curve, pointP), "Cannot compute Weil Pairing if one of two points is not on curve!");
+    assertf(ecc_verify_pt(curve, pointQ), "Cannot compute Weil Pairing if one of two points is not on curve!");
+    assertf(mpz_cmp_si(n, 0) > 0, "Please provide a positive value n to compute Weil Pairing!");
 
     // make sure
     //     P * n = O
@@ -686,9 +686,9 @@ void ecc_weil_pairing(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
     ecc_init_pt(pointT);
 
     ecc_mul_noverify(curve, pointT, pointP, n);
-    assertf(mpz_cmp_si(pointT->z, 0) == 0, "[" SHARED_LIB_NAME "] ERR: Please provide a value n such that n*P and n*Q equals infinity.");
+    assertf(mpz_cmp_si(pointT->z, 0) == 0, "Please provide a value n such that n*P and n*Q equals infinity.");
     ecc_mul_noverify(curve, pointT, pointQ, n);
-    assertf(mpz_cmp_si(pointT->z, 0) == 0, "[" SHARED_LIB_NAME "] ERR: Please provide a value n such that n*P and n*Q equals infinity.");
+    assertf(mpz_cmp_si(pointT->z, 0) == 0, "Please provide a value n such that n*P and n*Q equals infinity.");
 
     ecc_free_pt(pointT);
     return ecc_weil_pairing_noverify(curve, E, pointP, pointQ, n);
