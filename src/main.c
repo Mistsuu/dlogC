@@ -459,7 +459,6 @@ ecc curve;
 void test11()
 {
     ecc curve;
-    eccpt G;
     ecc_init(
         curve, 
         "1986076773346522069111732327339",    // a 
@@ -470,13 +469,21 @@ void test11()
     mpz_t n;
     mpz_init_set_str(n, "13276420418771430444004808657717", 10);
 
+    eccpt G;
     ecc_init_pt(G);
     ecc_random_pt(curve, G);
-    mpz_dev_urandomm(G->y, curve->p);
-    ecc_printf_pt(G);
-    printf("\n");
 
-    dlog_validate_input(curve, G, G, n);
+    mpz_t k;
+    mpz_init(k);
+
+    dlog2(
+        curve, 
+        k,
+        G, G, 
+        n,
+        4,
+        2
+    );
 }
 
 int main()
