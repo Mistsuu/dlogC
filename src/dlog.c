@@ -12,7 +12,9 @@ int dlog_validate_input(
     mpz_t G_mult_order
 )
 {
-    // ----------------------------- G, kG on curve? -----------------------------
+    // -------------------------------------------------------------------------------------
+    //      Check G, kG on curve.
+    // -------------------------------------------------------------------------------------
     if (!ecc_verify_pt(curve, G)) {
         #ifdef DLOG_VERBOSE
             printf("[debug] G is not on the curve. Exiting...\n");
@@ -27,7 +29,9 @@ int dlog_validate_input(
         return DLOG_POINT_NOT_ON_CURVE;
     }
 
-    // ---------------------- is order positive and prime? -----------------------
+    // -------------------------------------------------------------------------------------
+    //      Is G's order positive and prime?
+    // -------------------------------------------------------------------------------------
     if (mpz_cmp_si(G_mult_order, 0) <= 0) {
         #ifdef DLOG_VERBOSE
             printf("[debug] G_mult_order is negative. Exiting...\n");
@@ -42,7 +46,12 @@ int dlog_validate_input(
         return DLOG_FAULTY_POINT_ORDER;
     }
 
-    // -------------------------- checks G * order = O ---------------------------
+    // -------------------------------------------------------------------------------------
+    //      Check Gorder * G = O.
+    //      Not checking Gorder * kG = O here since
+    //      it's not a pre-requisite for this algorithm
+    //      to run.
+    // -------------------------------------------------------------------------------------
     eccpt O;
     ecc_init_pt(O);
     ecc_mul_noverify(curve, O, G, G_mult_order);
