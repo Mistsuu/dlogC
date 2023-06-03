@@ -9,7 +9,7 @@ void user_interrupt_handler(
     int signum
 )
 {
-    printf("[" SHARED_LIB_NAME "] Caught SIGINT! Exiting in peace...\n");
+    printf("[" SHARED_LIB_NAME "] Caught SIGINT (signum = %d)! Exiting in peace...\n", signum);
     exit(-1);
 }
 

@@ -382,7 +382,7 @@ void ecc_add(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     assertf(ecc_verify_pt(curve, pointQ), "Cannot perform P+Q if Q is not on curve.");
     assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot perform P+Q if P.y is undefined.");
     assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "Cannot perform P+Q if Q.y is undefined.");
-    return ecc_add_noverify(curve, pointR, pointP, pointQ);
+    ecc_add_noverify(curve, pointR, pointP, pointQ);
 }
 
 /*
@@ -393,7 +393,7 @@ void ecc_neg(ecc curve, eccpt pointR, eccpt pointP)
 {
     assertf(ecc_verify_pt(curve, pointP), "Cannot perform -P if P is not on curve.");
     assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot perform -P if P.y is undefined.");
-    return ecc_neg_noverify(curve, pointR, pointP);
+    ecc_neg_noverify(curve, pointR, pointP);
 }
 
 /*
@@ -406,7 +406,7 @@ void ecc_sub(ecc curve, eccpt pointR, eccpt pointP, eccpt pointQ)
     assertf(ecc_verify_pt(curve, pointQ), "Cannot perform P-Q if Q is not on curve.");
     assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot perform P-Q if P.y is undefined.");
     assertf(mpz_cmp_si(pointQ->y, UNDEFINED_COORDINATE) != 0, "Cannot perform P-Q if Q.y is undefined.");
-    return ecc_sub_noverify(curve, pointR, pointP, pointQ);
+    ecc_sub_noverify(curve, pointR, pointP, pointQ);
 }
 
 /*
@@ -417,7 +417,7 @@ void ecc_mul(ecc curve, eccpt pointR, eccpt pointP, mpz_t k)
 {
     assertf(ecc_verify_pt(curve, pointP), "Cannot perform k*P if P is not on curve.");
     assertf(mpz_cmp_si(pointP->y, UNDEFINED_COORDINATE) != 0, "Cannot perform k*P if P.y is undefined.");
-    return ecc_mul_noverify(curve, pointR, pointP, k);
+    ecc_mul_noverify(curve, pointR, pointP, k);
 }
 
 /*
@@ -691,5 +691,5 @@ void ecc_weil_pairing(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, mpz_t n)
     assertf(mpz_cmp_si(pointT->z, 0) == 0, "Please provide n such that n*P and n*Q == infinity to compute Weil Pairing!");
 
     ecc_free_pt(pointT);
-    return ecc_weil_pairing_noverify(curve, E, pointP, pointQ, n);
+    ecc_weil_pairing_noverify(curve, E, pointP, pointQ, n);
 }
