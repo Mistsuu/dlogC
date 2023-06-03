@@ -2,7 +2,6 @@
 #define OLDDLOG_H
 
 #include <gmp.h>
-#include <assert.h>
 #include <stdint.h>
 #include <string.h>
 #include <pthread.h>

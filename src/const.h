@@ -13,4 +13,6 @@
 #define DEFAULT_NUM_THREADS      4
 #define DEFAULT_MEM_LIMIT        0
 
+#define SHARED_LIB_NAME          "libdlogefp"
+
 #endif

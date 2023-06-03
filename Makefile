@@ -31,14 +31,14 @@ $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c $(FULLDEPS) | $(OBJECT_DIR)
 	$(CC) -fPIC -c -o $@ $< $(CFLAGS)
 
 # For commands
-.PHONY: clean libbsgsefp
+.PHONY: clean libdlogefp
 clean:
 	rm -f $(SOURCE_DIR)/*.o $(OBJECT_DIR)/*.o $(SHARED_DIR)/*.so ./dlog
 
 # For creating shared library :)
-libbsgsefp: $(SHARED_DIR)/libbsgsefp.so
+libdlogefp: $(SHARED_DIR)/libdlogefp.so
 
-$(SHARED_DIR)/libbsgsefp.so: $(FULLOBJS) | $(SHARED_DIR)
+$(SHARED_DIR)/libdlogefp.so: $(FULLOBJS) | $(SHARED_DIR)
 	$(CC) -shared -o $@ $^ $(CFLAGS) $(LIBS)
 
 $(SHARED_DIR):

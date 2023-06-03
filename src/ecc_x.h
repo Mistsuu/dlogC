@@ -8,7 +8,6 @@
 */
 #include <gmp.h>
 #include <stdlib.h>
-#include <assert.h>
 
 typedef mp_limb_t* ecc_xtemp[9];
 
