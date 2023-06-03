@@ -95,15 +95,13 @@ void mpn_montgomery_mulmod_n(
     mp_limb_t* t1p = tp;
     mp_limb_t* t2p = &t1p[2*n];
     mp_limb_t* t3p = &t2p[2*n];
-    mp_limb_t carry;
-
     mpn_mul_n(t1p, s1p, s2p, n);
     mpn_mul_n(t2p, t1p, Dp,  n);
     mpn_mul_n(t3p, t2p, dp,  n);
-    carry = mpn_add_n(t3p, t3p, t1p, 2*n);
-    mpn_copyd(rp, &t3p[n], n);
-    if (carry || mpn_cmp(rp, dp, n) >= 0)
-        mpn_sub_n(rp, rp, dp, n);
+    if (mpn_add_n(t3p, t3p, t1p, 2*n) || mpn_cmp(&t3p[n], dp, n) >= 0)
+        mpn_sub_n(rp, &t3p[n], dp, n);
+    else
+        mpn_copyd(rp, &t3p[n], n);
 }
 
 /*
@@ -132,13 +130,11 @@ void mpn_montgomery_sqrmod_n(
     mp_limb_t* t1p = tp;
     mp_limb_t* t2p = &t1p[2*n];
     mp_limb_t* t3p = &t2p[2*n];
-    mp_limb_t carry;
-
     mpn_sqr  (t1p, s1p, n);
     mpn_mul_n(t2p, t1p, Dp,  n);
     mpn_mul_n(t3p, t2p, dp,  n);
-    carry = mpn_add_n(t3p, t3p, t1p, 2*n);
-    mpn_copyd(rp, &t3p[n], n);
-    if (carry || mpn_cmp(rp, dp, n) >= 0)
-        mpn_sub_n(rp, rp, dp, n);
+    if (mpn_add_n(t3p, t3p, t1p, 2*n) || mpn_cmp(&t3p[n], dp, n) >= 0)
+        mpn_sub_n(rp, &t3p[n], dp, n);
+    else
+        mpn_copyd(rp, &t3p[n], n);
 }
