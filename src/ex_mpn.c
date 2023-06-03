@@ -44,7 +44,7 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
     // According to the doc,
     // "The most significant limb of the input {s1p, s1n} must be non-zero."
     // Ignore it and you'll get a very nasty SIGSEGV :(
-    mp_size_t actual_len;
+    mp_size_t actual_len = 0;
     while (s1n > 0 && !s1p[s1n - 1])
         s1n--;
     if (s1n > 0)
