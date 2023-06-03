@@ -162,7 +162,11 @@ int dlog2(
 
     // -------------------------------------------------------------------------------------
     //      Quickly determine if we can/or can't solve
-    //      and provide an answer if possible.
+    //      and provide an answer if possible. The reason
+    //      for this is that the Pollard-rho algorithm
+    //      is probabilistic rather than deterministic. Doing
+    //      this will prevent the algorithm from spiraling
+    //      into an infinite loop.
     // -------------------------------------------------------------------------------------
     dlog_status = dlog_fast_solve_if_possible(curve, k, G, kG, G_mult_order);
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)

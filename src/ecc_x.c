@@ -302,7 +302,8 @@ int ecc_xz_to_X(
     mpn_tdiv_qr(T[7], PX, 0, T[2], 2*n, curve_p, n);
 
     // todo: i hope to remove this shit
-    if (abs(sn) > n) { 
+    // todo: i think i'm about to do that.
+    if (labs(sn) > n) { 
         printf("[error] wtf, we have to take care of this shit, at ecc_xz_to_X() where inverted value > p????\n");
         exit(-1);
     }

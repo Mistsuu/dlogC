@@ -173,14 +173,14 @@ void* __thread__dlog_fill_buffer(
 
     for (size_t _ = 0; _ < n_size_t; ++_) {
         // ---------------------- Write i_ -----------------------
-        mpn2bytes(_buffer, index_size_bytes, i, index_size_limbs);
+        mpn2bytes((unsigned char*)_buffer, index_size_bytes, i, index_size_limbs);
         _buffer += index_size_bytes;
 
         // ---------------------- Write _0x/_0z -----------------------
         if (ecc_xz_to_X(V0, _0x, _0z, curve_p, item_size_limbs, T))
-            mpn2bytes(_buffer, item_size_bytes, V0, item_size_limbs);
+            mpn2bytes((unsigned char*)_buffer, item_size_bytes, V0, item_size_limbs);
         else 
-            mpn2bytes(_buffer, item_size_bytes, curve_p, item_size_limbs);
+            mpn2bytes((unsigned char*)_buffer, item_size_bytes, curve_p, item_size_limbs);
         _buffer += item_size_bytes;
 
         // ---------------------- Update i_ -----------------------
@@ -256,7 +256,7 @@ void dlog_fill_buffer_l(
 
     memset(lbuffer, 0, index_size_bytes); 
     lbuffer += index_size_bytes;
-    mpn2bytes(lbuffer, item_size_bytes, mpz_limbs_read(curve->p), item_size_limbs);
+    mpn2bytes((unsigned char*)lbuffer, item_size_bytes, mpz_limbs_read(curve->p), item_size_limbs);
     lbuffer += item_size_bytes;
 
     // -------------------------------------------------------------------------------------
@@ -400,9 +400,9 @@ void dlog_fill_buffer_r(
     ecc_sub(curve, kG_nnG, kG, kG_nnG);
 
     // [ n | (k - n*n)G ] -> rbuffer
-    mpn2bytes(rbuffer, index_size_bytes, mpz_limbs_read(n), mpz_size(n));
+    mpn2bytes((unsigned char*)rbuffer, index_size_bytes, mpz_limbs_read(n), mpz_size(n));
     rbuffer += index_size_bytes;
-    mpn2bytes(rbuffer, item_size_bytes, mpz_limbs_read(kG_nnG->x), mpz_size(kG_nnG->x));
+    mpn2bytes((unsigned char*)rbuffer, item_size_bytes, mpz_limbs_read(kG_nnG->x), mpz_size(kG_nnG->x));
     rbuffer += item_size_bytes;
 
     // -------------------------------------------------------------------------------------
@@ -672,8 +672,8 @@ void* __thread__dlog_search_buffer(
 
     mpn_zero(exp_l_limbs, index_size_limbs+1);
     mpn_zero(exp_r_limbs, index_size_limbs+1);
-    mpn_set_str(exp_l_limbs, lbuffer, index_size_bytes, 256);
-    mpn_set_str(exp_r_limbs, rbuffer, index_size_bytes, 256);
+    mpn_set_str(exp_l_limbs, (unsigned char*)lbuffer, index_size_bytes, 256);
+    mpn_set_str(exp_r_limbs, (unsigned char*)rbuffer, index_size_bytes, 256);
     return (void*) 1;
 }
 
