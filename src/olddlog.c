@@ -1,4 +1,4 @@
-#include "dlog.h"
+#include "olddlog.h"
 #include "ecc.h"
 #include "ecc_x.h"
 #include "ex_mpn.h"

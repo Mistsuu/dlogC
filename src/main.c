@@ -5,7 +5,7 @@
 #include "ecc_proj.h"
 #include "ex_mpn.h"
 #include "ex_mpz.h"
-#include "dlog.h"
+#include "olddlog.h"
 
 void test3()
 {

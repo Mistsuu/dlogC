@@ -5,7 +5,7 @@
 #include "ecc.h"
 #include "ecc_x.h"
 #include "ex_mpn.h"
-#include "dlog.h"
+#include "olddlog.h"
 #include "const.h"
 #include "mem.h"
 

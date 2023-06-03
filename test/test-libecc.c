@@ -3,7 +3,7 @@
 #include "ecc.h"
 #include "ecc_x.h"
 #include "ex_mpn.h"
-#include "dlog.h"
+#include "olddlog.h"
 
 void test1(ecc curve, eccpt G)
 {

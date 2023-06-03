@@ -1,5 +1,5 @@
-#ifndef DLOG_H
-#define DLOG_H
+#ifndef OLDDLOG_H
+#define OLDDLOG_H
 
 #include <gmp.h>
 #include <assert.h>

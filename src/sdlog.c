@@ -1,5 +1,5 @@
 #include "sdlog.h"
-#include "dlog.h"
+#include "olddlog.h"
 #include "ex_mpn.h"
 #include "const.h"
 #include "que2.h"
