@@ -6,6 +6,7 @@
 #include "ex_mpn.h"
 #include "ex_mpz.h"
 #include "olddlog.h"
+#include "dlog.h"
 
 void test3()
 {
@@ -455,6 +456,29 @@ ecc curve;
 
 }
 
+void test11()
+{
+    ecc curve;
+    eccpt G;
+    ecc_init(
+        curve, 
+        "1986076773346522069111732327339",    // a 
+        "808177731529494834911895879646",     // b
+        "13276420418771432419898581447951"    // p
+    );
+
+    mpz_t n;
+    mpz_init_set_str(n, "13276420418771430444004808657717", 10);
+
+    ecc_init_pt(G);
+    ecc_random_pt(curve, G);
+    mpz_dev_urandomm(G->y, curve->p);
+    ecc_printf_pt(G);
+    printf("\n");
+
+    dlog_validate_input(curve, G, G, n);
+}
+
 int main()
 {
     // test3();
@@ -463,6 +487,7 @@ int main()
     // test6();
     // test7();
     // test8();
-    test9();
+    // test9();
     // test10();
+    test11();
 }

@@ -14,6 +14,12 @@
 #include "ecc.h"
 #include "ecc_proj.h"
 
+int dlog_validate_input(
+    ecc curve,
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order
+);
+
 int dlog2(
     ecc curve, 
     mpz_t k, 
