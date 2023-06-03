@@ -84,7 +84,13 @@ void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_
             - {rp, n} (return value)
             - {tp, 6*n} (for temporary placement)
 */
-void mpn_montgomery_mulmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_t* s2p, const mp_limb_t* dp, const mp_limb_t* Dp, mp_size_t n, mp_limb_t* tp)
+void mpn_montgomery_mulmod_n(
+    mp_limb_t* rp, 
+    const mp_limb_t* s1p, const mp_limb_t* s2p, 
+    const mp_limb_t* dp, const mp_limb_t* Dp, 
+    mp_size_t n, 
+    mp_limb_t* tp
+)
 {
     mp_limb_t* t1p = tp;
     mp_limb_t* t2p = &t1p[2*n];
@@ -114,10 +120,14 @@ void mpn_montgomery_mulmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_
             - {Dp, n} = -{dp, n}^-1 mod R
             - {rp, n} (return value)
             - {tp, 6*n} (for temporary placement)
-
-        There must be no overlap between {rp, n} and the arguments.
 */
-void mpn_montgomery_sqrmod_n(mp_limb_t* rp, const mp_limb_t* s1p, const mp_limb_t* dp, const mp_limb_t* Dp, mp_size_t n, mp_limb_t* tp)
+void mpn_montgomery_sqrmod_n(
+    mp_limb_t* rp, 
+    const mp_limb_t* s1p, 
+    const mp_limb_t* dp, const mp_limb_t* Dp,
+    mp_size_t n, 
+    mp_limb_t* tp
+)
 {
     mp_limb_t* t1p = tp;
     mp_limb_t* t2p = &t1p[2*n];
