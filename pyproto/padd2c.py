@@ -5,12 +5,6 @@ lines = open(filename, "r").readlines()
 lines = [line.strip() for line in lines]
 
 py2cmap = {
-    "t0": "T[0]",
-    "t1": "T[1]",
-    "t2": "T[2]",
-    "t3": "T[3]",
-    "t4": "T[4]",
-    "t5": "T[5]",
     "X1": "Px",
     "Y1": "Py",
     "Z1": "Pz",
@@ -21,18 +15,30 @@ py2cmap = {
     "Y3": "Ry",
     "Z3": "Rz",
     "a": "curve_aR",
+    "b": "curve_bR",
     "b3": "curve_b3R",
+
+    "u": "T[0]",
+    "uu": "T[1]",
+    "v": "T[2]",
+    "vv": "T[3]",
+    "vvv": "T[4]",
+    "R": "T[5]",
+    "A": "T[6]",
+    "t5": "T[7]",
+    "t6": "T[8]",
 }
 
 # mul_overlap_replace = 'T[6]'
-# assert mul_overlap_replace not in py2cmap
+# assert mul_overlap_replace not in list(py2cmap.values())
 
-mul_temp_replace = 'T[6]'
-assert mul_temp_replace not in py2cmap
+mul_temp_replace = 'T[11]'
+assert mul_temp_replace not in list(py2cmap.values())
 
 def map_to_Cvar(token):
     if token in py2cmap:
         return py2cmap[token]
+    print(f'[warning] variable "{token}" does not have a corresponding map!')
     return token
 
 result = []
