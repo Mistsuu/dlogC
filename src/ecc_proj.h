@@ -24,7 +24,6 @@ void ecc_pdbl(
     mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
 
     mp_limb_t* curve_aR,                               // curve_aR must have n limbs allocated
-    mp_limb_t* curve_b3R,                              // curve_b3R must have n limbs allocated
     mp_limb_t* curve_p,                                // curve_p must have n limbs allocated
     mp_limb_t* curve_P,                                // curve_P must have n limbs allocated
     mp_size_t n,                                       // number of limbs in curve->p
