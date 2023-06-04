@@ -134,7 +134,6 @@ int dlog_init_dlog_obj(
     dlog_obj obj,
 
     ecc curve,
-    mpz_t k, 
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
@@ -144,9 +143,16 @@ int dlog_init_dlog_obj(
 )
 {
     obj->n_threads = n_threads;
-    obj->n_caches  = n_caches;
+    obj->n_caches = n_caches;
+    obj->n_randindices = n_randindices;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
+
+    obj->curve_aR = mpn_init_zero(obj->item_size_limbs);
+    obj->curve_bR = mpn_init_zero(obj->item_size_limbs);
+    obj->curve_p  = mpn_init_zero(obj->item_size_limbs);
+    obj->curve_P  = mpn_init_zero(obj->item_size_limbs);
+    obj->curve_n  = mpn_init_zero(obj->index_size_limbs);
 
     obj->thread_item_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
     obj->thread_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
@@ -168,12 +174,31 @@ int dlog_init_dlog_obj(
             obj->thread_read_counters[i][j] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
         }
     }
+
+    obj->random_aG_add_bkG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
+    obj->random_a          = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
+    obj->random_b          = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
+    for (unsigned int i = 0; i < n_randindices; ++i) {
+        obj->random_aG_add_bkG[i] = mpn_init_zero(obj->item_size_limbs * 2);
+        obj->random_a[i] = mpn_init_zero(obj->index_size_limbs);
+        obj->random_b[i] = mpn_init_zero(obj->index_size_limbs);
+    }
+}
+
+void dlog_fill_dlog_obj(
+    dlog_obj obj,
+    ecc curve,
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order
+)
+{
+    
 }
 
 void dlog_free_dlog_obj(dlog_obj obj)
 {
     free(obj->curve_aR);
-    free(obj->curve_b3R);
+    free(obj->curve_bR);
     free(obj->curve_p);
     free(obj->curve_P);
     free(obj->curve_n);
@@ -198,6 +223,16 @@ void dlog_free_dlog_obj(dlog_obj obj)
     free(obj->thread_index_caches);
     free(obj->thread_read_counters);
     free(obj->thread_write_counters);
+
+    for (unsigned int i = 0; i < obj->n_randindices; ++i) {
+        free(obj->random_aG_add_bkG[i]);
+        free(obj->random_a[i]);
+        free(obj->random_b[i]);
+    }
+
+    free(obj->random_aG_add_bkG);
+    free(obj->random_a);
+    free(obj->random_b);
 }
 
 int dlog2(

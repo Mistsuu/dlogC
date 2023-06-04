@@ -32,6 +32,14 @@ mp_limb_t* mpn_init_zero(size_t n)
     return x_limbs;
 }
 
+void mpn_cpyz(mp_limb_t* rop, mpz_t x, size_t n)
+{
+    const mp_limb_t* x_limbs = mpz_limbs_read(x);
+    size_t           x_size  = mpz_size(x);
+    memset(rop, 0, sizeof(mp_limb_t) * n);
+    memcpy(rop, x_limbs, sizeof(mp_limb_t) * (x_size > n ? n : x_size));
+}
+
 void mpn2bytes(unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_t s1n)
 {
     // If I don't do this, 
