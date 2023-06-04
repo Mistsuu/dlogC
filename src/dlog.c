@@ -2,6 +2,7 @@
 #include "ecc.h"
 #include "ecc_proj.h"
 #include "ex_mpn.h"
+#include "ex_mpz.h"
 #include "const.h"
 #include "que2.h"
 #include "mem.h"
@@ -9,9 +10,39 @@
 int dlog_validate_input(
     ecc curve,
     eccpt G, eccpt kG,
-    mpz_t G_mult_order
+    mpz_t G_mult_order,
+
+    unsigned int n_threads,
+    unsigned int n_caches,
+    unsigned int n_randindices
 )
 {
+    // -------------------------------------------------------------------------------------
+    //      Must have more than 0 threads.
+    //      Cache must not have 0 items.
+    //      Random indices must not have 0 items.
+    // -------------------------------------------------------------------------------------
+    if (n_threads == 0) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] 0 threads is also not supported. Exiting...\n");
+        #endif
+        return DLOG_BAD_CONFIG;
+    }
+
+    if (n_caches == 0) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] You must have >= 1 item in the cache. Exiting...\n");
+        #endif
+        return DLOG_BAD_CONFIG;
+    }
+
+    if (n_randindices < 2) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] You must have >= 2 random elements. Exiting...\n");
+        #endif
+        return DLOG_BAD_CONFIG;
+    }
+
     // -------------------------------------------------------------------------------------
     //      Check G, kG on curve.
     // -------------------------------------------------------------------------------------
@@ -152,7 +183,7 @@ int dlog_init_dlog_obj(
     obj->curve_bR = mpn_init_zero(obj->item_size_limbs);
     obj->curve_p  = mpn_init_zero(obj->item_size_limbs);
     obj->curve_P  = mpn_init_zero(obj->item_size_limbs);
-    obj->curve_n  = mpn_init_zero(obj->index_size_limbs);
+    obj->G_order  = mpn_init_zero(obj->index_size_limbs);
 
     obj->thread_item_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
     obj->thread_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
@@ -175,24 +206,106 @@ int dlog_init_dlog_obj(
         }
     }
 
-    obj->random_aG_add_bkG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
-    obj->random_a          = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
-    obj->random_b          = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
+    obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
+    obj->random_t          = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
+    obj->random_s          = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
     for (unsigned int i = 0; i < n_randindices; ++i) {
-        obj->random_aG_add_bkG[i] = mpn_init_zero(obj->item_size_limbs * 2);
-        obj->random_a[i] = mpn_init_zero(obj->index_size_limbs);
-        obj->random_b[i] = mpn_init_zero(obj->index_size_limbs);
+        obj->random_tG_add_skG[i] = mpn_init_zero(obj->item_size_limbs * 2);
+        obj->random_t[i] = mpn_init_zero(obj->index_size_limbs);
+        obj->random_s[i] = mpn_init_zero(obj->index_size_limbs);
     }
 }
 
 void dlog_fill_dlog_obj(
     dlog_obj obj,
+
     ecc curve,
     eccpt G, eccpt kG,
-    mpz_t G_mult_order
+    mpz_t G_mult_order,
+
+    unsigned int n_threads,
+    unsigned int n_caches,
+    unsigned int n_randindices
 )
 {
+    mpz_t mpz_R;
+    mpz_init_set_ui(mpz_R, 1);
+    mpz_mul_2exp(mpz_R, mpz_R, obj->item_size_limbs * mp_bits_per_limb);
+
+    // -------------------------------------------------------------------------------------
+    //      We have to convert curve's a and curve's b
+    //      to Montgomery form.
+    // -------------------------------------------------------------------------------------
+    mpz_t mpz_aR;
+    mpz_t mpz_bR;
+    mpz_t mpz_curve_P;
+    mpz_init(mpz_aR);
+    mpz_init(mpz_bR);
+    mpz_init(mpz_curve_P);
+    mpz_mul(mpz_aR, curve->a, mpz_R);
+    mpz_mul(mpz_bR, curve->b, mpz_R);
+    mpz_mod(mpz_aR, mpz_aR, curve->p);
+    mpz_mod(mpz_bR, mpz_bR, curve->p);
+    mpz_invert(mpz_curve_P, curve->p, mpz_R);
+
+    mpn_cpyz(obj->curve_aR, mpz_aR,       obj->item_size_limbs);
+    mpn_cpyz(obj->curve_bR, mpz_bR,       obj->item_size_limbs);
+    mpn_cpyz(obj->curve_p,  curve->p,     obj->item_size_limbs);
+    mpn_cpyz(obj->curve_P,  mpz_curve_P,  obj->item_size_limbs);
+    mpn_cpyz(obj->G_order,  G_mult_order, obj->index_size_limbs);
+
+    // -------------------------------------------------------------------------------------
+    //      Initialize fixed random points
+    // -------------------------------------------------------------------------------------
+    eccpt tG;
+    eccpt skG;
+    eccpt tG_add_skG;
+    mpz_t t;
+    mpz_t s;
+    mpz_init(t);
+    mpz_init(s);
+    ecc_init_pt(tG);
+    ecc_init_pt(skG);
+    ecc_init_pt(tG_add_skG);
     
+    for (unsigned int i = 0; i < n_randindices; ++i) {
+        mpz_dev_urandomm(t, G_mult_order);
+        mpz_dev_urandomm(s, G_mult_order);
+
+        ecc_mul_noverify(curve, tG, G, t);
+        ecc_mul_noverify(curve, skG, kG, s);
+        ecc_add_noverify(curve, tG_add_skG, tG, skG);
+
+        // Convert coordinate to Montgomery form.
+        mpz_mul(tG_add_skG->x, tG_add_skG->x, mpz_R);
+        mpz_mod(tG_add_skG->x, tG_add_skG->x, curve->p);
+        mpz_mul(tG_add_skG->y, tG_add_skG->y, mpz_R);
+        mpz_mod(tG_add_skG->y, tG_add_skG->y, curve->p);
+
+        mpn_cpyz(obj->random_t[i], t, obj->index_size_limbs);
+        mpn_cpyz(obj->random_s[i], s, obj->index_size_limbs);
+        mpn_cpyz( obj->random_tG_add_skG[i],                       tG_add_skG->x, obj->item_size_limbs);
+        mpn_cpyz(&obj->random_tG_add_skG[i][obj->item_size_limbs], tG_add_skG->y, obj->item_size_limbs);
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Initialize cache values
+    // -------------------------------------------------------------------------------------
+
+
+
+    // -------------------------------------------------------------------------------------
+    //      Free stuffs
+    // -------------------------------------------------------------------------------------
+    mpz_clear(mpz_R);
+    mpz_clear(mpz_aR);
+    mpz_clear(mpz_bR);
+    mpz_clear(mpz_curve_P);
+    mpz_clear(t);
+    mpz_clear(s);
+    ecc_free_pt(tG);
+    ecc_free_pt(skG);
+    ecc_free_pt(tG_add_skG);
 }
 
 void dlog_free_dlog_obj(dlog_obj obj)
@@ -201,7 +314,7 @@ void dlog_free_dlog_obj(dlog_obj obj)
     free(obj->curve_bR);
     free(obj->curve_p);
     free(obj->curve_P);
-    free(obj->curve_n);
+    free(obj->G_order);
 
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
         for (unsigned int j = 0; j < obj->n_caches; ++j) {
@@ -225,14 +338,14 @@ void dlog_free_dlog_obj(dlog_obj obj)
     free(obj->thread_write_counters);
 
     for (unsigned int i = 0; i < obj->n_randindices; ++i) {
-        free(obj->random_aG_add_bkG[i]);
-        free(obj->random_a[i]);
-        free(obj->random_b[i]);
+        free(obj->random_tG_add_skG[i]);
+        free(obj->random_t[i]);
+        free(obj->random_s[i]);
     }
 
-    free(obj->random_aG_add_bkG);
-    free(obj->random_a);
-    free(obj->random_b);
+    free(obj->random_tG_add_skG);
+    free(obj->random_t);
+    free(obj->random_s);
 }
 
 int dlog2(
@@ -271,7 +384,7 @@ int dlog2(
     // -------------------------------------------------------------------------------------
     //      Verify if input is good.
     // -------------------------------------------------------------------------------------
-    dlog_status = dlog_validate_input(curve, G, kG, G_mult_order);
+    dlog_status = dlog_validate_input(curve, G, kG, G_mult_order, n_threads, n_caches, n_randindices);
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
         return dlog_status;
 

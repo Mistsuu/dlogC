@@ -12,6 +12,7 @@
 #define DLOG_MOVE_TO_NEXT_STEP   4
 #define DLOG_POINT_NOT_ON_CURVE  5
 #define DLOG_FAULTY_POINT_ORDER  6
+#define DLOG_BAD_CONFIG          7
 
 #define DEFAULT_NUM_THREADS      4
 #define DEFAULT_MEM_LIMIT        0 // todo: remove
