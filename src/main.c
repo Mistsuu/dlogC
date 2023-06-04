@@ -428,6 +428,11 @@ void test11()
         2,
         20
     );
+
+    mpz_clear(k);
+    mpz_clear(n);
+    ecc_free_pt(G);
+    ecc_free(curve);
 }
 
 int main()
@@ -439,6 +444,6 @@ int main()
     // test7();
     // test8();
     // test9();
-    test10();
-    // test11();
+    // test10();
+    test11();
 }

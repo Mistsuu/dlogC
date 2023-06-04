@@ -40,6 +40,21 @@ typedef struct dlog_obj_struct
 
     mp_limb_t** random_tG_add_skG;                  // r random points of t*G + s*kG (using X, Y coordinate in Montgomery Form.)
     mp_limb_t** random_ts;                          // r random multipliers t, s
+
+    /* other temporary stuffs for each thread */
+    ecc_ptemp* thread_ecc_ptemps;
+    mp_limb_t** thread_tmp_cache_reads;
+
+    /* result storage */
+    mp_limb_t** thread_result_tortoise_items;
+    mp_limb_t** thread_result_hare_items;
+    mp_limb_t** thread_result_tortoise_indices;
+    mp_limb_t** thread_result_hare_indices;
+
+    /* result indicators */
+    int* founds;
+    int overall_found;
+
 } __dlog_obj_struct;
 
 typedef __dlog_obj_struct dlog_obj[1];

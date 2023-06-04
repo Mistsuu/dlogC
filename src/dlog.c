@@ -218,6 +218,29 @@ void dlog_init_dlog_obj(
         obj->random_tG_add_skG[i] = mpn_init_zero(obj->item_size_limbs * 2);
         obj->random_ts[i] = mpn_init_zero(obj->index_size_limbs * 2);
     }
+
+    obj->thread_ecc_ptemps = (ecc_ptemp*)malloc_exit_when_null(sizeof(ecc_ptemp) * n_threads);
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        ecc_init_ptemp(obj->thread_ecc_ptemps[i], obj->item_size_limbs);
+    }
+
+    obj->thread_tmp_cache_reads = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        obj->thread_tmp_cache_reads[i] = mpn_init_zero(obj->item_size_limbs * 3);
+    }
+
+    obj->thread_result_tortoise_items   = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_result_hare_items       = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_result_tortoise_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_result_hare_indices     = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        obj->thread_result_tortoise_items[i]   = mpn_init_zero(obj->item_size_limbs * 3);
+        obj->thread_result_hare_items[i]       = mpn_init_zero(obj->item_size_limbs * 3);
+        obj->thread_result_tortoise_indices[i] = mpn_init_zero(obj->index_size_limbs * 2);
+        obj->thread_result_hare_indices[i]     = mpn_init_zero(obj->index_size_limbs * 2);
+    }
+
+    obj->founds = (int*)malloc_exit_when_null(sizeof(int) * n_threads);
 }
 
 void dlog_fill_dlog_obj(
@@ -339,6 +362,17 @@ void dlog_fill_dlog_obj(
     }
 
     // -------------------------------------------------------------------------------------
+    //      Doesn't need to intialize temporary variables.
+    //      because they will just be overwritten.
+    // -------------------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------------------
+    //      Initialize overall results
+    // -------------------------------------------------------------------------------------
+    memset(obj->founds, 0, sizeof(int) * n_threads);
+    obj->overall_found = 0;
+
+    // -------------------------------------------------------------------------------------
     //      Free stuffs
     // -------------------------------------------------------------------------------------
     mpz_clear(mpz_R);
@@ -395,6 +429,28 @@ void dlog_free_dlog_obj(dlog_obj obj)
 
     free(obj->random_tG_add_skG);
     free(obj->random_ts);
+
+    for (unsigned int i = 0; i < obj->n_threads; ++i)
+        ecc_free_ptemp(obj->thread_ecc_ptemps[i]);
+    free(obj->thread_ecc_ptemps);
+
+    for (unsigned int i = 0; i < obj->n_threads; ++i)
+        free(obj->thread_tmp_cache_reads[i]);
+    free(obj->thread_tmp_cache_reads);
+
+    for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        free(obj->thread_result_tortoise_items[i]);
+        free(obj->thread_result_hare_items[i]);
+        free(obj->thread_result_tortoise_indices[i]);
+        free(obj->thread_result_hare_indices[i]);
+    }
+    
+    free(obj->thread_result_tortoise_items);
+    free(obj->thread_result_hare_items);
+    free(obj->thread_result_tortoise_indices);
+    free(obj->thread_result_hare_indices);
+
+    free(obj->founds);
 }
 
 int dlog2(
