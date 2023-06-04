@@ -9,6 +9,7 @@
 
 void       mpn_printf   (mp_limb_t* in, mp_size_t len);
 mp_limb_t* mpn_init_cpyz(mpz_t x, size_t n);
+void       mpn_cpyz     (mp_limb_t* rop, mpz_t x, size_t n);
 mp_limb_t* mpn_init_zero(size_t n);
 void       mpn2bytes    (unsigned char *str, mp_size_t len, const mp_limb_t *s1p, mp_size_t s1n);
 
@@ -45,5 +46,9 @@ do {                                                 \
     if (mpn_sub_n(rp, s1p, s2p, n))                  \
         mpn_add_n(rp, rp, dp, n);                    \
 } while(0)
+
+#define mpn_addmod_n mpn_montgomery_addmod_n 
+#define mpn_lshift1mod_n mpn_montgomery_lshift1mod_n
+#define mpn_submod_n mpn_montgomery_submod_n
 
 #endif
