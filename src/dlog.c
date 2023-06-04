@@ -161,7 +161,7 @@ int dlog_fast_solve_if_possible(
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 
-int dlog_init_dlog_obj(
+void dlog_init_dlog_obj(
     dlog_obj obj,
 
     ecc curve,
@@ -433,7 +433,15 @@ int dlog2(
     // -------------------------------------------------------------------------------------
     //      Verify if input is good.
     // -------------------------------------------------------------------------------------
-    dlog_status = dlog_validate_input(curve, G, kG, G_mult_order, n_threads, n_caches, n_randindices);
+    dlog_status = dlog_validate_input(
+                    curve, 
+                    G, kG, 
+                    G_mult_order, 
+
+                    n_threads, 
+                    n_caches, 
+                    n_randindices
+                  );
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
         return dlog_status;
 
@@ -445,9 +453,48 @@ int dlog2(
     //      this will prevent the algorithm from spiraling
     //      into an infinite loop.
     // -------------------------------------------------------------------------------------
-    dlog_status = dlog_fast_solve_if_possible(curve, k, G, kG, G_mult_order);
+    dlog_status = dlog_fast_solve_if_possible(
+                    curve, 
+                    k, 
+                    G, kG, 
+                    G_mult_order
+                  );
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
         return dlog_status;
 
-    
+    // -------------------------------------------------------------------------------------
+    //      Initialize memory for fast computations.
+    //      (i hope it's fast...)
+    // -------------------------------------------------------------------------------------
+    dlog_obj obj;
+    dlog_init_dlog_obj(
+        obj,
+
+        curve,
+        G, kG,
+        G_mult_order,
+
+        n_threads,
+        n_caches,
+        n_randindices
+    );
+
+    dlog_fill_dlog_obj(
+        obj,
+
+        curve,
+        G, kG,
+        G_mult_order,
+
+        n_threads,
+        n_caches,
+        n_randindices
+    );
+
+    // -------------------------------------------------------------------------------------
+    //      Bye!
+    // -------------------------------------------------------------------------------------
+    dlog_free_dlog_obj(obj);
+
+    return -1;
 }

@@ -54,6 +54,41 @@ int dlog_validate_input(
     unsigned int n_randindices
 );
 
+int dlog_fast_solve_if_possible(
+    ecc curve,
+    mpz_t k, 
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order
+);
+
+void dlog_init_dlog_obj(
+    dlog_obj obj,
+
+    ecc curve,
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order,
+
+    unsigned int n_threads,
+    unsigned int n_caches,
+    unsigned int n_randindices
+);
+
+void dlog_fill_dlog_obj(
+    dlog_obj obj,
+
+    ecc curve,
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order,
+
+    unsigned int n_threads,
+    unsigned int n_caches,
+    unsigned int n_randindices
+);
+
+void dlog_free_dlog_obj(
+    dlog_obj obj
+);
+
 int dlog2(
     ecc curve, 
     mpz_t k, 
