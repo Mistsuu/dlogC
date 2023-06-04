@@ -31,7 +31,7 @@ void ecc_free_ptemp(ecc_ptemp T)
 
 // -------------------------------------------------------------------------------
 
-void ecc_padd_Qz_is_1(
+void ecc_padd(
     mp_limb_t* Rx, mp_limb_t* Ry, mp_limb_t* Rz,       // Rx, Ry, Rz must have n limbs allocated
     mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
     mp_limb_t* Qx, mp_limb_t* Qy,                      // Qx, Qy     must have n limbs allocated
