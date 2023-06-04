@@ -130,6 +130,76 @@ int dlog_fast_solve_if_possible(
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 
+int dlog_init_dlog_obj(
+    dlog_obj obj,
+
+    ecc curve,
+    mpz_t k, 
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order,
+
+    unsigned int n_threads,
+    unsigned int n_caches,
+    unsigned int n_randindices
+)
+{
+    obj->n_threads = n_threads;
+    obj->n_caches  = n_caches;
+    obj->item_size_limbs  = mpz_size(curve->p);
+    obj->index_size_limbs = mpz_size(G_mult_order);
+
+    obj->thread_item_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_read_counters = (unsigned long***)malloc_exit_when_null(sizeof(unsigned long**) * n_threads);
+    obj->thread_write_counters = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
+
+    for (unsigned int i = 0; i < n_threads; ++i) {
+        obj->thread_item_caches[i] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
+        obj->thread_index_caches[i] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
+        obj->thread_read_counters[i] = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
+        obj->thread_write_counters[i] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
+
+        for (unsigned int j = 0; j < n_caches; ++j) {
+            obj->thread_item_caches[i][j] = mpn_init_zero(obj->item_size_limbs * 3);
+            obj->thread_index_caches[i][j] = mpn_init_zero(obj->index_size_limbs * 2);
+        }
+
+        for (unsigned int j = 0; j < n_threads; ++j) {
+            obj->thread_read_counters[i][j] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
+        }
+    }
+}
+
+void dlog_free_dlog_obj(dlog_obj obj)
+{
+    free(obj->curve_aR);
+    free(obj->curve_b3R);
+    free(obj->curve_p);
+    free(obj->curve_P);
+    free(obj->curve_n);
+
+    for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        for (unsigned int j = 0; j < obj->n_caches; ++j) {
+            free(obj->thread_item_caches[i][j]);
+            free(obj->thread_index_caches[i][j]);
+        }
+
+        for (unsigned int j = 0; j < obj->n_threads; ++j) {
+            free(obj->thread_read_counters[i][j]);
+        }
+
+        free(obj->thread_item_caches[i]);
+        free(obj->thread_index_caches[i]);
+        free(obj->thread_read_counters[i]);
+        free(obj->thread_write_counters[i]);
+    }
+
+    free(obj->thread_item_caches);
+    free(obj->thread_index_caches);
+    free(obj->thread_read_counters);
+    free(obj->thread_write_counters);
+}
+
 int dlog2(
     ecc curve, 
     mpz_t k, 
@@ -137,7 +207,8 @@ int dlog2(
     mpz_t G_mult_order, 
 
     unsigned int n_threads,
-    unsigned int cache_size
+    unsigned int n_caches,
+    unsigned int n_randindices
 )
 {
     #ifdef DLOG_VERBOSE
@@ -157,7 +228,7 @@ int dlog2(
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] cache_size = %d\n", cache_size);
+        printf("[debug] n_caches = %d\n", n_caches);
     #endif
 
     int dlog_status;
@@ -180,4 +251,6 @@ int dlog2(
     dlog_status = dlog_fast_solve_if_possible(curve, k, G, kG, G_mult_order);
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
         return dlog_status;
+
+    
 }
