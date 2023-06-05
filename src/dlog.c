@@ -350,15 +350,9 @@ void dlog_fill_dlog_obj(
     //      Initialize read/write counters
     // -------------------------------------------------------------------------------------
     for (unsigned int i = 0; i < n_threads; ++i) {
-        for (unsigned int j = 0; j < n_caches; ++j) {
-            obj->thread_write_counters[i][j] = 0;
-        }
-
-        for (unsigned int j = 0; j < n_threads; ++j) {
-            for (unsigned int k = 0; k < n_caches; ++k) {
-                obj->thread_read_counters[i][j][k] = 0;
-            }
-        }
+        memset(obj->thread_write_counters[i], 0, n_caches * sizeof(unsigned long));
+        for (unsigned int j = 0; j < n_threads; ++j)
+            memset(obj->thread_read_counters[i][j], 0, n_caches * sizeof(unsigned long));
     }
 
     // -------------------------------------------------------------------------------------
@@ -569,32 +563,191 @@ void* __thread__dlog_thread(
 
     // -------------------------------------------------------------------------------------
     //      Real calculation.
-    //      Do a cycle detection using Brent's algorithm.
+    //      Do a cycle detection using Brent's algorithm
+    //      with Teske's psuedorandom function.
     // -------------------------------------------------------------------------------------
     unsigned long power = 1;
     unsigned long lamda = 1;
     unsigned long icache = 0;
-    while (1) {
+
+    ecc_ptemp T;
+    ecc_init_ptemp(T, item_size_limbs);
+
+    mp_limb_t* tmp_item;
+    mp_limb_t* tmp_index;
+    tmp_item = mpn_init_zero(item_size_limbs * 3);
+    tmp_index = mpn_init_zero(index_size_limbs * 2);
+
+    while (!shared_obj->overall_found) {
+
+        // ---------------------- updating the tortoise pointer -------------------------
+        //                       (every 2^n steps, n increasing)                          
         if (power == lamda) {
             power <<= 1;
-            assertf(power != 0, "Wow computers are so good nowadays. We've reached the limit of %ld bits, there's nothing we can do now...", sizeof(unsigned long) * 8);
+            assertf(power != 0, "Oh geez computers are so good nowadays. We've reached the limit of %ld bits, there's nothing we can do now...", sizeof(unsigned long) * 8);
             lamda = 0;
 
             mpn_copyd(tortoise_item, hare_item_cache[icache], item_size_limbs * 3);
             mpn_copyd(tortoise_index, hare_index_cache[icache], index_size_limbs * 2);
         }
 
-        lamda++;
+        // ---------------------- updating the hare pointer -------------------------
+        unsigned int next_icache = (icache+1) % n_caches;
+        unsigned int irand = hare_item_cache[icache][0] % n_randindices;
+        all_write_counters[thread_no][next_icache]++;
 
-        #ifdef DLOG_VERBOSE
+        // element <- f(element)
+        ecc_padd(
+            &hare_item_cache[next_icache][0],
+            &hare_item_cache[next_icache][item_size_limbs],
+            &hare_item_cache[next_icache][item_size_limbs*2],
+
+            &hare_item_cache[icache][0],
+            &hare_item_cache[icache][item_size_limbs],
+            &hare_item_cache[icache][item_size_limbs*2],
+
+            &random_tG_add_skG[irand][0],
+            &random_tG_add_skG[irand][item_size_limbs],
             
-        #endif
-    }
+            curve_p,
+            curve_P,
+            item_size_limbs,
 
+            T
+        );
+
+        // index change
+        mpn_addmod_n(
+            &hare_index_cache[next_icache][0],
+            &hare_index_cache[icache][0],
+            &random_ts[irand][0],
+            G_order,
+            index_size_limbs
+        );
+
+        mpn_addmod_n(
+            &hare_index_cache[next_icache][index_size_limbs],
+            &hare_index_cache[icache][index_size_limbs],
+            &random_ts[irand][index_size_limbs],
+            G_order,
+            index_size_limbs
+        );
+
+        all_write_counters[thread_no][next_icache]++;
+
+        // ------------------- comparing with our hare pointer -------------------
+        if (ecc_peqx(
+            &tortoise_item[0], 
+            &tortoise_item[item_size_limbs*2],
+            
+            &hare_item_cache[next_icache][0], 
+            &hare_item_cache[next_icache][item_size_limbs*2],
+
+            curve_p,
+            curve_P,
+            item_size_limbs,
+
+            T
+        ))
+        {
+            mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
+            mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
+            mpn_copyd(result_hare_item, hare_item_cache[next_icache], item_size_limbs * 3);
+            mpn_copyd(result_hare_index, hare_index_cache[next_icache], index_size_limbs * 2);
+
+            shared_obj->founds[thread_no] = 1;
+            shared_obj->overall_found = 1;
+            goto dlog_thread_cleanup;
+        }
+
+        // ---------- comparing with the other thread's hare pointers -----------
+        for (unsigned int i = 0; i < n_threads; ++i) {
+            if (i == thread_no)
+                continue;
+
+            for (unsigned int j = 0; j < n_caches; ++j) {
+                // If same index as other thread's cache,
+                // just move on.
+                if (read_counters[i][j] == all_write_counters[i][j]) {
+                    #ifdef DLOG_VERBOSE
+                        mpz_add_ui(cache_hit_counter, cache_hit_counter, 1);
+                    #endif
+                    continue;
+                }
+
+                // Check how many miss happened
+                #ifdef DLOG_VERBOSE
+                    mpz_add_ui(
+                        cache_miss_counter, 
+                        cache_miss_counter, 
+                        (all_write_counters[i][j] >> 1) - (read_counters[i][j] >> 1) - 1
+                    );
+                #endif 
+
+                /* If the last bit of a write counter
+                is 1, that means that we can wait until its finished 
+                writing, because no deadlocks can occurs here */
+                while (all_write_counters[i][j] & 0x1) {}
+
+                // Set read counter.
+                read_counters[i][j] = all_write_counters[i][j];
+
+                // Copy point to avoid the race condition
+                // as much as possible.
+                mpn_copyd(tmp_index, all_hare_index_caches[i][j], index_size_limbs * 2);
+                mpn_copyd(tmp_item, all_hare_item_caches[i][j], item_size_limbs * 3);
+
+                // Check how many misreads might occur.
+                #ifdef DLOG_VERBOSE
+                    if (read_counters[i][j] != all_write_counters[i][j]) {
+                        mpz_add_ui(
+                            cache_possible_misread_counter, 
+                            cache_possible_misread_counter, 
+                            1
+                        );
+                    }
+                #endif 
+
+                // Compare point.
+                if (ecc_peqx(
+                    &tortoise_item[0], 
+                    &tortoise_item[item_size_limbs*2],
+                    
+                    &tmp_item[0], 
+                    &tmp_item[item_size_limbs*2],
+
+                    curve_p,
+                    curve_P,
+                    item_size_limbs,
+
+                    T
+                ))
+                {
+                    mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
+                    mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
+                    mpn_copyd(result_hare_item, tmp_item, item_size_limbs * 3);
+                    mpn_copyd(result_hare_index, tmp_index, index_size_limbs * 2);
+
+                    shared_obj->founds[thread_no] = 1;
+                    shared_obj->overall_found = 1;
+                    goto dlog_thread_cleanup;
+                }
+            }
+        }
+
+        // ---------------------------- updating lambda --------------------------
+        lamda++;
+        icache = next_icache;
+    }
 
     // -------------------------------------------------------------------------------------
     //      Cleanup
     // -------------------------------------------------------------------------------------
+dlog_thread_cleanup:
+    ecc_free_ptemp(T);
+    free(tmp_item);
+    free(tmp_index);
+
     return NULL;
 }
 
