@@ -53,7 +53,7 @@ typedef struct dlog_obj_struct
     int* founds;
     int overall_found;
 
-    /* profiling variables -- for debug version only! */
+    /* profiling variables -- use when compiled with VERBOSE build. */
     #ifdef DLOG_VERBOSE
         mpz_t* thread_cache_hit_counters;
         mpz_t* thread_cache_miss_counters;
