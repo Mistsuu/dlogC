@@ -418,11 +418,16 @@ void test11()
 
     mpz_t k;
     mpz_init(k);
+    mpz_dev_urandomm(k, n);
+
+    eccpt kG;
+    ecc_init_pt(kG);
+    ecc_mul_noverify(curve, kG, G, k);
 
     dlog2(
         curve, 
         k,
-        G, G, 
+        G, kG, 
         n,
         4,
         2,
@@ -432,6 +437,56 @@ void test11()
     mpz_clear(k);
     mpz_clear(n);
     ecc_free_pt(G);
+    ecc_free_pt(kG);
+    ecc_free(curve);
+}
+
+void test12()
+{
+    ecc curve;
+    ecc_init(
+        curve, 
+        "774719694",     // a 
+        "1155230889",    // b
+        "2507200429"     // p
+    );
+
+    mpz_t n;
+    mpz_init_set_str(n, "2507256991", 10);
+
+    eccpt G;
+    // ecc_init_pt(G);
+    // ecc_random_pt(curve, G);
+    ecc_init_pt_str(
+        curve,
+        G,
+        "2008859905",
+        "2187933519",
+        NULL
+    );
+
+    mpz_t k;
+    mpz_init(k);
+    mpz_dev_urandomm(k, n);
+
+    eccpt kG;
+    ecc_init_pt(kG);
+    ecc_mul_noverify(curve, kG, G, k);
+
+    dlog2(
+        curve, 
+        k,
+        G, kG, 
+        n,
+        4,
+        5,
+        20
+    );
+
+    mpz_clear(k);
+    mpz_clear(n);
+    ecc_free_pt(G);
+    ecc_free_pt(kG);
     ecc_free(curve);
 }
 
@@ -445,5 +500,6 @@ int main()
     // test8();
     // test9();
     // test10();
-    test11();
+    // test11();
+    test12();
 }

@@ -32,8 +32,8 @@ void ecc_pdbl(
 );
 
 int ecc_peqx(
-    mp_limb_t* Rx, mp_limb_t* Rz,       // Rx, Rz must have n limbs allocated
     mp_limb_t* Px, mp_limb_t* Pz,       // Px, Pz must have n limbs allocated
+    mp_limb_t* Qx, mp_limb_t* Qz,       // Qx, Qz must have n limbs allocated
 
     mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
     mp_limb_t* curve_P,                 // curve_P must have n limbs allocated

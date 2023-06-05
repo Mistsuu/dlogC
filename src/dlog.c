@@ -274,7 +274,7 @@ void dlog_fill_dlog_obj(
     mpz_mod(mpz_aR, mpz_aR, curve->p);
     mpz_mod(mpz_bR, mpz_bR, curve->p);
     mpz_invert(mpz_curve_P, curve->p, mpz_R);
-
+    mpz_sub(mpz_curve_P, mpz_R, mpz_curve_P);
     mpn_cpyz(obj->curve_aR, mpz_aR,       obj->item_size_limbs);
     mpn_cpyz(obj->curve_bR, mpz_bR,       obj->item_size_limbs);
     mpn_cpyz(obj->curve_p,  curve->p,     obj->item_size_limbs);
@@ -510,6 +510,22 @@ void dlog_print_cache_performance_report(
     #endif
 }
 
+#define eccpt_sage_printf(P)                      \
+do {                                              \
+    printf("E(");                                 \
+    mpz_out_str(stdout, 10, P->x); printf(", ");  \
+    mpz_out_str(stdout, 10, P->y); printf(", ");  \
+    mpz_out_str(stdout, 10, P->z); printf(")\n"); \
+} while (0)
+
+#define mpnpt_sage_printf(Px, Py, Pz, n) \
+do {                                     \
+    printf("E(");                        \
+    mpn_printf(Px, n); printf(", ");     \
+    mpn_printf(Py, n); printf(", ");     \
+    mpn_printf(Pz, n); printf(")\n");    \
+} while (0)
+
 void* __thread__dlog_thread(
     void* vargs
 )
@@ -569,6 +585,7 @@ void* __thread__dlog_thread(
     unsigned long power = 1;
     unsigned long lamda = 1;
     unsigned long icache = 0;
+    unsigned long count = 0;
 
     ecc_ptemp T;
     ecc_init_ptemp(T, item_size_limbs);
@@ -578,8 +595,8 @@ void* __thread__dlog_thread(
     tmp_item = mpn_init_zero(item_size_limbs * 3);
     tmp_index = mpn_init_zero(index_size_limbs * 2);
 
+    // while (!shared_obj->overall_found && count < 1000000) {
     while (!shared_obj->overall_found) {
-
         // ---------------------- updating the tortoise pointer -------------------------
         //                       (every 2^n steps, n increasing)                          
         if (power == lamda) {
@@ -616,22 +633,38 @@ void* __thread__dlog_thread(
             T
         );
 
-        // index change
-        mpn_addmod_n(
-            &hare_index_cache[next_icache][0],
-            &hare_index_cache[icache][0],
-            &random_ts[irand][0],
-            G_order,
-            index_size_limbs
-        );
+        // mpnpt_sage_printf(
+        //     &hare_item_cache[next_icache][0],
+        //     &hare_item_cache[next_icache][item_size_limbs],
+        //     &hare_item_cache[next_icache][item_size_limbs*2],
+        //     item_size_limbs
+        // );
 
-        mpn_addmod_n(
-            &hare_index_cache[next_icache][index_size_limbs],
-            &hare_index_cache[icache][index_size_limbs],
-            &random_ts[irand][index_size_limbs],
-            G_order,
-            index_size_limbs
-        );
+        // mpnpt_sage_printf(
+        //     &random_tG_add_skG[irand][0],
+        //     &random_tG_add_skG[irand][item_size_limbs],
+        //     &hare_item_cache[next_icache][item_size_limbs*2],
+        //     item_size_limbs
+        // );
+
+        return NULL;
+
+        // // index change
+        // mpn_addmod_n(
+        //     &hare_index_cache[next_icache][0],
+        //     &hare_index_cache[icache][0],
+        //     &random_ts[irand][0],
+        //     G_order,
+        //     index_size_limbs
+        // );
+
+        // mpn_addmod_n(
+        //     &hare_index_cache[next_icache][index_size_limbs],
+        //     &hare_index_cache[icache][index_size_limbs],
+        //     &random_ts[irand][index_size_limbs],
+        //     G_order,
+        //     index_size_limbs
+        // );
 
         all_write_counters[thread_no][next_icache]++;
 
@@ -660,84 +693,95 @@ void* __thread__dlog_thread(
             goto dlog_thread_cleanup;
         }
 
-        // ---------- comparing with the other thread's hare pointers -----------
-        for (unsigned int i = 0; i < n_threads; ++i) {
-            if (i == thread_no)
-                continue;
+        // // ---------- comparing with the other thread's hare pointers -----------
+        // for (unsigned int i = 0; i < n_threads; ++i) {
+        //     if (i == thread_no)
+        //         continue;
 
-            for (unsigned int j = 0; j < n_caches; ++j) {
-                // If same index as other thread's cache,
-                // just move on.
-                if (read_counters[i][j] == all_write_counters[i][j]) {
-                    #ifdef DLOG_VERBOSE
-                        mpz_add_ui(cache_hit_counter, cache_hit_counter, 1);
-                    #endif
-                    continue;
-                }
+        //     for (unsigned int j = 0; j < n_caches; ++j) {
+        //         // If same index as other thread's cache,
+        //         // just move on.
+        //         if (read_counters[i][j] == all_write_counters[i][j]) {
+        //             #ifdef DLOG_VERBOSE
+        //                 // mpz_add_ui(cache_hit_counter, cache_hit_counter, 1);
+        //             #endif
+        //             continue;
+        //         }
 
-                // Check how many miss happened
-                #ifdef DLOG_VERBOSE
-                    mpz_add_ui(
-                        cache_miss_counter, 
-                        cache_miss_counter, 
-                        (all_write_counters[i][j] >> 1) - (read_counters[i][j] >> 1) - 1
-                    );
-                #endif 
+        //         /* If the last bit of a write counter
+        //         is 1, that means that we can wait until its finished 
+        //         writing, because no deadlocks can occurs here */
+        //         if (all_write_counters[i][j] & 0x1) {
+        //             continue;
+        //         }
 
-                /* If the last bit of a write counter
-                is 1, that means that we can wait until its finished 
-                writing, because no deadlocks can occurs here */
-                while (all_write_counters[i][j] & 0x1) {}
+        //         // Check how many miss happened
+        //         #ifdef DLOG_VERBOSE
+        //             mpz_add_ui(
+        //                 cache_miss_counter, 
+        //                 cache_miss_counter, 
+        //                 (all_write_counters[i][j] >> 1) - (read_counters[i][j] >> 1) - 1
+        //             );
+        //         #endif 
 
-                // Set read counter.
-                read_counters[i][j] = all_write_counters[i][j];
+        //         // Set read counter.
+        //         read_counters[i][j] = all_write_counters[i][j];
 
-                // Copy point to avoid the race condition
-                // as much as possible.
-                mpn_copyd(tmp_index, all_hare_index_caches[i][j], index_size_limbs * 2);
-                mpn_copyd(tmp_item, all_hare_item_caches[i][j], item_size_limbs * 3);
+        //         // Copy point to avoid the race condition
+        //         // as much as possible.
+        //         mpn_copyd(tmp_index, all_hare_index_caches[i][j], index_size_limbs * 2);
+        //         mpn_copyd(tmp_item, all_hare_item_caches[i][j], item_size_limbs * 3);
 
-                // Check how many misreads might occur.
-                #ifdef DLOG_VERBOSE
-                    if (read_counters[i][j] != all_write_counters[i][j]) {
-                        mpz_add_ui(
-                            cache_possible_misread_counter, 
-                            cache_possible_misread_counter, 
-                            1
-                        );
-                    }
-                #endif 
+        //         // Check how many misreads might occur.
+        //         #ifdef DLOG_VERBOSE
+        //             if (read_counters[i][j] != all_write_counters[i][j]) {
+        //                 mpz_add_ui(
+        //                     cache_possible_misread_counter, 
+        //                     cache_possible_misread_counter, 
+        //                     1
+        //                 );
+        //             }
+        //             else {
+        //                 mpz_add_ui(cache_hit_counter, cache_hit_counter, 1);
+        //             }
+        //         #endif 
 
-                // Compare point.
-                if (ecc_peqx(
-                    &tortoise_item[0], 
-                    &tortoise_item[item_size_limbs*2],
+        //         // Compare point.
+        //         if (ecc_peqx(
+        //             &tortoise_item[0], 
+        //             &tortoise_item[item_size_limbs*2],
                     
-                    &tmp_item[0], 
-                    &tmp_item[item_size_limbs*2],
+        //             &tmp_item[0], 
+        //             &tmp_item[item_size_limbs*2],
 
-                    curve_p,
-                    curve_P,
-                    item_size_limbs,
+        //             curve_p,
+        //             curve_P,
+        //             item_size_limbs,
 
-                    T
-                ))
-                {
-                    mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
-                    mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
-                    mpn_copyd(result_hare_item, tmp_item, item_size_limbs * 3);
-                    mpn_copyd(result_hare_index, tmp_index, index_size_limbs * 2);
+        //             T
+        //         ))
+        //         {
+        //             mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
+        //             mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
+        //             mpn_copyd(result_hare_item, tmp_item, item_size_limbs * 3);
+        //             mpn_copyd(result_hare_index, tmp_index, index_size_limbs * 2);
 
-                    shared_obj->founds[thread_no] = 1;
-                    shared_obj->overall_found = 1;
-                    goto dlog_thread_cleanup;
-                }
-            }
-        }
+        //             shared_obj->founds[thread_no] = 1;
+        //             shared_obj->overall_found = 1;
+        //             goto dlog_thread_cleanup;
+        //         }
+        //     }
+        // }
 
         // ---------------------------- updating lambda --------------------------
         lamda++;
         icache = next_icache;
+
+        count++;
+        if (count % 1000000 == 0) {
+            printf("%d", thread_no);
+            fflush(stdout);
+        }
     }
 
     // -------------------------------------------------------------------------------------
