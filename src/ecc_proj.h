@@ -42,4 +42,15 @@ int ecc_peqx(
     ecc_ptemp T                         // temporary variables, allocated with ecc_init_ptemp(T, n).
 );
 
+int ecc_peq(
+    mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,  // Px, Py, Pz must have n limbs allocated
+    mp_limb_t* QxR, mp_limb_t* QyR,               // QxR, QyR   must have n limbs allocated
+
+    mp_limb_t* curve_p,                           // curve_p must have n limbs allocated
+    mp_limb_t* curve_P,                           // curve_P must have n limbs allocated
+    mp_size_t n,                                  // number of limbs in curve->p
+    
+    ecc_ptemp T                                   // temporary variables, allocated with ecc_init_ptemp(T, n).
+);
+
 #endif

@@ -595,7 +595,7 @@ void* __thread__dlog_thread(
     tmp_item = mpn_init_zero(item_size_limbs * 3);
     tmp_index = mpn_init_zero(index_size_limbs * 2);
 
-    // while (!shared_obj->overall_found && count < 1000000) {
+    // while (!shared_obj->overall_found && count < 20) {
     while (!shared_obj->overall_found) {
         // ---------------------- updating the tortoise pointer -------------------------
         //                       (every 2^n steps, n increasing)                          
@@ -614,24 +614,55 @@ void* __thread__dlog_thread(
         all_write_counters[thread_no][next_icache]++;
 
         // element <- f(element)
-        ecc_padd(
-            &hare_item_cache[next_icache][0],
-            &hare_item_cache[next_icache][item_size_limbs],
-            &hare_item_cache[next_icache][item_size_limbs*2],
+        if (!ecc_peq(
+                &hare_item_cache[icache][0],
+                &hare_item_cache[icache][item_size_limbs],
+                &hare_item_cache[icache][item_size_limbs*2],
 
-            &hare_item_cache[icache][0],
-            &hare_item_cache[icache][item_size_limbs],
-            &hare_item_cache[icache][item_size_limbs*2],
+                &random_tG_add_skG[irand][0],
+                &random_tG_add_skG[irand][item_size_limbs],
 
-            &random_tG_add_skG[irand][0],
-            &random_tG_add_skG[irand][item_size_limbs],
-            
-            curve_p,
-            curve_P,
-            item_size_limbs,
+                curve_p,
+                curve_P,
+                item_size_limbs,
 
-            T
-        );
+                T
+            ))
+                ecc_padd(
+                    &hare_item_cache[next_icache][0],
+                    &hare_item_cache[next_icache][item_size_limbs],
+                    &hare_item_cache[next_icache][item_size_limbs*2],
+
+                    &hare_item_cache[icache][0],
+                    &hare_item_cache[icache][item_size_limbs],
+                    &hare_item_cache[icache][item_size_limbs*2],
+
+                    &random_tG_add_skG[irand][0],
+                    &random_tG_add_skG[irand][item_size_limbs],
+                    
+                    curve_p,
+                    curve_P,
+                    item_size_limbs,
+
+                    T
+                );
+        else
+                ecc_pdbl(
+                    &hare_item_cache[next_icache][0],
+                    &hare_item_cache[next_icache][item_size_limbs],
+                    &hare_item_cache[next_icache][item_size_limbs*2],
+
+                    &hare_item_cache[icache][0],
+                    &hare_item_cache[icache][item_size_limbs],
+                    &hare_item_cache[icache][item_size_limbs*2],
+
+                    curve_aR,
+                    curve_p,
+                    curve_P,
+                    item_size_limbs,
+
+                    T
+                );
 
         // mpnpt_sage_printf(
         //     &hare_item_cache[next_icache][0],
@@ -647,24 +678,22 @@ void* __thread__dlog_thread(
         //     item_size_limbs
         // );
 
-        return NULL;
+        // index change
+        mpn_addmod_n(
+            &hare_index_cache[next_icache][0],
+            &hare_index_cache[icache][0],
+            &random_ts[irand][0],
+            G_order,
+            index_size_limbs
+        );
 
-        // // index change
-        // mpn_addmod_n(
-        //     &hare_index_cache[next_icache][0],
-        //     &hare_index_cache[icache][0],
-        //     &random_ts[irand][0],
-        //     G_order,
-        //     index_size_limbs
-        // );
-
-        // mpn_addmod_n(
-        //     &hare_index_cache[next_icache][index_size_limbs],
-        //     &hare_index_cache[icache][index_size_limbs],
-        //     &random_ts[irand][index_size_limbs],
-        //     G_order,
-        //     index_size_limbs
-        // );
+        mpn_addmod_n(
+            &hare_index_cache[next_icache][index_size_limbs],
+            &hare_index_cache[icache][index_size_limbs],
+            &random_ts[irand][index_size_limbs],
+            G_order,
+            index_size_limbs
+        );
 
         all_write_counters[thread_no][next_icache]++;
 

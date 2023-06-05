@@ -158,3 +158,22 @@ int ecc_peqx(
     mpn_montgomery_mulmod_n(T[1], Pz, Qx, curve_p, curve_P, n, T[11]);
     return mpn_cmp(T[0], T[1], n) == 0;
 }
+
+int ecc_peq(
+    mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,  // Px, Py, Pz must have n limbs allocated
+    mp_limb_t* QxR, mp_limb_t* QyR,               // QxR, QyR   must have n limbs allocated
+
+    mp_limb_t* curve_p,                           // curve_p must have n limbs allocated
+    mp_limb_t* curve_P,                           // curve_P must have n limbs allocated
+    mp_size_t n,                                  // number of limbs in curve->p
+    
+    ecc_ptemp T                                   // temporary variables, allocated with ecc_init_ptemp(T, n).
+)
+{
+    mpn_montgomery_mulmod_n(T[0], Pz, QxR, curve_p, curve_P, n, T[11]);
+    mpn_montgomery_mulmod_n(T[1], Pz, QyR, curve_p, curve_P, n, T[11]);
+    return (
+        mpn_cmp(T[0], Px, n) == 0 &&
+        mpn_cmp(T[1], Py, n) == 0
+    );
+}

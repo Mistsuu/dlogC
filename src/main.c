@@ -441,6 +441,7 @@ void test11()
     ecc_free(curve);
 }
 
+
 void test12()
 {
     ecc curve;
@@ -478,7 +479,7 @@ void test12()
         k,
         G, kG, 
         n,
-        4,
+        1,
         5,
         20
     );
