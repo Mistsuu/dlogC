@@ -1,6 +1,8 @@
 #ifndef DLOG_H
 #define DLOG_H
 
+#define DLOG_VERBOSE             // todo: for debug only :) - remove when done.
+
 #include <gmp.h>
 #include <ex_assert.h>
 #include <stdint.h>
@@ -41,10 +43,6 @@ typedef struct dlog_obj_struct
     mp_limb_t** random_tG_add_skG;                  // r random points of t*G + s*kG (using X, Y coordinate in Montgomery Form.)
     mp_limb_t** random_ts;                          // r random multipliers t, s
 
-    /* other temporary stuffs for each thread */
-    ecc_ptemp* thread_ecc_ptemps;
-    mp_limb_t** thread_tmp_cache_reads;
-
     /* result storage */
     mp_limb_t** thread_result_tortoise_items;
     mp_limb_t** thread_result_hare_items;
@@ -54,6 +52,13 @@ typedef struct dlog_obj_struct
     /* result indicators */
     int* founds;
     int overall_found;
+
+    /* profiling variables -- for debug version only! */
+    #ifdef DLOG_VERBOSE
+        mpz_t* thread_cache_hit_counters;
+        mpz_t* thread_cache_miss_counters;
+        mpz_t* thread_cache_possible_misread_counters;
+    #endif
 
 } __dlog_obj_struct;
 
