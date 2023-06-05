@@ -464,6 +464,57 @@ void dlog_free_dlog_obj(dlog_obj obj)
     #endif
 }
 
+void dlog_print_report(
+    dlog_obj obj
+)
+{
+    #ifdef DLOG_VERBOSE
+        mpz_t total;
+        mpz_init(total);
+
+        printf("[debug] CACHE hit all threads: ");
+        mpz_set_ui(total, 0);
+        for (unsigned int i = 0; i < obj->n_threads; ++i)
+            mpz_add(total, total, obj->thread_cache_hit_counters[i]);
+        mpz_out_str(stdout, 10, total);
+        printf("\n");
+
+        for (unsigned int i = 0; i < obj->n_threads; ++i) {
+            printf("[debug]    -> thread %d: ", i);
+            mpz_out_str(stdout, 10, obj->thread_cache_hit_counters[i]);
+            printf("\n");
+        }
+
+        printf("[debug] CACHE miss all threads: ");
+        mpz_set_ui(total, 0);
+        for (unsigned int i = 0; i < obj->n_threads; ++i)
+            mpz_add(total, total, obj->thread_cache_miss_counters[i]);
+        mpz_out_str(stdout, 10, total);
+        printf("\n");
+
+        for (unsigned int i = 0; i < obj->n_threads; ++i) {
+            printf("[debug]    -> thread %d: ", i);
+            mpz_out_str(stdout, 10, obj->thread_cache_miss_counters[i]);
+            printf("\n");
+        }
+
+        printf("[debug] CACHE possible misread all threads: ");
+        mpz_set_ui(total, 0);
+        for (unsigned int i = 0; i < obj->n_threads; ++i)
+            mpz_add(total, total, obj->thread_cache_possible_misread_counters[i]);
+        mpz_out_str(stdout, 10, total);
+        printf("\n");
+
+        for (unsigned int i = 0; i < obj->n_threads; ++i) {
+            printf("[debug]    -> thread %d: ", i);
+            mpz_out_str(stdout, 10, obj->thread_cache_possible_misread_counters[i]);
+            printf("\n");
+        }
+
+        mpz_clear(total);
+    #endif
+}
+
 int dlog2(
     ecc curve, 
     mpz_t k, 
@@ -565,8 +616,15 @@ int dlog2(
     #endif
 
     // -------------------------------------------------------------------------------------
-    //      Bye!
+    //      Doing dlog()...
     // -------------------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------------------
+    //      Print out report...
+    // -------------------------------------------------------------------------------------
+    #ifdef DLOG_VERBOSE
+        dlog_print_report(obj);
+    #endif
 
     // -------------------------------------------------------------------------------------
     //      Bye! There's no way we reach
