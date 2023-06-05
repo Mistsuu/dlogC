@@ -324,7 +324,7 @@ void dlog_fill_dlog_obj(
     mpz_init_set_ui(mpz_1, 1);
 
     for (unsigned int i = 0; i < n_threads; ++i) {
-        for (unsigned int j = 0; j < n_caches; ++i) {
+        for (unsigned int j = 0; j < n_caches; ++j) {
             mpz_dev_urandomm(t, G_mult_order);
             mpz_dev_urandomm(s, G_mult_order);
 
@@ -493,6 +493,7 @@ int dlog2(
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
         printf("[debug] n_caches = %d\n", n_caches);
+        printf("[debug] n_randindices = %d\n", n_caches);
     #endif
 
     int dlog_status;
@@ -557,6 +558,11 @@ int dlog2(
         n_caches,
         n_randindices
     );
+
+    #ifdef DLOG_VERBOSE
+        printf("[debug] index_size_limbs = %ld\n", obj->index_size_limbs);
+        printf("[debug] item_size_limbs = %ld\n", obj->item_size_limbs);
+    #endif
 
     // -------------------------------------------------------------------------------------
     //      Bye!
