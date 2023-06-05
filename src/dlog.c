@@ -185,28 +185,26 @@ void dlog_init_dlog_obj(
     obj->curve_P  = mpn_init_zero(obj->item_size_limbs);
     obj->G_order  = mpn_init_zero(obj->index_size_limbs);
 
-    obj->thread_tortoise_item_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_tortoise_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_tortoise_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_item_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
-    obj->thread_tortoise_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
     obj->thread_hare_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
     obj->thread_read_counters = (unsigned long***)malloc_exit_when_null(sizeof(unsigned long**) * n_threads);
     obj->thread_write_counters = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
 
     for (unsigned int i = 0; i < n_threads; ++i) {
-        obj->thread_tortoise_item_caches[i] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
+        obj->thread_tortoise_items[i] = mpn_init_zero(obj->item_size_limbs * 3);
+        obj->thread_tortoise_indices[i] = mpn_init_zero(obj->index_size_limbs * 2);
+        
         obj->thread_hare_item_caches[i] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
-        obj->thread_tortoise_index_caches[i] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
         obj->thread_hare_index_caches[i] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
-        obj->thread_read_counters[i] = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
-        obj->thread_write_counters[i] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
-
         for (unsigned int j = 0; j < n_caches; ++j) {
-            obj->thread_tortoise_item_caches[i][j] = mpn_init_zero(obj->item_size_limbs * 3);
             obj->thread_hare_item_caches[i][j] = mpn_init_zero(obj->item_size_limbs * 3);
-            obj->thread_tortoise_index_caches[i][j] = mpn_init_zero(obj->index_size_limbs * 2);
             obj->thread_hare_index_caches[i][j] = mpn_init_zero(obj->index_size_limbs * 2);
         }
 
+        obj->thread_read_counters[i] = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
+        obj->thread_write_counters[i] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
         for (unsigned int j = 0; j < n_threads; ++j) {
             obj->thread_read_counters[i][j] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
         }
@@ -324,24 +322,24 @@ void dlog_fill_dlog_obj(
     mpz_init_set_ui(mpz_1, 1);
 
     for (unsigned int i = 0; i < n_threads; ++i) {
+        mpz_dev_urandomm(t, G_mult_order);
+        mpz_dev_urandomm(s, G_mult_order);
+
+        ecc_mul_noverify(curve, tG, G, t);
+        ecc_mul_noverify(curve, skG, kG, s);
+        ecc_add_noverify(curve, tG_add_skG, tG, skG);
+
+        mpn_cpyz( obj->thread_tortoise_items[i],                         tG_add_skG->x, obj->item_size_limbs);
+        mpn_cpyz(&obj->thread_tortoise_items[i][obj->item_size_limbs],   tG_add_skG->y, obj->item_size_limbs);
+        mpn_cpyz(&obj->thread_tortoise_items[i][obj->item_size_limbs*2], mpz_1,         obj->item_size_limbs);
+
+        mpn_cpyz( obj->thread_tortoise_indices[i],                        t, obj->index_size_limbs);
+        mpn_cpyz(&obj->thread_tortoise_indices[i][obj->index_size_limbs], s, obj->index_size_limbs);
+
         for (unsigned int j = 0; j < n_caches; ++j) {
-            mpz_dev_urandomm(t, G_mult_order);
-            mpz_dev_urandomm(s, G_mult_order);
-
-            ecc_mul_noverify(curve, tG, G, t);
-            ecc_mul_noverify(curve, skG, kG, s);
-            ecc_add_noverify(curve, tG_add_skG, tG, skG);
-
-            mpn_cpyz( obj->thread_tortoise_item_caches[i][j],                         tG_add_skG->x, obj->item_size_limbs);
-            mpn_cpyz(&obj->thread_tortoise_item_caches[i][j][obj->item_size_limbs],   tG_add_skG->y, obj->item_size_limbs);
-            mpn_cpyz(&obj->thread_tortoise_item_caches[i][j][obj->item_size_limbs*2], mpz_1,         obj->item_size_limbs);
-
             mpn_cpyz( obj->thread_hare_item_caches[i][j],                         tG_add_skG->x, obj->item_size_limbs);
             mpn_cpyz(&obj->thread_hare_item_caches[i][j][obj->item_size_limbs],   tG_add_skG->y, obj->item_size_limbs);
             mpn_cpyz(&obj->thread_hare_item_caches[i][j][obj->item_size_limbs*2], mpz_1,         obj->item_size_limbs);
-
-            mpn_cpyz( obj->thread_tortoise_index_caches[i][j],                        t, obj->index_size_limbs);
-            mpn_cpyz(&obj->thread_tortoise_index_caches[i][j][obj->index_size_limbs], s, obj->index_size_limbs);
 
             mpn_cpyz( obj->thread_hare_index_caches[i][j],                        t, obj->index_size_limbs);
             mpn_cpyz(&obj->thread_hare_index_caches[i][j][obj->index_size_limbs], s, obj->index_size_limbs);
@@ -406,10 +404,11 @@ void dlog_free_dlog_obj(
     free(obj->G_order);
 
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        free(obj->thread_tortoise_items[i]);
+        free(obj->thread_tortoise_indices[i]);
+
         for (unsigned int j = 0; j < obj->n_caches; ++j) {
-            free(obj->thread_tortoise_item_caches[i][j]);
             free(obj->thread_hare_item_caches[i][j]);
-            free(obj->thread_tortoise_index_caches[i][j]);
             free(obj->thread_hare_index_caches[i][j]);
         }
 
@@ -417,17 +416,16 @@ void dlog_free_dlog_obj(
             free(obj->thread_read_counters[i][j]);
         }
 
-        free(obj->thread_tortoise_item_caches[i]);
         free(obj->thread_hare_item_caches[i]);
-        free(obj->thread_tortoise_index_caches[i]);
         free(obj->thread_hare_index_caches[i]);
+
         free(obj->thread_read_counters[i]);
         free(obj->thread_write_counters[i]);
     }
 
-    free(obj->thread_tortoise_item_caches);
+    free(obj->thread_tortoise_items);
     free(obj->thread_hare_item_caches);
-    free(obj->thread_tortoise_index_caches);
+    free(obj->thread_tortoise_indices);
     free(obj->thread_hare_index_caches);
     free(obj->thread_read_counters);
     free(obj->thread_write_counters);
@@ -442,14 +440,14 @@ void dlog_free_dlog_obj(
 
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
         free(obj->thread_result_tortoise_items[i]);
-        free(obj->thread_result_hare_items[i]);
         free(obj->thread_result_tortoise_indices[i]);
+        free(obj->thread_result_hare_items[i]);
         free(obj->thread_result_hare_indices[i]);
     }
     
     free(obj->thread_result_tortoise_items);
-    free(obj->thread_result_hare_items);
     free(obj->thread_result_tortoise_indices);
+    free(obj->thread_result_hare_items);
     free(obj->thread_result_hare_indices);
 
     free(obj->founds);
@@ -522,7 +520,82 @@ void* __thread__dlog_thread(
     void* vargs
 )
 {
+    // -------------------------------------------------------------------------------------
+    //      Setup arguments.
+    // -------------------------------------------------------------------------------------
+    __args_thread__dlog_thread* args = (__args_thread__dlog_thread*) vargs;
+    
+    dlog_obj_ptr shared_obj = args->shared_obj;
 
+    unsigned int thread_no     = args->thread_no;
+    unsigned int n_threads     = shared_obj->n_threads;
+    unsigned int n_caches      = shared_obj->n_caches;
+    unsigned int n_randindices = shared_obj->n_randindices;
+
+    mp_size_t item_size_limbs  = shared_obj->item_size_limbs;
+    mp_size_t index_size_limbs = shared_obj->index_size_limbs;
+
+    mp_limb_t* curve_aR = shared_obj->curve_aR;
+    mp_limb_t* curve_bR = shared_obj->curve_bR;
+    mp_limb_t* curve_p  = shared_obj->curve_p;
+    mp_limb_t* curve_P  = shared_obj->curve_P;
+    mp_limb_t* G_order  = shared_obj->G_order;
+
+    mp_limb_t**     all_tortoise_items    = shared_obj->thread_tortoise_items;
+    mp_limb_t**     all_tortoise_indices  = shared_obj->thread_tortoise_indices;
+    mp_limb_t***    all_hare_item_caches  = shared_obj->thread_hare_item_caches;
+    mp_limb_t***    all_hare_index_caches = shared_obj->thread_hare_index_caches;
+    unsigned long** read_counters         = shared_obj->thread_read_counters[thread_no];
+    unsigned long** all_write_counters    = shared_obj->thread_write_counters;
+
+    mp_limb_t*  tortoise_item    = all_tortoise_items[thread_no];
+    mp_limb_t*  tortoise_index   = all_tortoise_indices[thread_no];
+    mp_limb_t** hare_item_cache  = all_hare_item_caches[thread_no];
+    mp_limb_t** hare_index_cache = all_hare_index_caches[thread_no];
+
+    mp_limb_t** random_tG_add_skG = shared_obj->random_tG_add_skG;    
+    mp_limb_t** random_ts         = shared_obj->random_ts;
+
+    mp_limb_t* result_tortoise_item  = shared_obj->thread_result_tortoise_items[thread_no];
+    mp_limb_t* result_hare_item      = shared_obj->thread_result_hare_items[thread_no];
+    mp_limb_t* result_tortoise_index = shared_obj->thread_result_tortoise_indices[thread_no];
+    mp_limb_t* result_hare_index     = shared_obj->thread_result_hare_indices[thread_no];
+
+    #ifdef DLOG_VERBOSE
+        mpz_ptr cache_hit_counter              = shared_obj->thread_cache_hit_counters[thread_no];
+        mpz_ptr cache_miss_counter             = shared_obj->thread_cache_miss_counters[thread_no];
+        mpz_ptr cache_possible_misread_counter = shared_obj->thread_cache_possible_misread_counters[thread_no];
+    #endif
+
+    // -------------------------------------------------------------------------------------
+    //      Real calculation.
+    //      Do a cycle detection using Brent's algorithm.
+    // -------------------------------------------------------------------------------------
+    unsigned long power = 1;
+    unsigned long lamda = 1;
+    unsigned long icache = 0;
+    while (1) {
+        if (power == lamda) {
+            power <<= 1;
+            assertf(power != 0, "Wow computers are so good nowadays. We've reached the limit of %ld bits, there's nothing we can do now...", sizeof(unsigned long) * 8);
+            lamda = 0;
+
+            mpn_copyd(tortoise_item, hare_item_cache[icache], item_size_limbs * 3);
+            mpn_copyd(tortoise_index, hare_index_cache[icache], index_size_limbs * 2);
+        }
+
+        lamda++;
+
+        #ifdef DLOG_VERBOSE
+            
+        #endif
+    }
+
+
+    // -------------------------------------------------------------------------------------
+    //      Cleanup
+    // -------------------------------------------------------------------------------------
+    return NULL;
 }
 
 int dlog_main_process(
