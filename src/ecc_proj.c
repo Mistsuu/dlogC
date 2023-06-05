@@ -33,7 +33,7 @@ void ecc_free_ptemp(ecc_ptemp T)
 
 void ecc_padd(
     mp_limb_t* Rx,  mp_limb_t* Ry,  mp_limb_t* Rz,       // Rx, Ry, Rz must have n limbs allocated
-    mp_limb_t* Px,  mp_limb_t* Py,  mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
+    mp_limb_t* Px,  mp_limb_t* Py,  mp_limb_t* Pz,       // Px, Py, Pz must have n limbs allocated
     mp_limb_t* QxR, mp_limb_t* QyR,                      // QxR, QyR   must have n limbs allocated
 
     mp_limb_t* curve_p,                                  // curve_p must have n limbs allocated
@@ -83,7 +83,7 @@ void ecc_padd(
 
 void ecc_pdbl(
     mp_limb_t* Rx, mp_limb_t* Ry, mp_limb_t* Rz,       // Rx, Ry, Rz must have n limbs allocated
-    mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Ry, Pz must have n limbs allocated
+    mp_limb_t* Px, mp_limb_t* Py, mp_limb_t* Pz,       // Px, Py, Pz must have n limbs allocated
 
     mp_limb_t* curve_aR,                               // curve_aR must have n limbs allocated
     mp_limb_t* curve_p,                                // curve_p must have n limbs allocated
@@ -141,4 +141,20 @@ void ecc_pdbl(
     mpn_montgomery_submod_n(Ry, Ry, T[7], curve_p, n);
     // Y3 = Y3-RR
     mpn_montgomery_submod_n(Ry, Ry, T[7], curve_p, n);
+}
+
+int ecc_peqx(
+    mp_limb_t* Rx, mp_limb_t* Rz,       // Rx, Rz must have n limbs allocated
+    mp_limb_t* Px, mp_limb_t* Pz,       // Px, Pz must have n limbs allocated
+
+    mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
+    mp_limb_t* curve_P,                 // curve_P must have n limbs allocated
+    mp_size_t n,                        // number of limbs in curve->p
+    
+    ecc_ptemp T                         // temporary variables, allocated with ecc_init_ptemp(T, n).
+)
+{
+    mpn_montgomery_mulmod_n(T[0], Rx, Pz, curve_p, curve_P, n, T[11]);
+    mpn_montgomery_mulmod_n(T[1], Rz, Px, curve_p, curve_P, n, T[11]);
+    return mpn_cmp(T[0], T[1], n) == 0;
 }
