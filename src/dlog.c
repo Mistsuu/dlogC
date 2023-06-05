@@ -807,7 +807,7 @@ void* __thread__dlog_thread(
         icache = next_icache;
 
         count++;
-        if (count % 1000000 == 0) {
+        if (count % 10000000 == 0) {
             printf("%d", thread_no);
             fflush(stdout);
         }
@@ -824,7 +824,7 @@ dlog_thread_cleanup:
     return NULL;
 }
 
-int dlog_main_process(
+void dlog_cycle_search(
     dlog_obj obj
 )
 {
@@ -845,7 +845,7 @@ int dlog_main_process(
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
         result_code = pthread_create(&threads[i], NULL, __thread__dlog_thread, (void*)(&thread_args[i]));
         if (result_code) {
-            printf("[error] oh no! dlog_main_process cannot CREATE thread!!!\n");
+            printf("[error] oh no! dlog_cycle_search cannot CREATE thread!!!\n");
             exit(-1);
         }
     }
@@ -853,7 +853,7 @@ int dlog_main_process(
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
         result_code = pthread_join(threads[i], NULL);
         if (result_code) {
-            printf("[error] oh no! dlog_main_process cannot JOIN thread!!!\n");
+            printf("[error] oh no! dlog_cycle_search cannot JOIN thread!!!\n");
             exit(-1);
         }
     }
@@ -863,9 +863,130 @@ int dlog_main_process(
     // -------------------------------------------------------------------------------------
     free(thread_args);
     free(threads);
+}
 
-    // todo: return a variable `dlog_status`.
-    return DLOG_SUCCESS;
+void dlog_reset_search(
+    dlog_obj obj
+)
+{
+    memset(obj->founds, 0, sizeof(int) * obj->n_threads);
+    obj->overall_found = 0;
+}
+
+int dlog_get_answer(
+    ecc curve,
+    mpz_t k,
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order,
+
+    dlog_obj obj
+)
+{
+    int dlog_status = DLOG_BAD_COLLISION;
+
+    mpz_t t1; mpz_init(t1);
+    mpz_t s1; mpz_init(s1);
+    mpz_t t2; mpz_init(t2);
+    mpz_t s2; mpz_init(s2);
+
+    mpz_t tmp; mpz_init(tmp);
+    eccpt TMP; ecc_init_pt(TMP);
+
+    eccpt t1G_s1kG; ecc_init_pt(t1G_s1kG);
+    eccpt t2G_s2kG; ecc_init_pt(t2G_s2kG);
+
+    for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        if (obj->founds[i]) {
+            // mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
+            // mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
+            // mpn_copyd(result_hare_item, hare_item_cache[next_icache], item_size_limbs * 3);
+            // mpn_copyd(result_hare_index, hare_index_cache[next_icache], index_size_limbs * 2);
+
+            mpz_set_mpn(t1, &obj->thread_result_tortoise_indices[i][0],                     obj->index_size_limbs);
+            mpz_set_mpn(s1, &obj->thread_result_tortoise_indices[i][obj->index_size_limbs], obj->index_size_limbs);
+            mpz_set_mpn(t2, &obj->thread_result_hare_indices[i][0],                         obj->index_size_limbs);
+            mpz_set_mpn(s2, &obj->thread_result_hare_indices[i][obj->index_size_limbs],     obj->index_size_limbs);
+
+            mpz_set_mpn(t1G_s1kG->x, &obj->thread_result_tortoise_items[i][0],                      obj->item_size_limbs);
+            mpz_set_mpn(t1G_s1kG->y, &obj->thread_result_tortoise_items[i][obj->item_size_limbs],   obj->item_size_limbs);
+            mpz_set_mpn(t1G_s1kG->z, &obj->thread_result_tortoise_items[i][obj->item_size_limbs*2], obj->item_size_limbs);
+
+            mpz_set_mpn(t2G_s2kG->x, &obj->thread_result_hare_items[i][0],                      obj->item_size_limbs);
+            mpz_set_mpn(t2G_s2kG->y, &obj->thread_result_hare_items[i][obj->item_size_limbs],   obj->item_size_limbs);
+            mpz_set_mpn(t2G_s2kG->z, &obj->thread_result_hare_items[i][obj->item_size_limbs*2], obj->item_size_limbs);
+            
+            printf("[debug] dafuq\n");
+            printf("[debug] t1 = ");
+            mpz_out_str(stdout, 10, t1);
+            printf("\n");
+            printf("[debug] t2 = ");
+            mpz_out_str(stdout, 10, t2);
+            printf("\n");
+            printf("[debug] s1 = ");
+            mpz_out_str(stdout, 10, s1);
+            printf("\n");
+            printf("[debug] s2 = ");
+            mpz_out_str(stdout, 10, s2);
+            printf("\n");
+
+            printf("[debug] t1G_s1kG = ");
+            ecc_printf_pt(t1G_s1kG);
+            printf("\n");
+            printf("[debug] t2G_s2kG = ");
+            ecc_printf_pt(t2G_s2kG);
+            printf("\n");
+
+            // because we have x(tortoise) = x(hare)
+            // we have 2 different routes:
+            // tortoise = hare
+            if (mpz_cmp(t1, t2) != 0) {
+                mpz_sub(k, s2, s1);
+                mpz_invert(k, k, G_mult_order);
+                mpz_sub(tmp, t1, t2);
+                mpz_mul(k, k, tmp);
+                mpz_mod(k, k, G_mult_order);
+
+                // if k*G == kG -> found!
+                ecc_mul(curve, TMP, G, k);
+                if (ecc_eq(curve, TMP, kG) == 1) {
+                    dlog_status = DLOG_SUCCESS;
+                    break;
+                }
+            }
+
+            // tortoise = -hare
+            mpz_add(tmp, s1, s2);
+            mpz_mod(tmp, tmp, G_mult_order);
+            if (mpz_cmp_ui(tmp, 0) != 0) {
+                mpz_add(k, s2, s1);
+                mpz_invert(k, k, G_mult_order);
+                mpz_sub(k, G_mult_order, k);
+                mpz_add(tmp, t1, t2);
+                mpz_mul(k, k, tmp);
+                mpz_mod(k, k, G_mult_order);
+
+                // if k*G == kG -> found!
+                ecc_mul(curve, TMP, G, k);
+                if (ecc_eq(curve, TMP, kG) == 1) {
+                    printf("adfjlasfdjsjfkjfsljfajsff\n");
+                    dlog_status = DLOG_SUCCESS;
+                    break;
+                }
+            }
+        }
+    }
+
+    mpz_clear(t1);
+    mpz_clear(s1);
+    mpz_clear(t2);
+    mpz_clear(s2);
+    mpz_clear(tmp);
+
+    ecc_free_pt(TMP);
+    ecc_free_pt(t1G_s1kG);
+    ecc_free_pt(t2G_s2kG);
+
+    return dlog_status;
 }
 
 int dlog2(
@@ -971,10 +1092,26 @@ int dlog2(
     // -------------------------------------------------------------------------------------
     //      Doing dlog()...
     // -------------------------------------------------------------------------------------
-    while (dlog_main_process(obj) == DLOG_BAD_COLLISION) {
+    while (1) {
+        dlog_cycle_search(obj);
         #ifdef DLOG_VERBOSE
-            printf("[debug] It seems like we have found collision but the result is not correct! Doing dlog_main_process() again...\n");
+            printf("[debug] Collision found!\n");
         #endif
+
+        if (dlog_get_answer(curve, k, G, kG, G_mult_order, obj) == DLOG_SUCCESS) {
+            #ifdef DLOG_VERBOSE
+                printf("[debug] Finished. Found k = ");
+                mpz_out_str(stdout, 10, k);
+                printf("\n");
+            #endif
+
+            break;
+        }
+
+        #ifdef DLOG_VERBOSE
+            printf("[debug] The result is not correct!? Running cycle detection again...\n");
+        #endif
+        dlog_reset_search(obj);
     }
 
     // -------------------------------------------------------------------------------------

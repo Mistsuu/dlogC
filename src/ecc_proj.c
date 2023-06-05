@@ -156,7 +156,10 @@ int ecc_peqx(
 {
     mpn_montgomery_mulmod_n(T[0], Px, Qz, curve_p, curve_P, n, T[11]);
     mpn_montgomery_mulmod_n(T[1], Pz, Qx, curve_p, curve_P, n, T[11]);
-    return mpn_cmp(T[0], T[1], n) == 0;
+    return (
+        mpn_cmp(T[0], T[1], n) == 0 &&
+        mpn_zero_p(Pz, n) == mpn_zero_p(Qz, n)
+    );
 }
 
 int ecc_peq(
@@ -174,6 +177,7 @@ int ecc_peq(
     mpn_montgomery_mulmod_n(T[1], Pz, QyR, curve_p, curve_P, n, T[11]);
     return (
         mpn_cmp(T[0], Px, n) == 0 &&
-        mpn_cmp(T[1], Py, n) == 0
+        mpn_cmp(T[1], Py, n) == 0 &&
+        !mpn_zero_p(Pz, n)
     );
 }

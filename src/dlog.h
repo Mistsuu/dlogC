@@ -119,7 +119,20 @@ void dlog_print_cache_performance_report(
     dlog_obj obj
 );
 
-int dlog_main_process(
+void dlog_cycle_search(
+    dlog_obj obj
+);
+
+void dlog_reset_search(
+    dlog_obj obj
+);
+
+int dlog_get_answer(
+    ecc curve,
+    mpz_t k,
+    eccpt G, eccpt kG,
+    mpz_t G_mult_order,
+    
     dlog_obj obj
 );
 
