@@ -34,6 +34,25 @@ void mpz_dev_urandomm(mpz_t rop, const mpz_t n)
     fclose(fptr);
 }
 
+void mpz_init_set_mpn(mpz_t rop, mp_limb_t* xp, mp_size_t n)
+{
+    mpz_init(rop);
+    mp_limb_t* tp = mpz_limbs_modify(rop, n);
+    mpn_copyd(tp, xp, n);
+    while (n && !xp[n-1])
+        n--;
+    mpz_limbs_finish(rop, n);
+}
+
+void mpz_set_mpn(mpz_t rop, mp_limb_t* xp, mp_size_t n)
+{
+    mp_limb_t* tp = mpz_limbs_modify(rop, n);
+    mpn_copyd(tp, xp, n);
+    while (n && !xp[n-1])
+        n--;
+    mpz_limbs_finish(rop, n);
+}
+
 // =================================================================================
 //                                 ARITHMETICS STUFFS
 // =================================================================================
