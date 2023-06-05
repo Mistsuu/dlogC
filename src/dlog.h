@@ -62,7 +62,13 @@ typedef struct dlog_obj_struct
 
 } __dlog_obj_struct;
 
-typedef __dlog_obj_struct dlog_obj[1];
+typedef __dlog_obj_struct  dlog_obj[1];
+typedef __dlog_obj_struct* dlog_obj_ptr;
+
+typedef struct {
+    dlog_obj_ptr shared_obj;
+    unsigned int thread_no;
+} __args_thread__dlog_thread;
 
 int dlog_validate_input(
     ecc curve,
@@ -106,6 +112,14 @@ void dlog_fill_dlog_obj(
 );
 
 void dlog_free_dlog_obj(
+    dlog_obj obj
+);
+
+void dlog_print_cache_performance_report(
+    dlog_obj obj
+);
+
+int dlog_main_process(
     dlog_obj obj
 );
 

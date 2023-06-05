@@ -395,7 +395,9 @@ void dlog_fill_dlog_obj(
     ecc_free_pt(tG_add_skG);
 }
 
-void dlog_free_dlog_obj(dlog_obj obj)
+void dlog_free_dlog_obj(
+    dlog_obj obj
+)
 {
     free(obj->curve_aR);
     free(obj->curve_bR);
@@ -516,6 +518,57 @@ void dlog_print_cache_performance_report(
     #endif
 }
 
+void* __thread__dlog_thread(
+    void* vargs
+)
+{
+
+}
+
+int dlog_main_process(
+    dlog_obj obj
+)
+{
+    // -------------------------------------------------------------------------------------
+    //      Initialize arguments of __thread__dlog_thread.
+    // -------------------------------------------------------------------------------------
+    __args_thread__dlog_thread* thread_args = (__args_thread__dlog_thread*) malloc_exit_when_null(sizeof(__args_thread__dlog_thread) * obj->n_threads);
+    for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        thread_args[i].shared_obj = obj;
+        thread_args[i].thread_no  = i;
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Generate threads.
+    // -------------------------------------------------------------------------------------
+    pthread_t* threads = (pthread_t*) malloc_exit_when_null(sizeof(pthread_t) * obj->n_threads);
+    int result_code;
+    for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        result_code = pthread_create(&threads[i], NULL, __thread__dlog_thread, (void*)(&thread_args[i]));
+        if (result_code) {
+            printf("[error] oh no! dlog_main_process cannot CREATE thread!!!\n");
+            exit(-1);
+        }
+    }
+
+    for (unsigned int i = 0; i < obj->n_threads; ++i) {
+        result_code = pthread_join(threads[i], NULL);
+        if (result_code) {
+            printf("[error] oh no! dlog_main_process cannot JOIN thread!!!\n");
+            exit(-1);
+        }
+    }
+
+    // -------------------------------------------------------------------------------------
+    //      Cleaning up.
+    // -------------------------------------------------------------------------------------
+    free(thread_args);
+    free(threads);
+
+    // todo: return a variable `dlog_status`.
+    return DLOG_SUCCESS;
+}
+
 int dlog2(
     ecc curve, 
     mpz_t k, 
@@ -619,6 +672,11 @@ int dlog2(
     // -------------------------------------------------------------------------------------
     //      Doing dlog()...
     // -------------------------------------------------------------------------------------
+    while (dlog_main_process(obj) == DLOG_BAD_COLLISION) {
+        #ifdef DLOG_VERBOSE
+            printf("[debug] It seems like we have found collision but the result is not correct! Doing dlog_main_process() again...\n");
+        #endif
+    }
 
     // -------------------------------------------------------------------------------------
     //      Print out report...
