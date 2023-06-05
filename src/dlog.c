@@ -464,7 +464,7 @@ void dlog_free_dlog_obj(dlog_obj obj)
     #endif
 }
 
-void dlog_print_report(
+void dlog_print_cache_performance_report(
     dlog_obj obj
 )
 {
@@ -472,6 +472,7 @@ void dlog_print_report(
         mpz_t total;
         mpz_init(total);
 
+        printf("\n*********************** CACHE REPORT ***********************\n");
         printf("[debug] CACHE hit all threads: ");
         mpz_set_ui(total, 0);
         for (unsigned int i = 0; i < obj->n_threads; ++i)
@@ -510,7 +511,7 @@ void dlog_print_report(
             mpz_out_str(stdout, 10, obj->thread_cache_possible_misread_counters[i]);
             printf("\n");
         }
-
+        printf("************************************************************\n");
         mpz_clear(total);
     #endif
 }
@@ -544,7 +545,7 @@ int dlog2(
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
         printf("[debug] n_caches = %d\n", n_caches);
-        printf("[debug] n_randindices = %d\n", n_caches);
+        printf("[debug] n_randindices = %d\n", n_randindices);
     #endif
 
     int dlog_status;
@@ -623,7 +624,7 @@ int dlog2(
     //      Print out report...
     // -------------------------------------------------------------------------------------
     #ifdef DLOG_VERBOSE
-        dlog_print_report(obj);
+        dlog_print_cache_performance_report(obj);
     #endif
 
     // -------------------------------------------------------------------------------------
