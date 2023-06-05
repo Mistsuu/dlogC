@@ -217,13 +217,9 @@ void dlog_init_dlog_obj(
         obj->random_ts[i] = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
-    obj->thread_result_tortoise_items   = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
-    obj->thread_result_hare_items       = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_result_tortoise_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_result_hare_indices     = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     for (unsigned int i = 0; i < n_threads; ++i) {
-        obj->thread_result_tortoise_items[i]   = mpn_init_zero(obj->item_size_limbs * 3);
-        obj->thread_result_hare_items[i]       = mpn_init_zero(obj->item_size_limbs * 3);
         obj->thread_result_tortoise_indices[i] = mpn_init_zero(obj->index_size_limbs * 2);
         obj->thread_result_hare_indices[i]     = mpn_init_zero(obj->index_size_limbs * 2);
     }
@@ -433,15 +429,11 @@ void dlog_free_dlog_obj(
     free(obj->random_ts);
 
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
-        free(obj->thread_result_tortoise_items[i]);
         free(obj->thread_result_tortoise_indices[i]);
-        free(obj->thread_result_hare_items[i]);
         free(obj->thread_result_hare_indices[i]);
     }
     
-    free(obj->thread_result_tortoise_items);
     free(obj->thread_result_tortoise_indices);
-    free(obj->thread_result_hare_items);
     free(obj->thread_result_hare_indices);
 
     free(obj->founds);
@@ -566,8 +558,6 @@ void* __thread__dlog_thread(
     mp_limb_t** random_tG_add_skG = shared_obj->random_tG_add_skG;    
     mp_limb_t** random_ts         = shared_obj->random_ts;
 
-    mp_limb_t* result_tortoise_item  = shared_obj->thread_result_tortoise_items[thread_no];
-    mp_limb_t* result_hare_item      = shared_obj->thread_result_hare_items[thread_no];
     mp_limb_t* result_tortoise_index = shared_obj->thread_result_tortoise_indices[thread_no];
     mp_limb_t* result_hare_index     = shared_obj->thread_result_hare_indices[thread_no];
 
@@ -712,9 +702,7 @@ void* __thread__dlog_thread(
             T
         ))
         {
-            mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
             mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
-            mpn_copyd(result_hare_item, hare_item_cache[next_icache], item_size_limbs * 3);
             mpn_copyd(result_hare_index, hare_index_cache[next_icache], index_size_limbs * 2);
 
             shared_obj->founds[thread_no] = 1;
@@ -892,49 +880,12 @@ int dlog_get_answer(
     mpz_t tmp; mpz_init(tmp);
     eccpt TMP; ecc_init_pt(TMP);
 
-    eccpt t1G_s1kG; ecc_init_pt(t1G_s1kG);
-    eccpt t2G_s2kG; ecc_init_pt(t2G_s2kG);
-
     for (unsigned int i = 0; i < obj->n_threads; ++i) {
         if (obj->founds[i]) {
-            // mpn_copyd(result_tortoise_item, tortoise_item, item_size_limbs * 3);
-            // mpn_copyd(result_tortoise_index, tortoise_index, index_size_limbs * 2);
-            // mpn_copyd(result_hare_item, hare_item_cache[next_icache], item_size_limbs * 3);
-            // mpn_copyd(result_hare_index, hare_index_cache[next_icache], index_size_limbs * 2);
-
             mpz_set_mpn(t1, &obj->thread_result_tortoise_indices[i][0],                     obj->index_size_limbs);
             mpz_set_mpn(s1, &obj->thread_result_tortoise_indices[i][obj->index_size_limbs], obj->index_size_limbs);
             mpz_set_mpn(t2, &obj->thread_result_hare_indices[i][0],                         obj->index_size_limbs);
             mpz_set_mpn(s2, &obj->thread_result_hare_indices[i][obj->index_size_limbs],     obj->index_size_limbs);
-
-            mpz_set_mpn(t1G_s1kG->x, &obj->thread_result_tortoise_items[i][0],                      obj->item_size_limbs);
-            mpz_set_mpn(t1G_s1kG->y, &obj->thread_result_tortoise_items[i][obj->item_size_limbs],   obj->item_size_limbs);
-            mpz_set_mpn(t1G_s1kG->z, &obj->thread_result_tortoise_items[i][obj->item_size_limbs*2], obj->item_size_limbs);
-
-            mpz_set_mpn(t2G_s2kG->x, &obj->thread_result_hare_items[i][0],                      obj->item_size_limbs);
-            mpz_set_mpn(t2G_s2kG->y, &obj->thread_result_hare_items[i][obj->item_size_limbs],   obj->item_size_limbs);
-            mpz_set_mpn(t2G_s2kG->z, &obj->thread_result_hare_items[i][obj->item_size_limbs*2], obj->item_size_limbs);
-            
-            printf("[debug] dafuq\n");
-            printf("[debug] t1 = ");
-            mpz_out_str(stdout, 10, t1);
-            printf("\n");
-            printf("[debug] t2 = ");
-            mpz_out_str(stdout, 10, t2);
-            printf("\n");
-            printf("[debug] s1 = ");
-            mpz_out_str(stdout, 10, s1);
-            printf("\n");
-            printf("[debug] s2 = ");
-            mpz_out_str(stdout, 10, s2);
-            printf("\n");
-
-            printf("[debug] t1G_s1kG = ");
-            ecc_printf_pt(t1G_s1kG);
-            printf("\n");
-            printf("[debug] t2G_s2kG = ");
-            ecc_printf_pt(t2G_s2kG);
-            printf("\n");
 
             // because we have x(tortoise) = x(hare)
             // we have 2 different routes:
@@ -968,7 +919,6 @@ int dlog_get_answer(
                 // if k*G == kG -> found!
                 ecc_mul(curve, TMP, G, k);
                 if (ecc_eq(curve, TMP, kG) == 1) {
-                    printf("adfjlasfdjsjfkjfsljfajsff\n");
                     dlog_status = DLOG_SUCCESS;
                     break;
                 }
@@ -983,9 +933,6 @@ int dlog_get_answer(
     mpz_clear(tmp);
 
     ecc_free_pt(TMP);
-    ecc_free_pt(t1G_s1kG);
-    ecc_free_pt(t2G_s2kG);
-
     return dlog_status;
 }
 
@@ -1104,7 +1051,6 @@ int dlog2(
                 mpz_out_str(stdout, 10, k);
                 printf("\n");
             #endif
-
             break;
         }
 

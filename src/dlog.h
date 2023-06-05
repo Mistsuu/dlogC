@@ -44,8 +44,6 @@ typedef struct dlog_obj_struct
     mp_limb_t** random_ts;                          // r random multipliers t, s
 
     /* result storage */
-    mp_limb_t** thread_result_tortoise_items;
-    mp_limb_t** thread_result_hare_items;
     mp_limb_t** thread_result_tortoise_indices;
     mp_limb_t** thread_result_hare_indices;
 
@@ -132,7 +130,7 @@ int dlog_get_answer(
     mpz_t k,
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
-    
+
     dlog_obj obj
 );
 

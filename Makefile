@@ -11,7 +11,7 @@ SHARED_DIR  = so
 CC              = gcc
 CFLAGS.release  = -I$(LIBRARY_DIR) -O2
 CFLAGS.allwarn  = -I$(LIBRARY_DIR) -O2 -Wall -Wextra -Wpedantic
-CFLAGS.memcheck = -I$(LIBRARY_DIR) -O2 -ggdb -fsanitize=address
+CFLAGS.memcheck = -I$(LIBRARY_DIR) -O0 -ggdb -fsanitize=address
 CFLAGS.verbose  = -I$(LIBRARY_DIR) -O2 -ggdb -D DLOG_VERBOSE=1
 CFLAGS.static   = -I$(LIBRARY_DIR) -O2 -static
 CFLAGS          = $(CFLAGS.$(BUILD))
