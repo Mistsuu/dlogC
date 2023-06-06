@@ -99,29 +99,29 @@ int dlog_validate_input(
 
 // todo: fix
 int dlog_fast_solve_if_possible(
-    ecc curve,
+    mpz_t p,
     mpz_t k, 
-    eccpt G, eccpt kG,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order
 )
 {
     // -------------------------------------------------------------------------------------
-    //      Case 0: kG = O
+    //      Case 0: kG = 1
     // -------------------------------------------------------------------------------------
-    if (mpz_cmp_ui(kG->z, 0) == 0) {
+    if (mpz_cmp_ui(kG, 1) == 0) {
             #ifdef DLOG_VERBOSE
-            printf("[debug] kG == O. Automatically set k = 0.\n");
+            printf("[debug] kG == 1. Automatically set k = 0.\n");
         #endif
         mpz_set_ui(k, 0);
         return DLOG_SUCCESS;
     }
 
     // -------------------------------------------------------------------------------------
-    //      Case 1: G == O and kG != O
+    //      Case 1: G == 1 and kG != 1
     // -------------------------------------------------------------------------------------
-    if (mpz_cmp_ui(G->z, 0) == 0) {
+    if (mpz_cmp_ui(G, 1) == 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] G == O and kG != O. No solution exists.\n");
+            printf("[debug] G == 1 and kG != 1. No solution exists.\n");
         #endif
         return DLOG_NOT_FOUND_DLOG;
     }
@@ -129,35 +129,24 @@ int dlog_fast_solve_if_possible(
     // -------------------------------------------------------------------------------------
     //      Case 2: kG.order() > G.order()
     // -------------------------------------------------------------------------------------
-    eccpt O;
-    ecc_init_pt(O);
-    ecc_mul_noverify(curve, O, kG, G_mult_order);
-    if (mpz_cmp_ui(O->z, 0) != 0) {
+    mpz_t O;
+    mpz_init(O);
+    mpz_powm(O, kG, G_mult_order, p);
+    if (mpz_cmp_ui(O, 1) != 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] n*G == infinity but n*kG != infinity. No solution exists.\n");
+            printf("[debug] G^n == 1 but kG^n != 1. No solution exists.\n");
         #endif
-        ecc_free_pt(O);
+        mpz_clear(O);
         return DLOG_NOT_FOUND_DLOG;
     }
 
     // -------------------------------------------------------------------------------------
-    //      Case 3: Using Weil Pairing to 
-    //              check if there's solution?
+    //      Case 3: I don't know any function
+    //              that can help us to determine that
+    //              kG is from G^k. So this should be
+    //              left here blank.
     // -------------------------------------------------------------------------------------
-    mpz_t E;
-    mpz_init(E);
-    ecc_weil_pairing_noverify(curve, E, G, kG, G_mult_order);
-    if (mpz_cmp_ui(E, 1) != 0) {
-        #ifdef DLOG_VERBOSE
-            printf("[debug] weil_pairing(G, kG) != 1. kG is not a multiple of G.\n");
-        #endif
-        mpz_clear(E);
-        ecc_free_pt(O);
-        return DLOG_NOT_FOUND_DLOG;
-    }
-
-    mpz_clear(E);
-    ecc_free_pt(O);
+    mpz_clear(O);
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 
