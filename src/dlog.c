@@ -6,10 +6,9 @@
 #include "const.h"
 #include "mem.h"
 
-// todo: fix
 int dlog_validate_input(
-    ecc curve,
-    eccpt G, eccpt kG,
+    mpz_t p,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     unsigned int n_threads,
@@ -44,20 +43,19 @@ int dlog_validate_input(
     }
 
     // -------------------------------------------------------------------------------------
-    //      Check G, kG on curve.
+    //      Reduce G, kG mod p
     // -------------------------------------------------------------------------------------
-    if (!ecc_verify_pt(curve, G)) {
-        #ifdef DLOG_VERBOSE
-            printf("[debug] G is not on the curve. Exiting...\n");
-        #endif
-        return DLOG_POINT_NOT_ON_CURVE;
-    }
+    mpz_mod(G, G, p);
+    mpz_mod(kG, kG, p);
 
-    if (!ecc_verify_pt(curve, kG)) {
+    // -------------------------------------------------------------------------------------
+    //      Is p prime?
+    // -------------------------------------------------------------------------------------
+    if (!(mpz_probab_prime_p(p, BASESIZE_PRIME_CHECKER))) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] kG is not on the curve. Exiting...\n");
+            printf("[debug] p isn't prime. Exiting...\n");
         #endif
-        return DLOG_POINT_NOT_ON_CURVE;
+        return DLOG_P_IS_NOT_PRIME;
     }
 
     // -------------------------------------------------------------------------------------
@@ -78,23 +76,24 @@ int dlog_validate_input(
     }
 
     // -------------------------------------------------------------------------------------
-    //      Check Gorder * G = O.
-    //      Not checking Gorder * kG = O here since
+    //      Check G^Gorder = 1.
+    //      Not checking kG^Gorder = 1 here since
     //      it's not a pre-requisite for this algorithm
     //      to run.
     // -------------------------------------------------------------------------------------
-    eccpt O;
-    ecc_init_pt(O);
-    ecc_mul_noverify(curve, O, G, G_mult_order);
-    if (mpz_cmp_ui(O->z, 0) != 0) {
+    mpz_t O;
+    mpz_init(O);
+    mpz_powm(O, G, G_mult_order, p);
+
+    if (mpz_cmp_ui(O, 1) != 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] G_mult_order * G != infinity. Exiting...\n");
+            printf("[debug] G's order isn't G_mult_order. Exiting...\n");
         #endif
-        ecc_free_pt(O);
+        mpz_clear(O);
         return DLOG_FAULTY_POINT_ORDER;
     }
 
-    ecc_free_pt(O);
+    mpz_clear(O);
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 

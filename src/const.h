@@ -7,6 +7,7 @@
 
 #define DLOG_SUCCESS             0
 #define DLOG_NOT_FOUND_DLOG      1
+#define DLOG_P_IS_NOT_PRIME      2
 #define DLOG_MOVE_TO_NEXT_STEP   4
 #define DLOG_POINT_NOT_ON_CURVE  5
 #define DLOG_FAULTY_POINT_ORDER  6
