@@ -16,7 +16,6 @@
 #define DLOG_BAD_COLLISION       8
 
 #define DEFAULT_NUM_THREADS      4
-#define DEFAULT_MEM_LIMIT        0 // todo: remove
 #define DEFAULT_CACHE_SIZE       2
 #define DEFAULT_NRANDPOINTS      20
 
