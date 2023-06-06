@@ -502,22 +502,6 @@ void dlog_print_cache_performance_report(
     #endif
 }
 
-#define eccpt_sage_printf(P)                      \
-do {                                              \
-    printf("E(");                                 \
-    mpz_out_str(stdout, 10, P->x); printf(", ");  \
-    mpz_out_str(stdout, 10, P->y); printf(", ");  \
-    mpz_out_str(stdout, 10, P->z); printf(")\n"); \
-} while (0)
-
-#define mpnpt_sage_printf(Px, Py, Pz, n) \
-do {                                     \
-    printf("E(");                        \
-    mpn_printf(Px, n); printf(", ");     \
-    mpn_printf(Py, n); printf(", ");     \
-    mpn_printf(Pz, n); printf(")\n");    \
-} while (0)
-
 void* __thread__dlog_thread(
     void* vargs
 )
@@ -600,7 +584,7 @@ void* __thread__dlog_thread(
 
         // ---------------------- updating the hare pointer -------------------------
         unsigned int next_icache = (icache+1) % n_caches;
-        unsigned int irand = hare_item_cache[icache][0] % n_randindices;
+        unsigned int irand = hare_item_cache[icache][0] % n_randindices; // This should somehow uniquely map x/z -> x.
         all_write_counters[thread_no][next_icache]++;
 
         // element <- f(element)
@@ -653,20 +637,6 @@ void* __thread__dlog_thread(
 
                     T
                 );
-
-        // mpnpt_sage_printf(
-        //     &hare_item_cache[next_icache][0],
-        //     &hare_item_cache[next_icache][item_size_limbs],
-        //     &hare_item_cache[next_icache][item_size_limbs*2],
-        //     item_size_limbs
-        // );
-
-        // mpnpt_sage_printf(
-        //     &random_tG_add_skG[irand][0],
-        //     &random_tG_add_skG[irand][item_size_limbs],
-        //     &hare_item_cache[next_icache][item_size_limbs*2],
-        //     item_size_limbs
-        // );
 
         // index change
         mpn_addmod_n(

@@ -441,7 +441,6 @@ void test11()
     ecc_free(curve);
 }
 
-
 void test12()
 {
     ecc curve;
@@ -551,6 +550,6 @@ int main()
     // test9();
     // test10();
     // test11();
-    // test12();
-    test14();
+    test12();
+    // test14();
 }

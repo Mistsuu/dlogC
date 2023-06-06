@@ -16,6 +16,9 @@ void ecc_init_ptemp(ecc_ptemp T, mp_size_t n)
     T[9]  = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
     T[10] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * n);
     T[11] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (6*n));
+    T[12] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (n+1));
+    T[13] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (n+1));
+    T[14] = (mp_limb_t*) malloc_exit_when_null(sizeof(mp_limb_t) * (n+1));
 }
 
 void ecc_free_ptemp(ecc_ptemp T)
@@ -32,6 +35,9 @@ void ecc_free_ptemp(ecc_ptemp T)
     free(T[9]);
     free(T[10]);
     free(T[11]);
+    free(T[12]);
+    free(T[13]);
+    free(T[14]);
 }
 
 // -------------------------------------------------------------------------------
@@ -185,4 +191,48 @@ int ecc_peq(
         mpn_cmp(T[1], Py, n) == 0 &&
         !mpn_zero_p(Pz, n)
     );
+}
+
+void ecc_pxz_to_X(
+    mp_limb_t* PX,                      // PX must have n limbs allocated
+    mp_limb_t* Px, mp_limb_t* Pz,       // Px, Pz must have n limbs allocated
+
+    mp_limb_t* curve_p,                 // curve_p must have n limbs allocated
+    mp_size_t n,
+    
+    ecc_ptemp T                         // temporary variables, allocated with ecc_init_ptemp(T, n).
+)
+{
+    mpn_copyd(T[12], Pz, n);
+    mpn_copyd(T[13], curve_p, n);
+
+    mp_size_t sn;
+    mpn_zero(T[14], n);
+    mpn_gcdext(T[0], T[14], &sn, T[12], n, T[13], n);
+
+    // curve_p divides Pz: 
+    // Just fill it with P.
+    // to indicate an impossible
+    // value.
+    if (!sn) {
+        mpn_copyd(PX, curve_p, n);
+        return;
+    }
+
+    // negative T[14]: T[14] = p - T[14]
+    if (sn < 0)
+        mpn_sub_n(T[14], curve_p, T[14], n);
+
+    // PX = Px / Pz mod p
+    mpn_mul_n(T[11], Px, T[14], n);
+    mpn_tdiv_qr(T[12], PX, 0, T[11], 2*n, curve_p, n);
+
+    // todo: i hope to remove this shit
+    // wow, i still have to use this :)
+    // it seems like inverse is impossible
+    // to not use...
+    if (labs(sn) > n) { 
+        printf("[error] wtf, we have to take care of this shit, at ecc_xz_to_X() where inverted value > p????\n");
+        exit(-1);
+    }
 }
