@@ -6,6 +6,7 @@
 #include "const.h"
 #include "mem.h"
 
+// todo: fix
 int dlog_validate_input(
     ecc curve,
     eccpt G, eccpt kG,
@@ -97,6 +98,7 @@ int dlog_validate_input(
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 
+// todo: fix
 int dlog_fast_solve_if_possible(
     ecc curve,
     mpz_t k, 
@@ -160,6 +162,7 @@ int dlog_fast_solve_if_possible(
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 
+// todo: fix
 void dlog_init_dlog_obj(
     dlog_obj obj,
 
@@ -243,6 +246,7 @@ void dlog_init_dlog_obj(
     #endif
 }
 
+// todo: fix
 void dlog_fill_dlog_obj(
     dlog_obj obj,
 
@@ -388,6 +392,7 @@ void dlog_fill_dlog_obj(
     ecc_free_pt(tG_add_skG);
 }
 
+// todo: fix
 void dlog_free_dlog_obj(
     dlog_obj obj
 )
@@ -512,6 +517,7 @@ void dlog_print_cache_performance_report(
     #endif
 }
 
+// todo: fix
 void* __thread__dlog_thread(
     void* vargs
 )
@@ -774,6 +780,7 @@ dlog_thread_cleanup:
     return NULL;
 }
 
+// todo: fix
 void dlog_cycle_search(
     dlog_obj obj
 )
@@ -823,6 +830,7 @@ void dlog_reset_search(
     obj->overall_found = 0;
 }
 
+// todo: fix
 int dlog_get_answer(
     ecc curve,
     mpz_t k,
@@ -899,9 +907,9 @@ int dlog_get_answer(
 }
 
 int dlog(
-    ecc curve, 
+    mpz_t p,
     mpz_t k, 
-    eccpt G, eccpt kG, 
+    mpz_t G, mpz_t kG, 
     mpz_t G_mult_order, 
 
     unsigned int n_threads,
@@ -910,17 +918,17 @@ int dlog(
 )
 {
     #ifdef DLOG_VERBOSE
-        printf("[debug] curve: \n");
+        printf("[debug] p: \n");
         printf("[debug]    ");
-        ecc_printf(curve);
+        mpz_out_str(stdout, 10, p);
         printf("\n");
         printf("[debug] G: \n");
         printf("[debug]    ");
-        ecc_printf_pt(G);
+        mpz_out_str(stdout, 10, G);
         printf("\n");
         printf("[debug] kG: \n");
         printf("[debug]    ");
-        ecc_printf_pt(kG);
+        mpz_out_str(stdout, 10, kG);
         printf("\n");
         printf("[debug] G_mult_order = ");
         mpz_out_str(stdout, 10, G_mult_order);
@@ -936,7 +944,7 @@ int dlog(
     //      Verify if input is good.
     // -------------------------------------------------------------------------------------
     dlog_status = dlog_validate_input(
-                    curve, 
+                    p, 
                     G, kG, 
                     G_mult_order, 
 
@@ -956,7 +964,7 @@ int dlog(
     //      into an infinite loop.
     // -------------------------------------------------------------------------------------
     dlog_status = dlog_fast_solve_if_possible(
-                    curve, 
+                    p, 
                     k, 
                     G, kG, 
                     G_mult_order
@@ -972,7 +980,7 @@ int dlog(
     dlog_init_dlog_obj(
         obj,
 
-        curve,
+        p,
         G, kG,
         G_mult_order,
 
@@ -984,7 +992,7 @@ int dlog(
     dlog_fill_dlog_obj(
         obj,
 
-        curve,
+        p,
         G, kG,
         G_mult_order,
 
@@ -1007,7 +1015,7 @@ int dlog(
             printf("[debug] Collision found!\n");
         #endif
 
-        if (dlog_get_answer(curve, k, G, kG, G_mult_order, obj) == DLOG_SUCCESS) {
+        if (dlog_get_answer(p, k, G, kG, G_mult_order, obj) == DLOG_SUCCESS) {
             #ifdef DLOG_VERBOSE
                 printf("[debug] Finished. Found k = ");
                 mpz_out_str(stdout, 10, k);
