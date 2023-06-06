@@ -33,10 +33,12 @@ typedef struct dlog_obj_struct
     mp_limb_t* G_order;
 
     /* sorry for all the 3 stars pointers... */
-    mp_limb_t**       thread_tortoise_items;        // n threads, each thread has m cache values.
-    mp_limb_t***      thread_hare_item_caches;      // n threads, each thread has m cache values.
-    mp_limb_t**       thread_tortoise_indices;      // n threads, each thread has m cache indices.
+    mp_limb_t**       thread_tortoise_X_items;      // n threads, each thread has 1 value.
+    mp_limb_t***      thread_hare_X_items_caches;   // n threads, each thread has m cache values.
+    mp_limb_t**       thread_hare_XZ_items;         // n threads, each thread has 1 value.
+    mp_limb_t**       thread_tortoise_indices;      // n threads, each thread has 1 value.
     mp_limb_t***      thread_hare_index_caches;     // n threads, each thread has m cache indices.
+
     unsigned long***  thread_read_counters;         // n threads, each thread has n read counters (using n-1) to m write counters.
     unsigned long**   thread_write_counters;        // n threads, each thread has m write counters of m caches.
 
