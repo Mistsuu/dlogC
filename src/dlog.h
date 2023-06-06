@@ -35,7 +35,7 @@ typedef struct dlog_obj_struct
     /* sorry for all the 3 stars pointers... */
     mp_limb_t**       thread_tortoise_X_items;      // n threads, each thread has 1 value.
     mp_limb_t***      thread_hare_X_items_caches;   // n threads, each thread has m cache values.
-    mp_limb_t**       thread_hare_XZ_items;         // n threads, each thread has 1 value.
+    mp_limb_t**       thread_hare_XYZ_items;        // n threads, each thread has 1 value.
     mp_limb_t**       thread_tortoise_indices;      // n threads, each thread has 1 value.
     mp_limb_t***      thread_hare_index_caches;     // n threads, each thread has m cache indices.
 
