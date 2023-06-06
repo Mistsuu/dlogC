@@ -211,8 +211,8 @@ void ecc_pxz_to_X(
     mpn_gcdext(T[0], T[14], &sn, T[12], n, T[13], n);
 
     // curve_p divides Pz: 
-    // Just fill it with P.
-    // to indicate an impossible
+    // Just fill it with P to
+    // indicate an impossible
     // value.
     if (!sn) {
         mpn_copyd(PX, curve_p, n);
