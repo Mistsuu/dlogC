@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <getopt.h>
 #include <stdlib.h>
 #include <gmp.h>
 #include "ecc.h"
@@ -38,52 +39,43 @@ int str_init_readline(char** pbuffer)
     return str_len;
 }
 
-unsigned int get_number_of_threads(int argc, char** argv)
-{   
-    long int NUM_THREADS = DEFAULT_NUM_THREADS;
-    if (argc >= 2) {
-        NUM_THREADS = strtol(argv[1], NULL, 10);
-        if (NUM_THREADS == 0 || NUM_THREADS == LONG_MAX || NUM_THREADS == LONG_MIN)
-            NUM_THREADS = DEFAULT_NUM_THREADS;
+unsigned int parse_arg_uint(char* arg, unsigned int default_val)
+{
+    long int val = default_val;
+    if (arg) {
+        val = strtol(arg, NULL, 10);
+        if (val == 0 || val == LONG_MAX || val == LONG_MIN)
+            val = default_val;
         else
-            NUM_THREADS = abs(NUM_THREADS);
+            val = abs(val);
     }
-    return (unsigned int) NUM_THREADS;
-}
-
-unsigned int get_cache_size(int argc, char** argv)
-{   
-    // todo: change this.
-    long int CACHE_SIZE = DEFAULT_NUM_THREADS;
-    if (argc >= 2) {
-        CACHE_SIZE = strtol(argv[2], NULL, 10);
-        if (CACHE_SIZE == 0 || CACHE_SIZE == LONG_MAX || CACHE_SIZE == LONG_MIN)
-            CACHE_SIZE = DEFAULT_CACHE_SIZE;
-        else
-            CACHE_SIZE = abs(CACHE_SIZE);
-    }
-    return (unsigned int) CACHE_SIZE;
-}
-
-unsigned int get_random_size(int argc, char** argv)
-{   
-    long int RAND_SIZE = DEFAULT_NRANDPOINTS;
-    if (argc >= 2) {
-        RAND_SIZE = strtol(argv[3], NULL, 10);
-        if (RAND_SIZE == 0 || RAND_SIZE == LONG_MAX || RAND_SIZE == LONG_MIN)
-            RAND_SIZE = DEFAULT_NUM_THREADS;
-        else
-            RAND_SIZE = abs(RAND_SIZE);
-    }
-    return (unsigned int) RAND_SIZE;
+    return (unsigned int) val;
 }
 
 void main(int argc, char** argv)
 {
     // Get value from arguments.
-    unsigned int NUM_THREADS = get_number_of_threads(argc, argv);
-    unsigned int CACHE_SIZE  = get_cache_size(argc, argv);
-    unsigned int RAND_SIZE   = get_random_size(argc, argv);
+    unsigned int NUM_THREADS = DEFAULT_NUM_THREADS;
+    unsigned int CACHE_SIZE  = DEFAULT_CACHE_SIZE;
+    unsigned int RAND_SIZE   = DEFAULT_NRANDPOINTS;
+    
+    int opt;
+    while ((opt = getopt(argc, argv, "t:c:r:")) != -1) {
+        switch (opt) {
+            case 't':
+                NUM_THREADS = parse_arg_uint(optarg, DEFAULT_NUM_THREADS);
+                break;
+            case 'c':
+                CACHE_SIZE  = parse_arg_uint(optarg, DEFAULT_CACHE_SIZE);
+                break;
+            case 'r':
+                RAND_SIZE   = parse_arg_uint(optarg, DEFAULT_NRANDPOINTS);
+                break;
+            default:
+                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-c cache_size=4] [-r nrandpoints=20]\n", argv[0]);
+                exit(-1);
+        }
+    }
 
     // Parse curve values from stdin.
     char* curve_a;
@@ -140,11 +132,9 @@ void main(int argc, char** argv)
     mpz_init(k);
     if (dlog2(
             curve, 
-            
             k, 
             G, kG, 
             n, 
-            
             NUM_THREADS, 
             CACHE_SIZE, 
             RAND_SIZE
