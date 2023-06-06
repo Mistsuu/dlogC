@@ -713,8 +713,8 @@ void* __thread__dlog_thread(
                 }
 
                 /* If the last bit of a write counter
-                is 1, that means that we can wait until its finished 
-                writing, because no deadlocks can occurs here */
+                is 1, that means that the thread is writing,
+                we can just skip it. */
                 if (all_write_counters[ithread][icache] & 0x1) {
                     continue;
                 }

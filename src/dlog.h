@@ -1,8 +1,6 @@
 #ifndef DLOG_H
 #define DLOG_H
 
-#define DLOG_VERBOSE             // todo: for debug only :) - remove when done.
-
 #include <gmp.h>
 #include <ex_assert.h>
 #include <stdint.h>
