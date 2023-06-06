@@ -97,7 +97,6 @@ int dlog_validate_input(
     return DLOG_MOVE_TO_NEXT_STEP;
 }
 
-// todo: fix
 int dlog_fast_solve_if_possible(
     mpz_t p,
     mpz_t k, 
