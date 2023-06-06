@@ -129,7 +129,7 @@ void main(int argc, char** argv)
     // dlog() start.
     mpz_t k;
     mpz_init(k);
-    if (dlog2(
+    if (dlog(
             curve, 
             k, 
             G, kG, 

@@ -134,7 +134,7 @@ int dlog_get_answer(
     dlog_obj obj
 );
 
-int dlog2(
+int dlog(
     ecc curve, 
     mpz_t k, 
     eccpt G, eccpt kG, 

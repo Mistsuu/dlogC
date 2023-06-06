@@ -69,7 +69,7 @@ int sdlog(
     mpz_init_set_str(n, str_n, 10);
 
     // Calling the inner dlog().
-    int dlog_success = (dlog2(
+    int dlog_success = (dlog(
                             curve,
                             k,
                             G, kG,

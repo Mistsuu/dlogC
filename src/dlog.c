@@ -898,7 +898,7 @@ int dlog_get_answer(
     return dlog_status;
 }
 
-int dlog2(
+int dlog(
     ecc curve, 
     mpz_t k, 
     eccpt G, eccpt kG, 
