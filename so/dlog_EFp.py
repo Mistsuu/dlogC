@@ -195,8 +195,8 @@ if __name__ == '__main__':
             G, kG,
             0x06d8fefe8066085f,
 
-            ncores=8,
-            ncacheitems=5,
+            ncores=4,
+            ncacheitems=2,
             nranditems=20    
         )
     )
