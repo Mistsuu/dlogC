@@ -582,7 +582,6 @@ void* __thread__dlog_thread(
     tmp_X_item = mpn_init_zero(item_size_limbs * 3);
     tmp_ts_index = mpn_init_zero(index_size_limbs * 2);
 
-    // while (!shared_obj->overall_found && count < 20) {
     while (!shared_obj->overall_found) {
         // ---------------------- updating the tortoise pointer -------------------------
         //                       (every 2^n steps, n increasing)                          

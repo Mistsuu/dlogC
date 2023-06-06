@@ -409,12 +409,23 @@ void test11()
         "493424529467329699"     // p
     );
 
+    printf("***************** SAGEMATH DEBUG CODE *****************\n");
+    printf("a = "); mpz_out_str(stdout, 10, curve->a); printf("\n");
+    printf("b = "); mpz_out_str(stdout, 10, curve->b); printf("\n");
+    printf("p = "); mpz_out_str(stdout, 10, curve->p); printf("\n");
+    printf("E = EllipticCurve(GF(p), [a, b])\n");
+
     mpz_t n;
     mpz_init_set_str(n, "493424528226388063", 10);
+    printf("n = ");
+    mpz_out_str(stdout, 10, n);
+    printf("\n");
 
     eccpt G;
     ecc_init_pt(G);
     ecc_random_pt(curve, G);
+    printf("G = ");
+    eccpt_sage_printf(G);
 
     mpz_t k;
     mpz_init(k);
@@ -423,6 +434,13 @@ void test11()
     eccpt kG;
     ecc_init_pt(kG);
     ecc_mul_noverify(curve, kG, G, k);
+    printf("kG = ");
+    eccpt_sage_printf(kG);
+
+    printf("EE = pari.ellinit([E.a4(), E.a6()], p)\n");
+    printf("pari.elllog(EE, G, kG, n)\n");
+
+    printf("*******************************************************\n\n");
 
     dlog2(
         curve, 
@@ -430,7 +448,7 @@ void test11()
         G, kG, 
         n,
         4,
-        2,
+        5,
         20
     );
 
@@ -528,7 +546,7 @@ void test14()
         G, kG, 
         n,
         4,
-        5,
+        1,
         20
     );
 
@@ -549,7 +567,7 @@ int main()
     // test8();
     // test9();
     // test10();
-    // test11();
-    test12();
+    test11();
+    // test12();
     // test14();
 }
