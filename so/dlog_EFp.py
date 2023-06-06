@@ -156,7 +156,8 @@ def discrete_log_EFp(
     G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
     n: int, 
     ncores: int = 4,
-    mem_limit: int = None
+    ncacheitems: int = 4,
+    nranditems: int = 20
 ):
     with ProcessPoolExecutor(1) as executor:
         future = executor.submit(
@@ -165,7 +166,8 @@ def discrete_log_EFp(
             G, kG,
             n,
             ncores,
-            mem_limit
+            ncacheitems,
+            nranditems
         ) 
         
         return future.result()
