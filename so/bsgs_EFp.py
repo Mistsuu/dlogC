@@ -1,9 +1,9 @@
 import os
-assert os.path.exists('./libbsgsefp.so'), \
-    ValueError("You need to compile libbsgsefp.so first!")
+assert os.path.exists('./libdlogefp.so'), \
+    ValueError("You need to compile libdlogefp.so first!")
 
 import ctypes
-libbsgsefp = ctypes.CDLL('./libbsgsefp.so')
+libdlogefp = ctypes.CDLL('./libdlogefp.so')
 
 from collections import namedtuple
 from concurrent.futures import ProcessPoolExecutor
@@ -32,7 +32,7 @@ int sdlog(
     size_t mem_limit
 );
 """
-sdlog = libbsgsefp.sdlog
+sdlog = libdlogefp.sdlog
 sdlog.argtypes = [
             ctypes.c_char_p,
             ctypes.c_char_p,
@@ -58,7 +58,7 @@ void sdlog_free(
     char* str_k
 );
 """
-sdlog_free = libbsgsefp.sdlog_free
+sdlog_free = libdlogefp.sdlog_free
 sdlog_free.argtypes = [ ctypes.c_char_p ]
 sdlog_free.restype = ctypes.c_void_p
 
