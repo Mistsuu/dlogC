@@ -4,7 +4,6 @@
 #include "ex_mpn.h"
 #include "ex_mpz.h"
 #include "const.h"
-#include "que2.h"
 #include "mem.h"
 
 int dlog_validate_input(
@@ -13,8 +12,8 @@ int dlog_validate_input(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 )
 {
     // -------------------------------------------------------------------------------------
@@ -29,14 +28,14 @@ int dlog_validate_input(
         return DLOG_BAD_CONFIG;
     }
 
-    if (n_caches == 0) {
+    if (n_cache_items == 0) {
         #ifdef DLOG_VERBOSE
             printf("[debug] You must have >= 1 item in the cache. Exiting...\n");
         #endif
         return DLOG_BAD_CONFIG;
     }
 
-    if (n_randindices < 2) {
+    if (n_rand_items < 2) {
         #ifdef DLOG_VERBOSE
             printf("[debug] You must have >= 2 random elements. Exiting...\n");
         #endif
@@ -169,13 +168,13 @@ void dlog_init_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 )
 {
     obj->n_threads = n_threads;
-    obj->n_caches = n_caches;
-    obj->n_randindices = n_randindices;
+    obj->n_cache_items = n_cache_items;
+    obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
 
@@ -196,9 +195,9 @@ void dlog_init_dlog_obj(
         obj->thread_tortoise_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
         
         obj->thread_hare_XYZ_items[ithread] = mpn_init_zero(obj->item_size_limbs * 3);
-        obj->thread_hare_X_items_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
-        obj->thread_hare_ts_index_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_caches);
-        for (unsigned int jthread = 0; jthread < n_caches; ++jthread) {
+        obj->thread_hare_X_items_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
+        obj->thread_hare_ts_index_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
+        for (unsigned int jthread = 0; jthread < n_cache_items; ++jthread) {
             obj->thread_hare_X_items_caches[ithread][jthread] = mpn_init_zero(obj->item_size_limbs);
             obj->thread_hare_ts_index_caches[ithread][jthread] = mpn_init_zero(obj->index_size_limbs * 2);
         }
@@ -209,15 +208,15 @@ void dlog_init_dlog_obj(
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         obj->thread_read_counters[ithread] = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
-        obj->thread_write_counters[ithread] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
+        obj->thread_write_counters[ithread] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_cache_items);
         for (unsigned int jthread = 0; jthread < n_threads; ++jthread) {
-            obj->thread_read_counters[ithread][jthread] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_caches);
+            obj->thread_read_counters[ithread][jthread] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_cache_items);
         }
     }
 
-    obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
-    obj->random_ts         = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_randindices);
-    for (unsigned int irand = 0; irand < n_randindices; ++irand) {
+    obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
+    obj->random_ts         = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
+    for (unsigned int irand = 0; irand < n_rand_items; ++irand) {
         obj->random_tG_add_skG[irand] = mpn_init_zero(obj->item_size_limbs * 2);
         obj->random_ts[irand] = mpn_init_zero(obj->index_size_limbs * 2);
     }
@@ -252,8 +251,8 @@ void dlog_fill_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 )
 {
     mpz_t mpz_R;
@@ -296,7 +295,7 @@ void dlog_fill_dlog_obj(
     ecc_init_pt(skG);
     ecc_init_pt(tG_add_skG);
     
-    for (unsigned int irand = 0; irand < n_randindices; ++irand) {
+    for (unsigned int irand = 0; irand < n_rand_items; ++irand) {
         do {
             mpz_dev_urandomm(t, G_mult_order);
             mpz_dev_urandomm(s, G_mult_order);
@@ -341,7 +340,7 @@ void dlog_fill_dlog_obj(
         mpn_cpyz( obj->thread_hare_XYZ_items[ithread],                         tG_add_skG->x, obj->item_size_limbs);
         mpn_cpyz(&obj->thread_hare_XYZ_items[ithread][obj->item_size_limbs],   tG_add_skG->y, obj->item_size_limbs);
         mpn_cpyz(&obj->thread_hare_XYZ_items[ithread][obj->item_size_limbs*2], mpz_1,         obj->item_size_limbs);
-        for (unsigned int icache = 0; icache < n_caches; ++icache) {
+        for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
             mpn_cpyz( obj->thread_hare_X_items_caches[ithread][icache], tG_add_skG->x, obj->item_size_limbs);
             mpn_cpyz( obj->thread_hare_ts_index_caches[ithread][icache],                        t, obj->index_size_limbs);
             mpn_cpyz(&obj->thread_hare_ts_index_caches[ithread][icache][obj->index_size_limbs], s, obj->index_size_limbs);
@@ -352,9 +351,9 @@ void dlog_fill_dlog_obj(
     //      Initialize read/write counters
     // -------------------------------------------------------------------------------------
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-        memset(obj->thread_write_counters[ithread], 0, n_caches * sizeof(unsigned long));
+        memset(obj->thread_write_counters[ithread], 0, n_cache_items * sizeof(unsigned long));
         for (unsigned int jthread = 0; jthread < n_threads; ++jthread)
-            memset(obj->thread_read_counters[ithread][jthread], 0, n_caches * sizeof(unsigned long));
+            memset(obj->thread_read_counters[ithread][jthread], 0, n_cache_items * sizeof(unsigned long));
     }
 
     // -------------------------------------------------------------------------------------
@@ -404,7 +403,7 @@ void dlog_free_dlog_obj(
         free(obj->thread_tortoise_ts_indices[ithread]);
 
         free(obj->thread_hare_XYZ_items[ithread]);
-        for (unsigned int icache = 0; icache < obj->n_caches; ++icache) {
+        for (unsigned int icache = 0; icache < obj->n_cache_items; ++icache) {
             free(obj->thread_hare_X_items_caches[ithread][icache]);
             free(obj->thread_hare_ts_index_caches[ithread][icache]);
         }
@@ -431,7 +430,7 @@ void dlog_free_dlog_obj(
     free(obj->thread_read_counters);
     free(obj->thread_write_counters);
 
-    for (unsigned int irand = 0; irand < obj->n_randindices; ++irand) {
+    for (unsigned int irand = 0; irand < obj->n_rand_items; ++irand) {
         free(obj->random_tG_add_skG[irand]);
         free(obj->random_ts[irand]);
     }
@@ -526,8 +525,8 @@ void* __thread__dlog_thread(
 
     unsigned int thread_no     = args->thread_no;
     unsigned int n_threads     = shared_obj->n_threads;
-    unsigned int n_caches      = shared_obj->n_caches;
-    unsigned int n_randindices = shared_obj->n_randindices;
+    unsigned int n_cache_items      = shared_obj->n_cache_items;
+    unsigned int n_rand_items = shared_obj->n_rand_items;
 
     mp_size_t item_size_limbs  = shared_obj->item_size_limbs;
     mp_size_t index_size_limbs = shared_obj->index_size_limbs;
@@ -595,8 +594,8 @@ void* __thread__dlog_thread(
         }
 
         // ---------------------- updating the hare pointer -------------------------
-        unsigned int next_icache = (icache+1) % n_caches;
-        unsigned int irand = hare_X_item_cache[icache][0] % n_randindices; // This should somehow uniquely map x/z -> x.
+        unsigned int next_icache = (icache+1) % n_cache_items;
+        unsigned int irand = hare_X_item_cache[icache][0] % n_rand_items; // This should somehow uniquely map x/z -> x.
 
         // element <- f(element)
         if (!ecc_peq(
@@ -702,7 +701,7 @@ void* __thread__dlog_thread(
             if (ithread == thread_no)
                 continue;
 
-            for (unsigned int icache = 0; icache < n_caches; ++icache) {
+            for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
                 // If same index as other thread's cache,
                 // just move on.
                 if (read_counters[ithread][icache] == all_write_counters[ithread][icache]) {
@@ -906,8 +905,8 @@ int dlog2(
     mpz_t G_mult_order, 
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 )
 {
     #ifdef DLOG_VERBOSE
@@ -927,8 +926,8 @@ int dlog2(
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] n_caches = %d\n", n_caches);
-        printf("[debug] n_randindices = %d\n", n_randindices);
+        printf("[debug] n_cache_items = %d\n", n_cache_items);
+        printf("[debug] n_rand_items = %d\n", n_rand_items);
     #endif
 
     int dlog_status;
@@ -942,8 +941,8 @@ int dlog2(
                     G_mult_order, 
 
                     n_threads, 
-                    n_caches, 
-                    n_randindices
+                    n_cache_items, 
+                    n_rand_items
                   );
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
         return dlog_status;
@@ -978,8 +977,8 @@ int dlog2(
         G_mult_order,
 
         n_threads,
-        n_caches,
-        n_randindices
+        n_cache_items,
+        n_rand_items
     );
 
     dlog_fill_dlog_obj(
@@ -990,8 +989,8 @@ int dlog2(
         G_mult_order,
 
         n_threads,
-        n_caches,
-        n_randindices
+        n_cache_items,
+        n_rand_items
     );
 
     #ifdef DLOG_VERBOSE

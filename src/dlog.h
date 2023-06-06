@@ -17,8 +17,8 @@
 typedef struct dlog_obj_struct
 {   
     unsigned int n_threads;
-    unsigned int n_caches;
-    unsigned int n_randindices;
+    unsigned int n_cache_items;
+    unsigned int n_rand_items;
     mp_size_t item_size_limbs;
     mp_size_t index_size_limbs;
 
@@ -74,8 +74,8 @@ int dlog_validate_input(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 );
 
 int dlog_fast_solve_if_possible(
@@ -93,8 +93,8 @@ void dlog_init_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 );
 
 void dlog_fill_dlog_obj(
@@ -105,8 +105,8 @@ void dlog_fill_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 );
 
 void dlog_free_dlog_obj(
@@ -141,8 +141,8 @@ int dlog2(
     mpz_t G_mult_order, 
 
     unsigned int n_threads,
-    unsigned int n_caches,
-    unsigned int n_randindices
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 );
 
 #endif

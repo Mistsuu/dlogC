@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include <gmp.h>
 #include "ecc.h"
-#include "ecc_x.h"
 #include "ex_mpn.h"
-#include "olddlog.h"
 
 void test1(ecc curve, eccpt G)
 {

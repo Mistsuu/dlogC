@@ -49,7 +49,8 @@ sdlog.argtypes = [
             ctypes.c_char_p,
 
             ctypes.c_uint,
-            ctypes.c_size_t
+            ctypes.c_uint,
+            ctypes.c_uint,
         ]
 sdlog.restype = ctypes.c_int
 
@@ -69,12 +70,13 @@ ECC      = namedtuple('ECC', ['a', 'b', 'p'])
 ECCPoint = namedtuple('ECCPoint', ['x', 'y'])
 ECCInf   = None
 
-def _discrete_log_babystep_giantstep_EFp(
+def _discrete_log_EFp(
     curve: ECC,
     G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
-    upper_k: int, 
+    n: int, 
     ncores: int = 4,
-    mem_limit: int = None
+    ncacheitems: int = 4,
+    nranditems: int = 20,
 ):
     # ============================== Sanity checks ==============================
     # Check if we can convert them into numbers?
@@ -98,13 +100,11 @@ def _discrete_log_babystep_giantstep_EFp(
     kGy = int(kG.y) % curve_p
     kGz = 1
 
-    upper_k = int(upper_k)
+    n = int(n)
 
     ncores = int(ncores)
-    if mem_limit == None:
-        mem_limit = 0
-    else:
-        mem_limit = int(mem_limit)
+    ncacheitems = int(ncacheitems)
+    nranditems = int(nranditems)
 
     # ========================== Parse & run C functions ========================
     str_curve_a = str(curve_a).encode() + b'\0'
@@ -119,7 +119,7 @@ def _discrete_log_babystep_giantstep_EFp(
     str_kGx = str(kGx).encode() + b'\0'
     str_kGy = str(kGy).encode() + b'\0'
     str_kGz = str(kGz).encode() + b'\0'
-    str_upper_k = str(upper_k).encode() + b'\0'
+    str_n = str(n).encode() + b'\0'
 
     sdlog(
         str_curve_a,
@@ -134,10 +134,11 @@ def _discrete_log_babystep_giantstep_EFp(
         str_kGx,
         str_kGy,
         str_kGz,
-        str_upper_k,
+        str_n,
 
         ncores,
-        mem_limit
+        ncacheitems,
+        nranditems
     )
 
     # Parse value
@@ -150,19 +151,19 @@ def _discrete_log_babystep_giantstep_EFp(
 
     return k
 
-def discrete_log_babystep_giantstep_EFp(
+def discrete_log_EFp(
     curve: ECC,
     G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
-    upper_k: int, 
+    n: int, 
     ncores: int = 4,
     mem_limit: int = None
 ):
     with ProcessPoolExecutor(1) as executor:
         future = executor.submit(
-            _discrete_log_babystep_giantstep_EFp,
+            _discrete_log_EFp,
             curve,
             G, kG,
-            upper_k,
+            n,
             ncores,
             mem_limit
         ) 
@@ -187,10 +188,9 @@ if __name__ == '__main__':
     )
 
     print(
-        discrete_log_babystep_giantstep_EFp(
+        discrete_log_EFp(
             curve,
             G, kG,
-            0x06d8fefe8066085f,
-            mem_limit=4*1024*1024*1024
+            0x06d8fefe8066085f        
         )
     )

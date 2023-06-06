@@ -1,8 +1,7 @@
 #include "sdlog.h"
-#include "olddlog.h"
+#include "dlog.h"
 #include "ex_mpn.h"
 #include "const.h"
-#include "que2.h"
 #include "mem.h"
 
 void user_interrupt_handler(
@@ -12,7 +11,6 @@ void user_interrupt_handler(
     printf("[" SHARED_LIB_NAME "] Caught SIGINT (signum = %d)! Exiting in peace...\n", signum);
     exit(-1);
 }
-
 
 int sdlog(
     // Curve parameters
@@ -29,11 +27,12 @@ int sdlog(
     char* str_kGx,
     char* str_kGy,
     char* str_kGz,
-    char* str_upper_k,
+    char* str_n,
 
     // Configs
     unsigned int n_threads,
-    size_t mem_limit
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 )
 {
     // Register user's interrupt :)
@@ -66,18 +65,19 @@ int sdlog(
         str_kGz
     );
 
-    mpz_t upper_k;
-    mpz_init_set_str(upper_k, str_upper_k, 10);
+    mpz_t n;
+    mpz_init_set_str(n, str_n, 10);
 
     // Calling the inner dlog().
-    int dlog_success = (dlog(
+    int dlog_success = (dlog2(
                             curve,
                             k,
-                            G,
-                            kG,
-                            upper_k,
+                            G, kG,
+                            n,
+                            
                             n_threads,
-                            mem_limit
+                            n_cache_items,
+                            n_rand_items
                         ) == DLOG_SUCCESS); 
 
     // Returns "None" if cannot find.
@@ -99,7 +99,7 @@ int sdlog(
     // Cleanup.
 sdlog_cleanup:
     mpz_clear(k);
-    mpz_clear(upper_k);
+    mpz_clear(n);
 
     ecc_free_pt(G);
     ecc_free_pt(kG);

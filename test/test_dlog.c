@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <gmp.h>
 #include "ecc.h"
-#include "ecc_x.h"
 #include "ecc_proj.h"
 #include "ex_mpn.h"
 #include "ex_mpz.h"
-#include "olddlog.h"
 #include "dlog.h"
 
 void test3()

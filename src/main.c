@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <gmp.h>
 #include "ecc.h"
-#include "ecc_x.h"
 #include "ex_mpn.h"
 #include "dlog.h"
 #include "const.h"
@@ -55,24 +54,24 @@ unsigned int parse_arg_uint(char* arg, unsigned int default_val)
 void main(int argc, char** argv)
 {
     // Get value from arguments.
-    unsigned int NUM_THREADS = DEFAULT_NUM_THREADS;
-    unsigned int CACHE_SIZE  = DEFAULT_CACHE_SIZE;
-    unsigned int RAND_SIZE   = DEFAULT_NRANDPOINTS;
+    unsigned int NUM_THREADS     = DEFAULT_NUM_THREADS;
+    unsigned int NUM_CACHE_ITEMS = DEFAULT_NUM_CACHE_ITEMS;
+    unsigned int NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
     
     int opt;
-    while ((opt = getopt(argc, argv, "t:c:r:")) != -1) {
+    while ((opt = getopt(argc, argv, "t:c:r:h")) != -1) {
         switch (opt) {
             case 't':
                 NUM_THREADS = parse_arg_uint(optarg, DEFAULT_NUM_THREADS);
                 break;
             case 'c':
-                CACHE_SIZE  = parse_arg_uint(optarg, DEFAULT_CACHE_SIZE);
+                NUM_CACHE_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_CACHE_ITEMS);
                 break;
             case 'r':
-                RAND_SIZE   = parse_arg_uint(optarg, DEFAULT_NRANDPOINTS);
+                NUM_RAND_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_RAND_ITEMS);
                 break;
             default:
-                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-c cache_size=4] [-r nrandpoints=20]\n", argv[0]);
+                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-c num_cache_items=4] [-r nrandpoints=20]\n", argv[0]);
                 exit(-1);
         }
     }
@@ -136,8 +135,8 @@ void main(int argc, char** argv)
             G, kG, 
             n, 
             NUM_THREADS, 
-            CACHE_SIZE, 
-            RAND_SIZE
+            NUM_CACHE_ITEMS, 
+            NUM_RAND_ITEMS
         ) == DLOG_SUCCESS
     ) 
     {
