@@ -809,9 +809,9 @@ void dlog_cycle_search(
     //      Initialize arguments of __thread__dlog_thread.
     // -------------------------------------------------------------------------------------
     __args_thread__dlog_thread* thread_args = (__args_thread__dlog_thread*) malloc_exit_when_null(sizeof(__args_thread__dlog_thread) * obj->n_threads);
-    for (unsigned int i = 0; i < obj->n_threads; ++i) {
-        thread_args[i].shared_obj = obj;
-        thread_args[i].thread_no  = i;
+    for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
+        thread_args[ithread].shared_obj = obj;
+        thread_args[ithread].thread_no  = ithread;
     }
 
     // -------------------------------------------------------------------------------------
@@ -819,16 +819,16 @@ void dlog_cycle_search(
     // -------------------------------------------------------------------------------------
     pthread_t* threads = (pthread_t*) malloc_exit_when_null(sizeof(pthread_t) * obj->n_threads);
     int result_code;
-    for (unsigned int i = 0; i < obj->n_threads; ++i) {
-        result_code = pthread_create(&threads[i], NULL, __thread__dlog_thread, (void*)(&thread_args[i]));
+    for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
+        result_code = pthread_create(&threads[ithread], NULL, __thread__dlog_thread, (void*)(&thread_args[ithread]));
         if (result_code) {
             printf("[error] oh no! dlog_cycle_search cannot CREATE thread!!!\n");
             exit(-1);
         }
     }
 
-    for (unsigned int i = 0; i < obj->n_threads; ++i) {
-        result_code = pthread_join(threads[i], NULL);
+    for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
+        result_code = pthread_join(threads[ithread], NULL);
         if (result_code) {
             printf("[error] oh no! dlog_cycle_search cannot JOIN thread!!!\n");
             exit(-1);
@@ -869,12 +869,12 @@ int dlog_get_answer(
     mpz_t tmp; mpz_init(tmp);
     eccpt TMP; ecc_init_pt(TMP);
 
-    for (unsigned int i = 0; i < obj->n_threads; ++i) {
-        if (obj->founds[i]) {
-            mpz_set_mpn(t1, &obj->thread_result_tortoise_indices[i][0],                     obj->index_size_limbs);
-            mpz_set_mpn(s1, &obj->thread_result_tortoise_indices[i][obj->index_size_limbs], obj->index_size_limbs);
-            mpz_set_mpn(t2, &obj->thread_result_hare_indices[i][0],                         obj->index_size_limbs);
-            mpz_set_mpn(s2, &obj->thread_result_hare_indices[i][obj->index_size_limbs],     obj->index_size_limbs);
+    for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
+        if (obj->founds[ithread]) {
+            mpz_set_mpn(t1, &obj->thread_result_tortoise_indices[ithread][0],                     obj->index_size_limbs);
+            mpz_set_mpn(s1, &obj->thread_result_tortoise_indices[ithread][obj->index_size_limbs], obj->index_size_limbs);
+            mpz_set_mpn(t2, &obj->thread_result_hare_indices[ithread][0],                         obj->index_size_limbs);
+            mpz_set_mpn(s2, &obj->thread_result_hare_indices[ithread][obj->index_size_limbs],     obj->index_size_limbs);
 
             // because we have x(tortoise) = x(hare)
             // we have 2 different routes:
