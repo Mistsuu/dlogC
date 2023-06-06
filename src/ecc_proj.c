@@ -232,7 +232,7 @@ void ecc_pxz_to_X(
     // it seems like inverse is impossible
     // to not use...
     if (labs(sn) > n) { 
-        printf("[error] wtf, we have to take care of this shit, at ecc_xz_to_X() where inverted value > p????\n");
+        printf("[error] wtf, we have to take care of this shit, at ecc_pxz_to_X() where inverted value > p????\n");
         exit(-1);
     }
 }
