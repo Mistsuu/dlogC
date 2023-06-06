@@ -193,6 +193,10 @@ if __name__ == '__main__':
         discrete_log_EFp(
             curve,
             G, kG,
-            0x06d8fefe8066085f        
+            0x06d8fefe8066085f,
+
+            ncores=8,
+            ncacheitems=5,
+            nranditems=20    
         )
     )
