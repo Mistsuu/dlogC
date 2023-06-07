@@ -282,6 +282,7 @@ void dlog_fill_dlog_obj(
 
         // Convert to Montgomery form.
         mpz_mul(tG_add_skG, tG_add_skG, mpz_R);
+        mpz_mod(tG_add_skG, tG_add_skG, p);
 
         // Fill t,s values.
         mpn_cpyz( obj->random_ts[irand],                        t, obj->index_size_limbs);
@@ -305,6 +306,7 @@ void dlog_fill_dlog_obj(
 
         // Convert to Montgomery form.
         mpz_mul(tG_add_skG, tG_add_skG, mpz_R);
+        mpz_mod(tG_add_skG, tG_add_skG, p);
 
         mpn_cpyz( obj->thread_tortoise_items[ithread], tG_add_skG, obj->item_size_limbs);
         mpn_cpyz( obj->thread_tortoise_ts_indices[ithread],                        t, obj->index_size_limbs);
