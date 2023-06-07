@@ -1,14 +1,16 @@
-# Baby Step Giant Step for Elliptic Curves in F_p Parallelized, but is in C.
+# The Pollard-Rho algorithm for finding discrete logarithm in E(GF(p))
 
-*(you can checkout branch `baby-Fp` for baby-step-giant-step algorithm in `Fp` instead)*
+*(you can checkout `pollard-rho` branch for the Pollard-Rho implementation of the discrete log algorithm, which does the same thing as this but is **MUCH, MUCH faster** and consume **WAY, WAY much less memory**.)*
+
+*(also `pollard-rho-Fp` for discrete log in `GF(p)` instead, `dlog-Fp` is now for educational purposes only.)*
 
 ## Introduction
 
-A child project spawned from [baby-giant-Fp-parallel](https://github.com/Mistsuu/baby-giant-Fp-parallel), and it's is in **C**.
+A child project of a child project spawned from [baby-giant-Fp-parallel](https://github.com/Mistsuu/baby-giant-Fp-parallel), and it's is in **C**.
 
-This is an algorithm that tries to find the solution to the following problem: Given point `G` and `k*G` on the curve `y^2 = x^3 + ax + b` in `GF(p)`, find `k`.
+This is an algorithm that tries to find the solution to the following problem: Given `G` and `G^k mod p` with a known multiplicative **PRIME** order `n`, find `k`.
 
-This repo is made for educational purposes, striving for optimal time and space complexity in baby step & giant step algorithm for elliptic curves in `GF(p)`.
+This repo is made for educational purposes, and for fun.
 
 Utilizes **GMP version 6.2.1**.
 
@@ -17,8 +19,10 @@ Utilizes **GMP version 6.2.1**.
 ```
 git clone https://github.com/Mistsuu/BabyStepGiantStepC
 cd BabyStepGiantStepC
+git checkout pollard-rho-Fp
 make -j16
 ```
+
 to produce `./dlog`.
 
 ### Input supplying
@@ -26,151 +30,86 @@ to produce `./dlog`.
 To use `./dlog`, we supply input as a list of numbers seperated by a newline (`\n`) in the following format:
 
 ```
-<curve.a>
-<curve.b>
-<curve.p>
-<X(G)>
-<Y(G)>
-<X(kG)>
-<Y(kG)>
-<upper k bound>
+<p>
+<G>
+<G^k mod p>
+<n>
 ```
+
+⚠️ It is required that `n` must be **PRIME** in order for the algorithm to work, else the algorithm just spits out `None`.
 
 ### Customize your number of threads
 
-You can run `./dlog <num_threads>` to specify the number of threads used in multithreading part. If not specified, the default value for `num_threads` is `4`. 
+You can run `./dlog -t <num_threads>` to specify the number of threads used in multithreading part. If not specified, the default value for `num_threads` is `4`. 
 
 ### Limit your memory
 
-In the newer version, running `./dlog <num_threads> <memory_limit>` will run `./dlog` with limited memory. Suitable for machines where not enough RAM is available. The format of `<memory_limit>` is a `double` value followed by `M` - **megabytes** (*for example,* `4096M`) or `G` - **gigabytes** (*for example,* `1.25G`). If only a `double` value is given, the unit will be `G` by default.
+You don't need to because in this version, the memory usage is very minimal *(less than `1MB` is expected for most applications)*
 
-If you don't specify this part at all, the program will use any amount of memory as it likes.
+### Some custom parameters
+
+- `-c <num_cache_items>` 
+  This value might allow you to have less errors processing data in a multithread setting. You can customize it to be any value `> 0` but it is advised to put it to any value from `4` to `10`. You can try change it higher to experiement with the runtime. However, the higher the value gets, the less the impact it would have on the runtime. Default value is `4`.
+
+- `-r <nrandpoints>`
+  Set up the number of random points on the curve for the Pollard-Rho algorithm. You can experiment with this value, but any value from `20` and upper would work just as fine and won't affect much runtime. Default value is `20`.
 
 ### Output
 
-The output will either be a number *(a negative one is normal)*, or `None`, or some error data *(only happens in the case of memory error or thread creation error, which is not often as long as `<upper k bound>` is small enough that its square root fits 64-bits)*.
+The output will either be a number, or `None`, or some error data *(only happens in the case of memory error or thread creation error, which is not often as long as `n` is small enough that its square root fits 64-bits)*.
+
+The program outputs `None` in the following cases:
+
+- The program detects that no solution can be found.
+- `n` is not a prime number or it is not positive.
+- `num_cache_items` is `0`.
+- `nrandpoints` is `< 2`. 
 
 ## Example
 
 For example, to recover `k` from:
-```
-G = (437471552757133390 : 354281835126765881 : 1)
-k*G = (295738136557598210 : 89525692852745488 : 1)
-```
-in curve `y^2 = x^3 + 448019786388741247*x + 544225411105375163 in GF(593010448435692503)` where we know the order of `G` is `593010448361862286` using `8` threads limited to **4GB** of memory.
 
-We can run `./dlog 8 4G` & supply the following input:
+```python
+G = 63848476900962761921955720089397765658257438572112067334361113887001094555500037
+pow(G, k, p) = 124598459814481000866971099140174848414430762122941331126292491764551683720313014
+p = 17524524814163177
 ```
-448019786388741247
-544225411105375163
-593010448435692503
-437471552757133390
-354281835126765881
-295738136557598210
-89525692852745488
-593010448361862286
+
+where we know the order of the multiplicative group generated by `G` is `2259283924057529` using `4` threads.
+
+We can run `./dlog -t 4` & supply the following input:
+
+```
+140601987068392810555209463610249011351761931006927193734529493874226799329006719
+63848476900962761921955720089397765658257438572112067334361113887001094555500037
+124598459814481000866971099140174848414430762122941331126292491764551683720313014
+2259283924057529
 ```
 
 Which gives the output:
+
 ```
-234176126564864674
+814905979740757
 ```
 
 If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for more detail)*, it will produce some outputs like this:
+
 ```
-[debug] curve: 
-[debug]    Elliptic Curve y^2 = x^3 + 448019786388741247*x + 544225411105375163 in GF(593010448435692503)
+[debug] p: 
+[debug]    140601987068392810555209463610249011351761931006927193734529493874226799329006719
 [debug] G: 
-[debug]    (437471552757133390 : 354281835126765881 : 1)
+[debug]    63848476900962761921955720089397765658257438572112067334361113887001094555500037
 [debug] kG: 
-[debug]    (295738136557598210 : 89525692852745488 : 1)
-[debug] upper_k = 593010448361862286
-[debug] memory limit: 4294967296 bytes = 4096.000000 MB = 4.000000 GB
-[debug] n_threads = 8
-[debug] index_size_bytes = 4
-[debug] item_size_bytes = 8
+[debug]    124598459814481000866971099140174848414430762122941331126292491764551683720313014
+[debug] G_mult_order = 2259283924057529
+[debug] n_threads = 4
+[debug] n_cache_items = 10
+[debug] n_rand_items = 20
 [debug] index_size_limbs = 1
-[debug] item_size_limbs = 1
-[debug] n_partitions = 19
-[debug] n_items = 178956969
-[debug] size buffer: 4294967280 bytes = 4095.999985 MB = 4.000000 GB
-
-[debug] === Running partition 0 === (found k value in this partition will be added with 32025596753666961*0 to get the actual k)
-[debug] Filling L buffer...
-[debug] Filling L took 20.307818 seconds.
-[debug] Filling R buffer...
-[debug] Filling R took 21.101883 seconds.
-[debug] Sorting L buffer...
-[debug] Sorting L took 62.114992 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 62.804649 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.806363 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 1 === (found k value in this partition will be added with 32025596753666961*1 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.896676 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 60.835373 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.849460 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 2 === (found k value in this partition will be added with 32025596753666961*2 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 22.212721 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 62.251165 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.489302 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 3 === (found k value in this partition will be added with 32025596753666961*3 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.863485 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.216875 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.551580 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 4 === (found k value in this partition will be added with 32025596753666961*4 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.377466 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.615065 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.581498 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 5 === (found k value in this partition will be added with 32025596753666961*5 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.770146 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.968580 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.491920 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 6 === (found k value in this partition will be added with 32025596753666961*6 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.651545 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.693792 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 4.452649 seconds.
-[debug] Cannot search for equal values in L & R buffers!
-
-[debug] === Running partition 7 === (found k value in this partition will be added with 32025596753666961*7 to get the actual k)
-[debug] Filling R buffer...
-[debug] Filling R took 20.949573 seconds.
-[debug] Sorting R buffer...
-[debug] Sorting R took 61.580475 seconds.
-[debug] Searching in L & R buffers...
-[debug] Searching took 1.156795 seconds.
-[debug] Found k = 9996949289195947.
-234176126564864674
+[debug] item_size_limbs = 5
+[debug] Collision found!
+[debug] Finished. Found k = 814905979740757
+814905979740757
 ```
 
 You can see some input examples provided in the `examples/` folder.
@@ -178,80 +117,55 @@ You can see some input examples provided in the `examples/` folder.
 
 ## Compile modes
 
-Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck`, `static` which creates different kind of builds:
+- Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck`, `static` which creates different kind of builds:
 
-- `release`: Using `dlog` will produce no debug output. *(default)*
-- `verbose`: Using `dlog` will produce debug output such as:
-  - The size of allocated memory to construct the `L` and `R` `char` buffers in the baby step giant step algorithm.
-  - Time took for each sub-operations.
-  - And many more...
-- `memcheck`: Which just compiles the code with `-fsanitize=address`. Helpful in looking for memory leaks in the code.
-- `static`: Creates a static version of `release` build.
+  - `release`: Using `dlog` will produce no debug output. *(default)*
+  - `verbose`: Using `dlog` will produce debug output.
+  - `memcheck`: Which just compiles the code with `-fsanitize=address`. Helpful in looking for memory leaks in the code.
+  - `static`: Creates a static version of `release` build of `dlog`.
+  - `allwarn`: If you want to compile with a lot of error displaying 🥰
 
-## Comparisons with the [parent project](https://github.com/Mistsuu/baby-giant-Fp-parallel)
-
-### Goods ✅
-
-- Reduces runtime for the **example test-case**:
-
-  ```
-  curve: y^2 = x^3 + ax + b in GF(p)
-  where:
-    a = 1986076773346522069111732327339
-    b = 808177731529494834911895879646
-    p = 13276420418771432419898581447951
-    
-  generator_point = (12752653901711390718579996242468:9102988295173351464328400869432:1)
-  generator_order = 857765763956341
-  ```
-
-  in the parent project from **10 minutes** to **34 seconds** using *8 threads* on **Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz**.
-
-- Also reduces some more memory.
-
-### Bads ❌ 
-
-- Cannot parallelize array-sorting in the 2nd step without causing some unknown bottleneck problem.
-- `malloc()` fails are handled by quick-and-dirty-`exit(-1)`s, (not sure if it's bad or not?)
-- Code is probably unnecessarily long because of some function is built such as `xmul()`s that is not used at all. It's only there because I just like to implement them for no other reasons than curiosity.
+  You can also run `make libdlogfp` to build `so/libdlogfp.so` that you can use with the `so/dlog_Fp.py` *(but it gets a very weird bug that if you run the function `discrete_log_Fp()` a-lot, suddenly there's a bottleneck that cause the code to run much slower...)*
 
 ## How it works
 
-### Baby Step Giant Step Algorithm Basic
+I just give a link here because I know people can do it much better than me. The link I provided has very good formulas, explanations that can satisfy your satisfaction. The keyword to Google search is `Pollard-rho for discrete logarithm`.
 
-The algorithm does this by storing `n+1` points (`n = isqrt(G.order())`) to 2 arrays: `L` and `R`:
+- [Random Walks Revisited: Extensions of
+  Pollard’s Rho Algorithm for Computing
+  Multiple Discrete Logarithms](https://ac.informatik.uni-freiburg.de/publications/publications/sac01.pdf)
 
-- `L` stores `0*G`, `1*G`, `2*G`, ..., `n*G`.
-- `R` stores `k*G`, `(k-n)*G`, ..., `(k-n*n)*G`.
+I use Teske's random function and apply Brent cycle-finding algorithm mentioned in this paper.
 
-If we can find `l*G` in `L` and `(k-r*n)*G` in `R` that `l*G == (k-r*n)*G`, we can solve for `k = l + r*n`.
+## Optimization
 
-### Sub-operations
+*(i'm lazy so I just copy the description from the `pollard-rho` branch... please don't hit me if i'm wrong some part :()*
 
-This code divides the process into 3 sub-operations:
+### Reduce mod `p` optimization
 
-#### Fill `L` & `R` 
+I decided to put numbers in [Montgomery form](https://www.wikiwand.com/en/Montgomery_modular_multiplication) to do arithmetics with them. It helps me in a lot of ways.
 
-Filling `L` and `R` with the above points. This part can be space-optimized by storing each point like this:
+Normally when you do `a*b mod p`, you have to do:
+
+- `X = a*b`
+- then `Y = X mod p`
+
+However, the `mod` operation is so expensive that you can basically replace it with `3` multiplications and `1` subtraction and it will have less runtime. The Montgomery form allows you to do a map:
 
 ```
-+---------+-------------------------+
-|  index  |        X(index*G)       |
-+---------+-------------------------+
+(a*R mod p), (b*R mod p) -> (a*b*R mod p)
 ```
 
-We store `X` coordinates of the points only. Because if `X(l*G) == X((k-r*n)*G)`, we can still recover `k` from `k = l + r*n`, or `k = r*n - l`.
+where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs :happy:
 
-I use multi-threading in this sub-operations to speed up the filling.
+That's the first reason. The second reason is that after every arithmetic operations (`*`, `+`, `-`), the result always has the same number of `mp_limb_t`s as the inputs, which means that I don't have to keep track the number of limbs to allocate the right amount of memory. And also I can just write some Python code to automatically generate the C code for that part *(yey automation)*
 
-Also I choose to represent point's coordinates in `X/Z` form, so that it only takes one inversion for each point to speed up this part even more :>
+### Multithreading
 
-#### Sort `L` & `R`
+If we have `t` threads running at the same time applying the `Pollard-Rho` algorithm independently, we will have a speedup of `sqrt(t)` times. If the threads can communicate with each other, we will have a speed up of `t` times. That's what I (try) to do in this code, multi-threading and making them communicate with each other. 
 
-Sort `L` and `R` by each element's `X` coordinate so that we can search for equal values in `O(N)` time. *(this operation takes `O(NlogN)`, however)*
+Every thread will have a situation of *"one write, many read"*. It is a situation where one thread writes a value to a shared memory and the other threads will try to read it, compare with their data to get the result. 
 
-It uses **Quick Sort** to sort the array, allowing an in-place memory sort, thus requiring no additional memory usages.
+I don't use locks, out of fear that it might hinder the finding process. Instead I decided to spread the writes into many memory slots so that the reading thread doesn't read the data at the same place of the writing thread writes. That's what the `-c` option are for, it specifies the number of those slots. 
 
-#### Search `L` and `R`
-
-After the arrays are sorted, we search the equal `X` values in them, then deduce `k` to get the result.
+While this mean that we might misread some values, it provide enough speedup so I just roll with this route :) *(and, yes, because I'm too lazy to implement other ways)* *(it probably also explain why we get such drastic fluctuation in runtime though...)*
