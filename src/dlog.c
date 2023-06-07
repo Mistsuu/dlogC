@@ -203,18 +203,6 @@ void dlog_init_dlog_obj(
     }
 
     obj->founds = (int*)malloc_exit_when_null(sizeof(int) * n_threads);
-
-    #ifdef DLOG_VERBOSE
-        obj->thread_cache_hit_counters              = (mpz_t*)malloc_exit_when_null(sizeof(mpz_t) * n_threads);
-        obj->thread_cache_miss_counters             = (mpz_t*)malloc_exit_when_null(sizeof(mpz_t) * n_threads);
-        obj->thread_cache_possible_misread_counters = (mpz_t*)malloc_exit_when_null(sizeof(mpz_t) * n_threads);
-
-        for (unsigned int i = 0; i < n_threads; ++i) {
-            mpz_init(obj->thread_cache_hit_counters[i]);
-            mpz_init(obj->thread_cache_miss_counters[i]);
-            mpz_init(obj->thread_cache_possible_misread_counters[i]);
-        }
-    #endif
 }
 
 void dlog_fill_dlog_obj(
@@ -422,12 +410,6 @@ void* __thread__dlog_thread(
     mp_limb_t* result_tortoise_ts_index = shared_obj->thread_result_tortoise_ts_indices[thread_no];
     mp_limb_t* result_hare_ts_index     = shared_obj->thread_result_hare_ts_indices[thread_no];
 
-    #ifdef DLOG_VERBOSE
-        mpz_ptr cache_hit_counter              = shared_obj->thread_cache_hit_counters[thread_no];
-        mpz_ptr cache_miss_counter             = shared_obj->thread_cache_miss_counters[thread_no];
-        mpz_ptr cache_possible_misread_counter = shared_obj->thread_cache_possible_misread_counters[thread_no];
-    #endif
-
     // -------------------------------------------------------------------------------------
     //      Real calculation.
     //      Do a cycle detection using Brent's algorithm
@@ -494,6 +476,8 @@ void* __thread__dlog_thread(
             index_size_limbs
         );
 
+        all_thread_write_index[thread_no] = next_icache;
+
         // ---------- comparing with the other thread's hare pointers -----------
         for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
             // Copy point to avoid the race condition
@@ -501,17 +485,6 @@ void* __thread__dlog_thread(
             unsigned int icache = all_thread_write_index[ithread];
             mpn_copyd(tmp_ts_index, all_hare_ts_index_caches[ithread][icache], index_size_limbs * 2);
             mpn_copyd(tmp_item, all_hare_item_caches[ithread][icache], item_size_limbs);
-
-            // Check how many misreads might occur.
-            #ifdef DLOG_VERBOSE
-                if (read_counters[ithread][icache] != all_write_counters[ithread][icache]) {
-                    mpz_add_ui(
-                        cache_possible_misread_counter, 
-                        cache_possible_misread_counter, 
-                        1
-                    );
-                }
-            #endif 
 
             // Compare point.
             if (mpn_cmp(tortoise_item, tmp_item, item_size_limbs) == 0) {
@@ -763,13 +736,6 @@ int dlog(
         #endif
         dlog_reset_search(obj);
     }
-
-    // -------------------------------------------------------------------------------------
-    //      Print out report...
-    // -------------------------------------------------------------------------------------
-    #ifdef DLOG_VERBOSE
-        dlog_print_cache_performance_report(obj);
-    #endif
 
     // -------------------------------------------------------------------------------------
     //      Bye! There's no way we reach
