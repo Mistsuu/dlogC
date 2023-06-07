@@ -674,7 +674,6 @@ void* __thread__dlog_thread(
     //      Cleanup
     // -------------------------------------------------------------------------------------
 dlog_thread_cleanup:
-    ecc_free_ptemp(T);
     free(tmp_item);
     free(tmp_ts_index);
     free(T);
