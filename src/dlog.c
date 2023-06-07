@@ -416,8 +416,8 @@ void* __thread__dlog_thread(
 
     unsigned int thread_no     = args->thread_no;
     unsigned int n_threads     = shared_obj->n_threads;
-    unsigned int n_cache_items      = shared_obj->n_cache_items;
-    unsigned int n_rand_items = shared_obj->n_rand_items;
+    unsigned int n_cache_items = shared_obj->n_cache_items;
+    unsigned int n_rand_items  = shared_obj->n_rand_items;
 
     mp_size_t item_size_limbs  = shared_obj->item_size_limbs;
     mp_size_t index_size_limbs = shared_obj->index_size_limbs;

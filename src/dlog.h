@@ -105,10 +105,6 @@ void dlog_free_dlog_obj(
     dlog_obj obj
 );
 
-void dlog_print_cache_performance_report(
-    dlog_obj obj
-);
-
 void dlog_cycle_search(
     dlog_obj obj
 );
