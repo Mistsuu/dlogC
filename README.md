@@ -2,7 +2,7 @@
 
 *(you can checkout `pollard-rho` branch for the Pollard-Rho implementation of the discrete log algorithm, which does the same thing as this but is **MUCH, MUCH faster** and consume **WAY, WAY much less memory**.)*
 
-*(also `pollard-rho-Fp` for discrete log in `GF(p)` instead, `dlog-Fp` is now for educational purposes only.)*
+*(also `pollard-rho-Fp` for discrete log in `GF(p)` instead, `baby-Fp` is now for educational purposes only.)*
 
 ## Introduction
 
