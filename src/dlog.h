@@ -23,8 +23,9 @@ typedef struct dlog_obj_struct
     mp_size_t index_size_limbs;
 
     /* field */
-    mp_limb_t* p;
-    mp_limb_t* P;
+    mp_limb_t* field_p;
+    mp_limb_t* field_P;
+    mp_limb_t* G_order;
 
     /* sorry for all the 3 stars pointers... */
     mp_limb_t**       thread_tortoise_items;            // n threads, each thread has 1 value.

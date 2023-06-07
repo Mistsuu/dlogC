@@ -167,8 +167,9 @@ void dlog_init_dlog_obj(
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
 
-    obj->p = mpn_init_zero(obj->item_size_limbs);
-    obj->P = mpn_init_zero(obj->item_size_limbs);
+    obj->field_p = mpn_init_zero(obj->item_size_limbs);
+    obj->field_P = mpn_init_zero(obj->item_size_limbs);
+    obj->G_order = mpn_init_zero(obj->item_size_limbs);
 
     obj->thread_tortoise_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
@@ -253,8 +254,10 @@ void dlog_fill_dlog_obj(
     mpz_init(mpz_P);
     mpz_invert(mpz_P, p, mpz_R);
     mpz_sub(mpz_P, mpz_R, mpz_P);
-    mpn_cpyz(obj->p, p,      obj->item_size_limbs);
-    mpn_cpyz(obj->P, mpz_P,  obj->item_size_limbs);
+
+    mpn_cpyz(obj->field_p, p,     obj->item_size_limbs);
+    mpn_cpyz(obj->field_P, mpz_P, obj->item_size_limbs);
+    mpn_cpyz(obj->G_order, G_mult_order, obj->item_size_limbs);
 
     // -------------------------------------------------------------------------------------
     //      Initialize fixed random elements
@@ -357,13 +360,13 @@ void dlog_fill_dlog_obj(
     mpz_clear(tG_add_skG);
 }
 
-// todo: fix
 void dlog_free_dlog_obj(
     dlog_obj obj
 )
 {
-    free(obj->p);
-    free(obj->P);
+    free(obj->field_p);
+    free(obj->field_P);
+    free(obj->G_order);
 
     for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
         free(obj->thread_tortoise_items[ithread]);
@@ -493,16 +496,14 @@ void* __thread__dlog_thread(
 
     unsigned int thread_no     = args->thread_no;
     unsigned int n_threads     = shared_obj->n_threads;
-    unsigned int n_cache_items      = shared_obj->n_cache_items;
-    unsigned int n_rand_items = shared_obj->n_rand_items;
+    unsigned int n_cache_items = shared_obj->n_cache_items;
+    unsigned int n_rand_items  = shared_obj->n_rand_items;
 
     mp_size_t item_size_limbs  = shared_obj->item_size_limbs;
     mp_size_t index_size_limbs = shared_obj->index_size_limbs;
 
-    mp_limb_t* curve_aR = shared_obj->curve_aR;
-    mp_limb_t* curve_bR = shared_obj->curve_bR;
-    mp_limb_t* curve_p  = shared_obj->curve_p;
-    mp_limb_t* curve_P  = shared_obj->curve_P;
+    mp_limb_t* field_p  = shared_obj->field_p;
+    mp_limb_t* field_P  = shared_obj->field_P;
     mp_limb_t* G_order  = shared_obj->G_order;
 
     mp_limb_t**  all_tortoise_X_items      = shared_obj->thread_tortoise_items;
