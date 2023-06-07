@@ -22,13 +22,9 @@ typedef struct dlog_obj_struct
     mp_size_t item_size_limbs;
     mp_size_t index_size_limbs;
 
-    /* elliptic curve parameters a, b will 
-    be represented in Montgomery form. */    
-    mp_limb_t* curve_aR;
-    mp_limb_t* curve_bR;
-    mp_limb_t* curve_p;
-    mp_limb_t* curve_P;
-    mp_limb_t* G_order;
+    /* field */
+    mp_limb_t* p;
+    mp_limb_t* P;
 
     /* sorry for all the 3 stars pointers... */
     mp_limb_t**       thread_tortoise_items;            // n threads, each thread has 1 value.

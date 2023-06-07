@@ -167,11 +167,8 @@ void dlog_init_dlog_obj(
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
 
-    obj->curve_aR = mpn_init_zero(obj->item_size_limbs);
-    obj->curve_bR = mpn_init_zero(obj->item_size_limbs);
-    obj->curve_p  = mpn_init_zero(obj->item_size_limbs);
-    obj->curve_P  = mpn_init_zero(obj->item_size_limbs);
-    obj->G_order  = mpn_init_zero(obj->index_size_limbs);
+    obj->p = mpn_init_zero(obj->item_size_limbs);
+    obj->P = mpn_init_zero(obj->item_size_limbs);
 
     obj->thread_tortoise_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
@@ -206,7 +203,7 @@ void dlog_init_dlog_obj(
     obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     obj->random_ts         = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     for (unsigned int irand = 0; irand < n_rand_items; ++irand) {
-        obj->random_tG_add_skG[irand] = mpn_init_zero(obj->item_size_limbs * 2);
+        obj->random_tG_add_skG[irand] = mpn_init_zero(obj->item_size_limbs);
         obj->random_ts[irand] = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
@@ -236,8 +233,8 @@ void dlog_init_dlog_obj(
 void dlog_fill_dlog_obj(
     dlog_obj obj,
 
-    ecc curve,
-    eccpt G, eccpt kG,
+    mpz_t p,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     unsigned int n_threads,
@@ -250,78 +247,63 @@ void dlog_fill_dlog_obj(
     mpz_mul_2exp(mpz_R, mpz_R, obj->item_size_limbs * mp_bits_per_limb);
 
     // -------------------------------------------------------------------------------------
-    //      We have to convert curve's a and curve's b
-    //      to Montgomery form.
+    //      Initialize p and p^-1 mod R.
+    //      (very important for multiplication optimization...)
     // -------------------------------------------------------------------------------------
-    mpz_t mpz_aR;
-    mpz_t mpz_bR;
-    mpz_t mpz_curve_P;
-    mpz_init(mpz_aR);
-    mpz_init(mpz_bR);
-    mpz_init(mpz_curve_P);
-    mpz_mul(mpz_aR, curve->a, mpz_R);
-    mpz_mul(mpz_bR, curve->b, mpz_R);
-    mpz_mod(mpz_aR, mpz_aR, curve->p);
-    mpz_mod(mpz_bR, mpz_bR, curve->p);
-    mpz_invert(mpz_curve_P, curve->p, mpz_R);
-    mpz_sub(mpz_curve_P, mpz_R, mpz_curve_P);
-    mpn_cpyz(obj->curve_aR, mpz_aR,       obj->item_size_limbs);
-    mpn_cpyz(obj->curve_bR, mpz_bR,       obj->item_size_limbs);
-    mpn_cpyz(obj->curve_p,  curve->p,     obj->item_size_limbs);
-    mpn_cpyz(obj->curve_P,  mpz_curve_P,  obj->item_size_limbs);
-    mpn_cpyz(obj->G_order,  G_mult_order, obj->index_size_limbs);
+    mpz_t mpz_P;
+    mpz_init(mpz_P);
+    mpz_invert(mpz_P, p, mpz_R);
+    mpz_sub(mpz_P, mpz_R, mpz_P);
+    mpn_cpyz(obj->p, p,      obj->item_size_limbs);
+    mpn_cpyz(obj->P, mpz_P,  obj->item_size_limbs);
 
     // -------------------------------------------------------------------------------------
-    //      Initialize fixed random points
+    //      Initialize fixed random elements
     // -------------------------------------------------------------------------------------
-    eccpt tG;
-    eccpt skG;
-    eccpt tG_add_skG;
+    mpz_t tG;
+    mpz_t skG;
+    mpz_t tG_add_skG;
     mpz_t t;
     mpz_t s;
     mpz_init(t);
     mpz_init(s);
-    ecc_init_pt(tG);
-    ecc_init_pt(skG);
-    ecc_init_pt(tG_add_skG);
+    mpz_init(tG);
+    mpz_init(skG);
+    mpz_init(tG_add_skG);
     
     for (unsigned int irand = 0; irand < n_rand_items; ++irand) {
         do {
             mpz_dev_urandomm(t, G_mult_order);
             mpz_dev_urandomm(s, G_mult_order);
 
-            ecc_mul_noverify(curve, tG, G, t);
-            ecc_mul_noverify(curve, skG, kG, s);
-            ecc_add_noverify(curve, tG_add_skG, tG, skG);
-        } while (mpz_cmp_ui(tG_add_skG->z, 0) == 0);
+            mpz_powm(tG, G, t, p);
+            mpz_powm(skG, kG, s, p);
+            mpz_mul(tG_add_skG, tG, skG);
+            mpz_mod(tG_add_skG, tG_add_skG, p);
+        } while (mpz_cmp_ui(tG_add_skG, 1) == 0);
 
         // Convert coordinate to Montgomery form.
-        mpz_mul(tG_add_skG->x, tG_add_skG->x, mpz_R);
-        mpz_mod(tG_add_skG->x, tG_add_skG->x, curve->p);
-        mpz_mul(tG_add_skG->y, tG_add_skG->y, mpz_R);
-        mpz_mod(tG_add_skG->y, tG_add_skG->y, curve->p);
+        mpz_mul(tG_add_skG, tG_add_skG, mpz_R);
 
+        // Fill t,s values.
         mpn_cpyz( obj->random_ts[irand],                        t, obj->index_size_limbs);
         mpn_cpyz(&obj->random_ts[irand][obj->index_size_limbs], s, obj->index_size_limbs);
-        mpn_cpyz( obj->random_tG_add_skG[irand],                       tG_add_skG->x, obj->item_size_limbs);
-        mpn_cpyz(&obj->random_tG_add_skG[irand][obj->item_size_limbs], tG_add_skG->y, obj->item_size_limbs);
+        mpn_cpyz( obj->random_tG_add_skG[irand], tG_add_skG, obj->item_size_limbs);
     }
 
     // -------------------------------------------------------------------------------------
     //      Initialize cache values
     // -------------------------------------------------------------------------------------
-    mpz_t mpz_1;
-    mpz_init_set_ui(mpz_1, 1);
-
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         do {
             mpz_dev_urandomm(t, G_mult_order);
             mpz_dev_urandomm(s, G_mult_order);
 
-            ecc_mul_noverify(curve, tG, G, t);
-            ecc_mul_noverify(curve, skG, kG, s);
-            ecc_add_noverify(curve, tG_add_skG, tG, skG);
-        } while (mpz_cmp_ui(tG_add_skG->z, 0) == 0);
+            mpz_powm(tG, G, t, p);
+            mpz_powm(skG, kG, s, p);
+            mpz_mul(tG_add_skG, tG, skG);
+            mpz_mod(tG_add_skG, tG_add_skG, p);
+        } while (mpz_cmp_ui(tG_add_skG, 1) == 0);
 
         mpn_cpyz( obj->thread_tortoise_items[ithread], tG_add_skG->x, obj->item_size_limbs);
         mpn_cpyz( obj->thread_tortoise_ts_indices[ithread],                        t, obj->index_size_limbs);
@@ -367,15 +349,11 @@ void dlog_fill_dlog_obj(
     //      Free stuffs
     // -------------------------------------------------------------------------------------
     mpz_clear(mpz_R);
-    mpz_clear(mpz_aR);
-    mpz_clear(mpz_bR);
-    mpz_clear(mpz_curve_P);
-    mpz_clear(mpz_1);
     mpz_clear(t);
     mpz_clear(s);
-    ecc_free_pt(tG);
-    ecc_free_pt(skG);
-    ecc_free_pt(tG_add_skG);
+    mpz_clear(tG);
+    mpz_clear(skG);
+    mpz_clear(tG_add_skG);
 }
 
 // todo: fix
