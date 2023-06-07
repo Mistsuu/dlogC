@@ -139,7 +139,7 @@ if __name__ == '__main__':
                     42586547163467,
 
                     ncores=4,
-                    ncacheitems=2,
+                    ncacheitems=20,
                     nranditems=20   
                  )
     print(f'{recoveredX = }')
