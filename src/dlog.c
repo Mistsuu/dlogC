@@ -229,7 +229,6 @@ void dlog_init_dlog_obj(
     #endif
 }
 
-// todo: fix
 void dlog_fill_dlog_obj(
     dlog_obj obj,
 
@@ -282,7 +281,7 @@ void dlog_fill_dlog_obj(
             mpz_mod(tG_add_skG, tG_add_skG, p);
         } while (mpz_cmp_ui(tG_add_skG, 1) == 0);
 
-        // Convert coordinate to Montgomery form.
+        // Convert to Montgomery form.
         mpz_mul(tG_add_skG, tG_add_skG, mpz_R);
 
         // Fill t,s values.
@@ -305,15 +304,16 @@ void dlog_fill_dlog_obj(
             mpz_mod(tG_add_skG, tG_add_skG, p);
         } while (mpz_cmp_ui(tG_add_skG, 1) == 0);
 
-        mpn_cpyz( obj->thread_tortoise_items[ithread], tG_add_skG->x, obj->item_size_limbs);
+        // Convert to Montgomery form.
+        mpz_mul(tG_add_skG, tG_add_skG, mpz_R);
+
+        mpn_cpyz( obj->thread_tortoise_items[ithread], tG_add_skG, obj->item_size_limbs);
         mpn_cpyz( obj->thread_tortoise_ts_indices[ithread],                        t, obj->index_size_limbs);
         mpn_cpyz(&obj->thread_tortoise_ts_indices[ithread][obj->index_size_limbs], s, obj->index_size_limbs);
 
-        mpn_cpyz( obj->thread_hare_items[ithread],                         tG_add_skG->x, obj->item_size_limbs);
-        mpn_cpyz(&obj->thread_hare_items[ithread][obj->item_size_limbs],   tG_add_skG->y, obj->item_size_limbs);
-        mpn_cpyz(&obj->thread_hare_items[ithread][obj->item_size_limbs*2], mpz_1,         obj->item_size_limbs);
+        mpn_cpyz( obj->thread_hare_items[ithread], tG_add_skG, obj->item_size_limbs);
         for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
-            mpn_cpyz( obj->thread_hare_items_caches[ithread][icache], tG_add_skG->x, obj->item_size_limbs);
+            mpn_cpyz( obj->thread_hare_items_caches[ithread][icache], tG_add_skG, obj->item_size_limbs);
             mpn_cpyz( obj->thread_hare_ts_index_caches[ithread][icache],                        t, obj->index_size_limbs);
             mpn_cpyz(&obj->thread_hare_ts_index_caches[ithread][icache][obj->index_size_limbs], s, obj->index_size_limbs);
         }
@@ -348,6 +348,7 @@ void dlog_fill_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Free stuffs
     // -------------------------------------------------------------------------------------
+    mpz_clear(mpz_P);
     mpz_clear(mpz_R);
     mpz_clear(t);
     mpz_clear(s);
@@ -361,11 +362,8 @@ void dlog_free_dlog_obj(
     dlog_obj obj
 )
 {
-    free(obj->curve_aR);
-    free(obj->curve_bR);
-    free(obj->curve_p);
-    free(obj->curve_P);
-    free(obj->G_order);
+    free(obj->p);
+    free(obj->P);
 
     for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
         free(obj->thread_tortoise_items[ithread]);
