@@ -65,8 +65,8 @@ typedef struct {
 } __args_thread__dlog_thread;
 
 int dlog_validate_input(
-    ecc curve,
-    eccpt G, eccpt kG,
+    mpz_t p,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     unsigned int n_threads,
@@ -75,17 +75,17 @@ int dlog_validate_input(
 );
 
 int dlog_fast_solve_if_possible(
-    ecc curve,
+    mpz_t p,
     mpz_t k, 
-    eccpt G, eccpt kG,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order
 );
 
 void dlog_init_dlog_obj(
     dlog_obj obj,
 
-    ecc curve,
-    eccpt G, eccpt kG,
+    mpz_t p,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     unsigned int n_threads,
@@ -96,8 +96,8 @@ void dlog_init_dlog_obj(
 void dlog_fill_dlog_obj(
     dlog_obj obj,
 
-    ecc curve,
-    eccpt G, eccpt kG,
+    mpz_t p,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     unsigned int n_threads,
@@ -122,18 +122,18 @@ void dlog_reset_search(
 );
 
 int dlog_get_answer(
-    ecc curve,
+    mpz_t p,
     mpz_t k,
-    eccpt G, eccpt kG,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     dlog_obj obj
 );
 
 int dlog(
-    ecc curve, 
+    mpz_t p,
     mpz_t k, 
-    eccpt G, eccpt kG, 
+    mpz_t G, mpz_t kG, 
     mpz_t G_mult_order, 
 
     unsigned int n_threads,

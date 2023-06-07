@@ -152,8 +152,8 @@ int dlog_fast_solve_if_possible(
 void dlog_init_dlog_obj(
     dlog_obj obj,
 
-    ecc curve,
-    eccpt G, eccpt kG,
+    mpz_t p,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     unsigned int n_threads,
@@ -164,7 +164,7 @@ void dlog_init_dlog_obj(
     obj->n_threads = n_threads;
     obj->n_cache_items = n_cache_items;
     obj->n_rand_items = n_rand_items;
-    obj->item_size_limbs  = mpz_size(curve->p);
+    obj->item_size_limbs  = mpz_size(p);
     obj->index_size_limbs = mpz_size(G_mult_order);
 
     obj->field_p = mpn_init_zero(obj->item_size_limbs);
