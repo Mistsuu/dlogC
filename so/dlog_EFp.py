@@ -25,11 +25,12 @@ int sdlog(
     char* str_kGx,
     char* str_kGy,
     char* str_kGz,
-    char* str_upper_k,
+    char* str_n,
 
     // Configs
     unsigned int n_threads,
-    size_t mem_limit
+    unsigned int n_cache_items,
+    unsigned int n_rand_items
 );
 """
 sdlog = libdlogefp.sdlog
