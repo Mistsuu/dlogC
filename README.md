@@ -1,6 +1,8 @@
 # Baby Step Giant Step for Elliptic Curves in F_p Parallelized, but is in C.
 
-*(you can checkout branch `baby-Fp` for baby-step-giant-step algorithm in `Fp` instead)*
+*(you can checkout `pollard-rho` branch for the Pollard-Rho implementation of the discrete log algorithm, which does the same thing as this but is MUCH, MUCH faster and consume WAY, WAY much less memory.)*
+
+*(also `pollard-rho-Fp` for discrete log in **GF(p)** instead, `dlog-Fp` is now for educational purposes only.)*
 
 ## Introduction
 
@@ -248,7 +250,7 @@ Also I choose to represent point's coordinates in `X/Z` form, so that it only ta
 
 #### Sort `L` & `R`
 
-Sort `L` and `R` by each element's `X` coordinate so that we can search for equal values in `O(N)` time. *(this operation takes `O(NlogN)`, however)*
+Sort `L` and `R` by each element's `X` coordinate so that we can search for equal values in `O(N)` time. *(this operation takes `O(NlogN)`, however)*, where `N` is `isqrt(G.order())`.
 
 It uses **Quick Sort** to sort the array, allowing an in-place memory sort, thus requiring no additional memory usages.
 
