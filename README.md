@@ -154,9 +154,11 @@ However, the `mod` operation is so expensive that you can basically replace it w
 (a*R mod p), (b*R mod p) -> (a*b*R mod p)
 ```
 
-where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs :happy:
+where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the fit limbs :happy:
 
-That's the first reason. The second reason is that after every arithmetic operations (`*`, `+`, `-`), the result always has the same number of `mp_limb_t`s as the inputs, which means that I don't have to keep track the number of limbs to allocate the right amount of memory. And also I can just write some Python code to automatically generate the C code for that part *(yey automation)*
+In the algorithm, most of the runtime is dedicated to multiply 2 numbers mod `p`. So optimize it => Algorithm speedup.
+
+That's the first reason. The second reason is that after every arithmetic operations (`*`, `+`, `-`), the result always has the same number of `mp_limb_t`s as the inputs, which means that I don't have to keep track the number of limbs for each operation to allocate the right amount of memory for the variables. And also I can just write some Python code to automatically generate the C code for that part *(yey automation)*
 
 ### Multithreading
 
