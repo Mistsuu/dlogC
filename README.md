@@ -1,12 +1,8 @@
-# The Pollard-Rho algorithm for finding discrete logarithm in E(GF(p))
-
-*(you can checkout `pollard-rho` branch for the Pollard-Rho implementation of the discrete log algorithm, which does the same thing as this but is **MUCH, MUCH faster** and consume **WAY, WAY much less memory**.)*
-
-*(also `pollard-rho-Fp` for discrete log in `GF(p)` instead, `dlog-Fp` is now for educational purposes only.)*
+# The Pollard-Rho algorithm for finding discrete logarithm in GF(p)
 
 ## Introduction
 
-A child project of a child project spawned from [baby-giant-Fp-parallel](https://github.com/Mistsuu/baby-giant-Fp-parallel), and it's is in **C**.
+Part **III.75** of the [trilogy](https://github.com/Mistsuu/BabyStepGiantStepC).
 
 This is an algorithm that tries to find the solution to the following problem: Given `G` and `G^k mod p` with a known multiplicative **PRIME** order `n`, find `k`.
 
