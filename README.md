@@ -117,15 +117,15 @@ You can see some input examples provided in the `examples/` folder.
 
 ## Compile modes
 
-- Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck`, `static` which creates different kind of builds:
+Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memcheck`, `static` which creates different kind of builds:
 
-  - `release`: Using `dlog` will produce no debug output. *(default)*
-  - `verbose`: Using `dlog` will produce debug output.
-  - `memcheck`: Which just compiles the code with `-fsanitize=address`. Helpful in looking for memory leaks in the code.
-  - `static`: Creates a static version of `release` build of `dlog`.
-  - `allwarn`: If you want to compile with a lot of error displaying 🥰
+- `release`: Using `dlog` will produce no debug output. *(default)*
+- `verbose`: Using `dlog` will produce debug output.
+- `memcheck`: Which just compiles the code with `-fsanitize=address`. Helpful in looking for memory leaks in the code.
+- `static`: Creates a static version of `release` build of `dlog`.
+- `allwarn`: If you want to compile with a lot of error displaying 🥰
 
-  You can also run `make libdlogfp` to build `so/libdlogfp.so` that you can use with the `so/dlog_Fp.py` *(but it gets a very weird bug that if you run the function `discrete_log_Fp()` a-lot, suddenly there's a bottleneck that cause the code to run much slower...)*
+You can also run `make libdlogfp` to build `so/libdlogfp.so` that you can use with the `so/dlog_Fp.py` *(but it gets a very weird bug that if you run the function `discrete_log_Fp()` a-lot, suddenly there's a bottleneck that cause the code to run much slower...)*
 
 ## How it works
 
