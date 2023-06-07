@@ -144,7 +144,7 @@ You can also run `make libdlogefp` to build `so/libdlogefp.so` that you can use 
 
   in the parent project from **34 seconds** to about **6 seconds** *(best running time, because this algorithm is very random, so sometimes it can get to **35 seconds**...)* using *4 threads* on **Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz**. But on average, this should be faster than the **Baby Step Giant Step** one.
 
-- Uses `O(1)` memory. *(so I could delete the memory handling code in satisfaction urg feeling so good)*
+- Uses `O(1)` memory with a modest constant. *(so I could delete the memory handling code in satisfaction urg feeling so good)*
 
 - The slowest operation's time complexity is `O(sqrt(n))`, where `n` is the order of `G`.
 
