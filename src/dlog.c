@@ -684,7 +684,6 @@ dlog_thread_cleanup:
     return NULL;
 }
 
-// todo: fix
 void dlog_cycle_search(
     dlog_obj obj
 )
@@ -734,11 +733,10 @@ void dlog_reset_search(
     obj->overall_found = 0;
 }
 
-// todo: fix
 int dlog_get_answer(
-    ecc curve,
+    mpz_t p,
     mpz_t k,
-    eccpt G, eccpt kG,
+    mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
     dlog_obj obj
@@ -752,7 +750,6 @@ int dlog_get_answer(
     mpz_t s2; mpz_init(s2);
 
     mpz_t tmp; mpz_init(tmp);
-    eccpt TMP; ecc_init_pt(TMP);
 
     for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
         if (obj->founds[ithread]) {
@@ -761,8 +758,6 @@ int dlog_get_answer(
             mpz_set_mpn(t2, &obj->thread_result_hare_ts_indices[ithread][0],                         obj->index_size_limbs);
             mpz_set_mpn(s2, &obj->thread_result_hare_ts_indices[ithread][obj->index_size_limbs],     obj->index_size_limbs);
 
-            // because we have x(tortoise) = x(hare)
-            // we have 2 different routes:
             // tortoise = hare
             if (mpz_cmp(t1, t2) != 0) {
                 mpz_sub(k, s2, s1);
@@ -772,27 +767,8 @@ int dlog_get_answer(
                 mpz_mod(k, k, G_mult_order);
 
                 // if k*G == kG -> found!
-                ecc_mul(curve, TMP, G, k);
-                if (ecc_eq(curve, TMP, kG) == 1) {
-                    dlog_status = DLOG_SUCCESS;
-                    break;
-                }
-            }
-
-            // tortoise = -hare
-            mpz_add(tmp, s1, s2);
-            mpz_mod(tmp, tmp, G_mult_order);
-            if (mpz_cmp_ui(tmp, 0) != 0) {
-                mpz_add(k, s2, s1);
-                mpz_invert(k, k, G_mult_order);
-                mpz_sub(k, G_mult_order, k);
-                mpz_add(tmp, t1, t2);
-                mpz_mul(k, k, tmp);
-                mpz_mod(k, k, G_mult_order);
-
-                // if k*G == kG -> found!
-                ecc_mul(curve, TMP, G, k);
-                if (ecc_eq(curve, TMP, kG) == 1) {
+                mpz_powm(tmp, G, k, p);
+                if (mpz_cmp(tmp, kG) == 0) {
                     dlog_status = DLOG_SUCCESS;
                     break;
                 }
@@ -805,8 +781,6 @@ int dlog_get_answer(
     mpz_clear(t2);
     mpz_clear(s2);
     mpz_clear(tmp);
-
-    ecc_free_pt(TMP);
     return dlog_status;
 }
 
