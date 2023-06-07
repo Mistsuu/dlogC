@@ -1,5 +1,7 @@
 # The Pollard-Rho algorithm for finding discrete logarithm in GF(p)
 
+*(if no solution exists, this program wil run foreverrrrrrr)*
+
 ## Introduction
 
 Part **III.75** of the [trilogy](https://github.com/Mistsuu/BabyStepGiantStepC).
@@ -56,7 +58,7 @@ The output will either be a number, or `None`, or some error data *(only happens
 
 The program outputs `None` in the following cases:
 
-- The program detects that no solution can be found.
+- The program detects that no solution can be found *(but in a very very small case)*
 - `n` is not a prime number or it is not positive.
 - `num_cache_items` is `0`.
 - `nrandpoints` is `< 2`. 
