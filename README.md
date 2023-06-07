@@ -1,10 +1,14 @@
 # Baby Step Giant Step in F_p Parallelized
 
+*(you can checkout `pollard-rho` branch for the Pollard-Rho implementation of the discrete log algorithm, which does the same thing as this but is **MUCH, MUCH faster** and consume **WAY, WAY much less memory**.)*
+
+*(also `pollard-rho-Fp` for discrete log in `GF(p)` instead, `dlog-Fp` is now for educational purposes only.)*
+
 ## Introduction
 
 A child project of a child project spawned from [baby-giant-Fp-parallel](https://github.com/Mistsuu/baby-giant-Fp-parallel), and it's is in **C**.
 
-This is an algorithm that tries to find the solution to the following problem: Given `G` and `G^k mod p`, find `k`.
+This is an algorithm that tries to find the solution to the following problem: Given `G` and `G^k mod p` and an upper bound `upper_k` of `k`, find `k`.
 
 This repo is made for educational purposes, and for fun.
 
@@ -154,7 +158,7 @@ Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memch
 
 ### Baby Step Giant Step Algorithm Basic
 
-The algorithm does this by storing `n+1` points (`n = isqrt(G.order())`) to 2 arrays: `L` and `R`:
+The algorithm does this by storing `n+1` points (`n = isqrt(upper_k)`) to 2 arrays: `L` and `R`:
 
 - `L` stores `G^0`, `G^1`, `G^2`, ..., `G^n`.
 - `R` stores `G^k`, `G^(k-n)`, ..., `G^(k-n*n)`.
@@ -179,7 +183,7 @@ I use multi-threading in this sub-operations to speed up the filling.
 
 #### Sort `L` & `R`
 
-Sort `L` and `R` by each element's `X` coordinate so that we can search for equal values in `O(N)` time. *(this operation takes `O(NlogN)`, however)*
+Sort `L` and `R` by each element's `X` coordinate so that we can search for equal values in `O(N)` time. *(this operation takes `O(NlogN)`, however)*, where `N` is `isqrt(upper_k)`.
 
 It uses **Quick Sort** to sort the array, allowing an in-place memory sort, thus requiring no additional memory usages.
 
