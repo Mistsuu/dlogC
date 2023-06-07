@@ -13,22 +13,16 @@ void user_interrupt_handler(
 }
 
 int sdlog(
-    // Curve parameters
-    char* str_curve_a,
-    char* str_curve_b,
-    char* str_curve_p,
+    // Field parameter
+    char* str_p,
 
-    // To be overwritten
+    // To be modified
     char** pstr_k,
 
-    char* str_Gx,
-    char* str_Gy,
-    char* str_Gz,
-    char* str_kGx,
-    char* str_kGy,
-    char* str_kGz,
-    char* str_n,
-
+    char* str_G,
+    char* str_kG,
+    char* str_upper_k,
+    
     // Configs
     unsigned int n_threads,
     unsigned int n_cache_items,
@@ -38,43 +32,24 @@ int sdlog(
     // Register user's interrupt :)
     signal(SIGINT, user_interrupt_handler);
 
-    ecc curve;
-    ecc_init(
-        curve, 
-        str_curve_a, // a 
-        str_curve_b, // b
-        str_curve_p  // p
-    );
-
+    mpz_t p;
+    mpz_init_set_str(p, str_p, 10);
     mpz_t k;
     mpz_init(k);
-
-    eccpt G;
-    ecc_init_pt_str(
-        curve, G,
-        str_Gx,   // x
-        str_Gy,   // y
-        str_Gz    // z
-    );
-
-    eccpt kG;
-    ecc_init_pt_str(
-        curve, kG,
-        str_kGx,
-        str_kGy,
-        str_kGz
-    );
-
-    mpz_t n;
-    mpz_init_set_str(n, str_n, 10);
+    mpz_t G;
+    mpz_init_set_str(G, str_G, 10);
+    mpz_t kG;
+    mpz_init_set_str(kG, str_kG, 10);
+    mpz_t upper_k;
+    mpz_init_set_str(upper_k, str_upper_k, 10);
 
     // Calling the inner dlog().
     int dlog_success = (dlog(
-                            curve,
+                            p,
                             k,
-                            G, kG,
-                            n,
-                            
+                            G,
+                            kG,
+                            upper_k,
                             n_threads,
                             n_cache_items,
                             n_rand_items
@@ -98,12 +73,11 @@ int sdlog(
 
     // Cleanup.
 sdlog_cleanup:
+    mpz_clear(p);
     mpz_clear(k);
-    mpz_clear(n);
-
-    ecc_free_pt(G);
-    ecc_free_pt(kG);
-    ecc_free(curve);
+    mpz_clear(G);
+    mpz_clear(kG);
+    mpz_clear(upper_k);
 
     return dlog_success;
 }

@@ -11,8 +11,6 @@
     #include <sys/time.h>
 #endif
 
-#include "ecc.h"
-#include "ecc_proj.h"
 
 typedef struct dlog_obj_struct
 {   

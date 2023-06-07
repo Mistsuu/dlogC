@@ -1,6 +1,4 @@
 #include "dlog.h"
-#include "ecc.h"
-#include "ecc_proj.h"
 #include "ex_mpn.h"
 #include "ex_mpz.h"
 #include "const.h"

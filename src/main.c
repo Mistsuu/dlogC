@@ -3,7 +3,6 @@
 #include <getopt.h>
 #include <stdlib.h>
 #include <gmp.h>
-#include "ecc.h"
 #include "ex_mpn.h"
 #include "dlog.h"
 #include "const.h"

@@ -18,6 +18,6 @@
 #define DEFAULT_NUM_CACHE_ITEMS  4
 #define DEFAULT_NUM_RAND_ITEMS   20
 
-#define SHARED_LIB_NAME          "libdlogefp"
+#define SHARED_LIB_NAME          "libdlogfp"
 
 #endif

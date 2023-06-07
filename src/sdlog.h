@@ -11,22 +11,16 @@ void user_interrupt_handler(
 );
 
 int sdlog(
-    // Curve parameters
-    char* str_curve_a,
-    char* str_curve_b,
-    char* str_curve_p,
+    // Field parameter
+    char* str_p,
 
-    // To be overwritten
+    // To be modified
     char** pstr_k,
 
-    char* str_Gx,
-    char* str_Gy,
-    char* str_Gz,
-    char* str_kGx,
-    char* str_kGy,
-    char* str_kGz,
-    char* str_n,
-
+    char* str_G,
+    char* str_kG,
+    char* str_upper_k,
+    
     // Configs
     unsigned int n_threads,
     unsigned int n_cache_items,

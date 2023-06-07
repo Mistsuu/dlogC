@@ -32,14 +32,14 @@ $(OBJECT_DIR)/%.o: $(SOURCE_DIR)/%.c $(FULLDEPS) | $(OBJECT_DIR)
 	$(CC) -fPIC -c -o $@ $< $(CFLAGS)
 
 # For commands
-.PHONY: clean libdlogefp
+.PHONY: clean libdlogfp
 clean:
 	rm -f $(SOURCE_DIR)/*.o $(OBJECT_DIR)/*.o $(SHARED_DIR)/*.so ./dlog
 
 # For creating shared library :)
-libdlogefp: $(SHARED_DIR)/libdlogefp.so
+libdlogfp: $(SHARED_DIR)/libdlogfp.so
 
-$(SHARED_DIR)/libdlogefp.so: $(FULLOBJS) | $(SHARED_DIR)
+$(SHARED_DIR)/libdlogfp.so: $(FULLOBJS) | $(SHARED_DIR)
 	$(CC) -shared -o $@ $^ $(CFLAGS) $(LIBS)
 
 $(SHARED_DIR):
