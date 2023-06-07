@@ -9,11 +9,11 @@ SHARED_DIR  = so
 
 # Compilers options
 CC              = gcc
-CFLAGS.release  = -I$(LIBRARY_DIR) -O2
-CFLAGS.allwarn  = -I$(LIBRARY_DIR) -O2 -Wall -Wextra -Wpedantic
+CFLAGS.release  = -I$(LIBRARY_DIR) -O3
+CFLAGS.allwarn  = -I$(LIBRARY_DIR) -O3 -Wall -Wextra -Wpedantic
 CFLAGS.memcheck = -I$(LIBRARY_DIR) -O0 -ggdb -fsanitize=address
-CFLAGS.verbose  = -I$(LIBRARY_DIR) -O2 -ggdb -D DLOG_VERBOSE=1
-CFLAGS.static   = -I$(LIBRARY_DIR) -O2 -static
+CFLAGS.verbose  = -I$(LIBRARY_DIR) -O3 -ggdb -D DLOG_VERBOSE=1
+CFLAGS.static   = -I$(LIBRARY_DIR) -O3 -static
 CFLAGS          = $(CFLAGS.$(BUILD))
 LIBS            = -lgmp -lpthread
 
