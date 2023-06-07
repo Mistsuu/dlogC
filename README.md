@@ -190,11 +190,13 @@ However, the `mod` operation is so expensive that you can basically replace it w
 (a*R mod p), (b*R mod p) -> (a*b*R mod p)
 ```
 
-where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs :happy:
+where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs :happy: 
 
-That's the first reason. The second reason is that after every arithmetic operations (`*`, `+`, `-`), the result always has the same number of `mp_limb_t`s as the inputs, which means that I don't have to keep track the number of limbs to allocate the right amount of memory. And also I can just write some Python code to automatically generate the C code for that part *(yey automation)*
+In elliptic curve arithmetics, most of the runtime is dedicated to multiply 2 numbers mod p. So optimize it => Optimizing runtime to create newer points => Algorithm speedup because most of the runtime we spent on adding points.
 
-And, because `(X:Y:Z)` is the same as `(XR:YR:ZR)`, so we can apply the arithmetics again and again to the points without having to transform the results to put it into the correct form.
+That's the first reason. The second reason is that after every arithmetic operations (`*`, `+`, `-`), the result always has the same number of `mp_limb_t`s as the inputs, which means that I don't have to keep track the number of limbs for each operation to allocate the right amount of memory for the variables. And also I can just write some Python code to automatically generate the C code for that part *(yey automation)*
+
+And, because `(X:Y:Z)` is the same as `(XR:YR:ZR)`, so we can apply the elliptic curve arithmetics again and again to the existing points without having to transform it first to the suitable form (it's already there).
 
 ### Multithreading
 
