@@ -434,11 +434,14 @@ void* __thread__dlog_thread(
     mp_limb_t*** all_hare_X_item_caches    = shared_obj->thread_hare_X_items_caches;
     mp_limb_t*** all_hare_ts_index_caches  = shared_obj->thread_hare_ts_index_caches;
 
+    unsigned long* all_thread_write_index  = shared_obj->thread_write_index;
+
     mp_limb_t*  tortoise_X_item            = all_tortoise_X_items[thread_no];
     mp_limb_t*  tortoise_ts_index          = all_tortoise_ts_indices[thread_no];
     mp_limb_t*  hare_XYZ_item              = all_hare_XYZ_items[thread_no];
     mp_limb_t** hare_X_item_cache          = all_hare_X_item_caches[thread_no];
     mp_limb_t** hare_ts_index_cache        = all_hare_ts_index_caches[thread_no];
+
 
     mp_limb_t** random_tG_add_skG = shared_obj->random_tG_add_skG;    
     mp_limb_t** random_ts         = shared_obj->random_ts;
@@ -534,8 +537,6 @@ void* __thread__dlog_thread(
         // ---------------------- write to a public pointer -------------------------
         //               (this is where the race condition might happen)
 
-        // all_write_counters[thread_no][next_icache]++;
-
         // write normalized X/Z coordinate
         ecc_pxz_to_X(
             hare_X_item_cache[next_icache], 
@@ -566,54 +567,24 @@ void* __thread__dlog_thread(
             index_size_limbs
         );
 
-        // all_write_counters[thread_no][next_icache]++;
+        all_thread_write_index[thread_no] = next_icache;
 
-        // ------------------- comparing with our hare pointer -------------------
-        if (mpn_cmp(tortoise_X_item, hare_X_item_cache[next_icache], item_size_limbs) == 0) {
-            mpn_copyd(result_tortoise_ts_index, tortoise_ts_index,                index_size_limbs * 2);
-            mpn_copyd(result_hare_ts_index,     hare_ts_index_cache[next_icache], index_size_limbs * 2);
-
-            shared_obj->founds[thread_no] = 1;
-            shared_obj->overall_found = 1;
-            goto dlog_thread_cleanup;
-        }
-
-        // ---------- comparing with the other thread's hare pointers -----------
+        // ---------- comparing with the every thread's hare pointers -----------
         for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-            if (ithread == thread_no)
-                continue;
+            // Copy point to avoid the race condition
+            // as much as possible.
+            unsigned int icache = all_thread_write_index[ithread];
+            mpn_copyd(tmp_ts_index, all_hare_ts_index_caches[ithread][icache], index_size_limbs * 2);
+            mpn_copyd(tmp_X_item, all_hare_X_item_caches[ithread][icache], item_size_limbs);
 
-            for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
-                // If same index as other thread's cache,
-                // just move on.
-                // if (read_counters[ithread][icache] == all_write_counters[ithread][icache]) {
-                //     continue;
-                // }
+            // Compare point.
+            if (mpn_cmp(tortoise_X_item, tmp_X_item, item_size_limbs) == 0) {
+                mpn_copyd(result_tortoise_ts_index, tortoise_ts_index, index_size_limbs * 2);
+                mpn_copyd(result_hare_ts_index,     tmp_ts_index,      index_size_limbs * 2);
 
-                /* If the last bit of a write counter
-                is 1, that means that the thread is writing,
-                we can just skip it. */
-                // if (all_write_counters[ithread][icache] & 0x1) {
-                //     continue;
-                // }
-
-                // Set read counter.
-                // read_counters[ithread][icache] = all_write_counters[ithread][icache];
-
-                // Copy point to avoid the race condition
-                // as much as possible.
-                mpn_copyd(tmp_ts_index, all_hare_ts_index_caches[ithread][icache], index_size_limbs * 2);
-                mpn_copyd(tmp_X_item, all_hare_X_item_caches[ithread][icache], item_size_limbs);
-
-                // Compare point.
-                if (mpn_cmp(tortoise_X_item, tmp_X_item, item_size_limbs) == 0) {
-                    mpn_copyd(result_tortoise_ts_index, tortoise_ts_index, index_size_limbs * 2);
-                    mpn_copyd(result_hare_ts_index,     tmp_ts_index,      index_size_limbs * 2);
-
-                    shared_obj->founds[thread_no] = 1;
-                    shared_obj->overall_found = 1;
-                    goto dlog_thread_cleanup;
-                }
+                shared_obj->founds[thread_no] = 1;
+                shared_obj->overall_found = 1;
+                goto dlog_thread_cleanup;
             }
         }
 
