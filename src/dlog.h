@@ -31,8 +31,7 @@ typedef struct dlog_obj_struct
     mp_limb_t**       thread_tortoise_ts_indices;       // n threads, each thread has 1 value.
     mp_limb_t***      thread_hare_ts_index_caches;      // n threads, each thread has m cache indices.
 
-    unsigned long***  thread_read_counters;             // n threads, each thread has n read counters (using n-1) to m write counters.
-    unsigned long**   thread_write_counters;            // n threads, each thread has m write counters of m caches.
+    unsigned long*    thread_write_index;
 
     mp_limb_t** random_tG_add_skG;                      // r random points of t*G + s*kG (using X, Y coordinate in Montgomery Form.)
     mp_limb_t** random_ts;                              // r random multipliers t, s
@@ -44,13 +43,6 @@ typedef struct dlog_obj_struct
     /* result indicators */
     int* founds;
     int overall_found;
-
-    /* profiling variables -- use when compiled with VERBOSE build. */
-    #ifdef DLOG_VERBOSE
-        mpz_t* thread_cache_hit_counters;
-        mpz_t* thread_cache_miss_counters;
-        mpz_t* thread_cache_possible_misread_counters;
-    #endif
 
 } __dlog_obj_struct;
 
@@ -104,10 +96,6 @@ void dlog_fill_dlog_obj(
 );
 
 void dlog_free_dlog_obj(
-    dlog_obj obj
-);
-
-void dlog_print_cache_performance_report(
     dlog_obj obj
 );
 

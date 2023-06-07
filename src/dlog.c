@@ -186,16 +186,7 @@ void dlog_init_dlog_obj(
         }
     }
 
-    obj->thread_read_counters = (unsigned long***)malloc_exit_when_null(sizeof(unsigned long**) * n_threads);
-    obj->thread_write_counters = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
-
-    for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-        obj->thread_read_counters[ithread] = (unsigned long**)malloc_exit_when_null(sizeof(unsigned long*) * n_threads);
-        obj->thread_write_counters[ithread] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_cache_items);
-        for (unsigned int jthread = 0; jthread < n_threads; ++jthread) {
-            obj->thread_read_counters[ithread][jthread] = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_cache_items);
-        }
-    }
+    obj->thread_write_index = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_threads);
 
     obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     obj->random_ts         = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
@@ -320,30 +311,16 @@ void dlog_fill_dlog_obj(
     }
 
     // -------------------------------------------------------------------------------------
-    //      Initialize read/write counters
+    //      Initialize write index
     // -------------------------------------------------------------------------------------
-    for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-        memset(obj->thread_write_counters[ithread], 0, n_cache_items * sizeof(unsigned long));
-        for (unsigned int jthread = 0; jthread < n_threads; ++jthread)
-            memset(obj->thread_read_counters[ithread][jthread], 0, n_cache_items * sizeof(unsigned long));
-    }
+    memset(obj->thread_write_index, 0, n_threads * sizeof(unsigned long));
+
 
     // -------------------------------------------------------------------------------------
     //      Initialize overall results
     // -------------------------------------------------------------------------------------
     memset(obj->founds, 0, sizeof(int) * n_threads);
     obj->overall_found = 0;
-
-    // -------------------------------------------------------------------------------------
-    //      Initialize some profiling variables.
-    // -------------------------------------------------------------------------------------
-    #ifdef DLOG_VERBOSE
-        for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-            mpz_set_ui(obj->thread_cache_hit_counters[ithread], 0);
-            mpz_set_ui(obj->thread_cache_miss_counters[ithread], 0);
-            mpz_set_ui(obj->thread_cache_possible_misread_counters[ithread], 0);
-        }
-    #endif
 
     // -------------------------------------------------------------------------------------
     //      Free stuffs
@@ -374,10 +351,6 @@ void dlog_free_dlog_obj(
             free(obj->thread_hare_ts_index_caches[ithread][icache]);
         }
 
-        for (unsigned int jthread = 0; jthread < obj->n_threads; ++jthread) {
-            free(obj->thread_read_counters[ithread][jthread]);
-        }
-
         free(obj->thread_hare_items_caches[ithread]);
         free(obj->thread_hare_ts_index_caches[ithread]);
     }
@@ -387,13 +360,7 @@ void dlog_free_dlog_obj(
     free(obj->thread_hare_items_caches);
     free(obj->thread_hare_ts_index_caches);
 
-    for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
-        free(obj->thread_read_counters[ithread]);
-        free(obj->thread_write_counters[ithread]);
-    }
-
-    free(obj->thread_read_counters);
-    free(obj->thread_write_counters);
+    free(obj->thread_write_index);
 
     for (unsigned int irand = 0; irand < obj->n_rand_items; ++irand) {
         free(obj->random_tG_add_skG[irand]);
@@ -412,69 +379,6 @@ void dlog_free_dlog_obj(
     free(obj->thread_result_hare_ts_indices);
 
     free(obj->founds);
-
-    #ifdef DLOG_VERBOSE
-        for (unsigned int ithread = 0; ithread < obj->n_threads; ++ithread) {
-            mpz_clear(obj->thread_cache_hit_counters[ithread]);
-            mpz_clear(obj->thread_cache_miss_counters[ithread]);
-            mpz_clear(obj->thread_cache_possible_misread_counters[ithread]);
-        }
-        free(obj->thread_cache_hit_counters);
-        free(obj->thread_cache_miss_counters);
-        free(obj->thread_cache_possible_misread_counters);
-    #endif
-}
-
-void dlog_print_cache_performance_report(
-    dlog_obj obj
-)
-{
-    #ifdef DLOG_VERBOSE
-        mpz_t total;
-        mpz_init(total);
-
-        printf("\n*********************** CACHE REPORT ***********************\n");
-        printf("[debug] CACHE hit all threads: ");
-        mpz_set_ui(total, 0);
-        for (unsigned int i = 0; i < obj->n_threads; ++i)
-            mpz_add(total, total, obj->thread_cache_hit_counters[i]);
-        mpz_out_str(stdout, 10, total);
-        printf("\n");
-
-        for (unsigned int i = 0; i < obj->n_threads; ++i) {
-            printf("[debug]    -> thread %d: ", i);
-            mpz_out_str(stdout, 10, obj->thread_cache_hit_counters[i]);
-            printf("\n");
-        }
-
-        printf("[debug] CACHE miss all threads: ");
-        mpz_set_ui(total, 0);
-        for (unsigned int i = 0; i < obj->n_threads; ++i)
-            mpz_add(total, total, obj->thread_cache_miss_counters[i]);
-        mpz_out_str(stdout, 10, total);
-        printf("\n");
-
-        for (unsigned int i = 0; i < obj->n_threads; ++i) {
-            printf("[debug]    -> thread %d: ", i);
-            mpz_out_str(stdout, 10, obj->thread_cache_miss_counters[i]);
-            printf("\n");
-        }
-
-        printf("[debug] CACHE possible misread all threads: ");
-        mpz_set_ui(total, 0);
-        for (unsigned int i = 0; i < obj->n_threads; ++i)
-            mpz_add(total, total, obj->thread_cache_possible_misread_counters[i]);
-        mpz_out_str(stdout, 10, total);
-        printf("\n");
-
-        for (unsigned int i = 0; i < obj->n_threads; ++i) {
-            printf("[debug]    -> thread %d: ", i);
-            mpz_out_str(stdout, 10, obj->thread_cache_possible_misread_counters[i]);
-            printf("\n");
-        }
-        printf("************************************************************\n");
-        mpz_clear(total);
-    #endif
 }
 
 void* __thread__dlog_thread(
@@ -510,8 +414,7 @@ void* __thread__dlog_thread(
     mp_limb_t** hare_item_cache            = all_hare_item_caches[thread_no];
     mp_limb_t** hare_ts_index_cache        = all_hare_ts_index_caches[thread_no];
 
-    unsigned long** read_counters      = shared_obj->thread_read_counters[thread_no];
-    unsigned long** all_write_counters = shared_obj->thread_write_counters;
+    unsigned long* all_thread_write_index  = shared_obj->thread_write_index;
 
     mp_limb_t** random_tG_add_skG = shared_obj->random_tG_add_skG;    
     mp_limb_t** random_ts         = shared_obj->random_ts;
@@ -561,8 +464,6 @@ void* __thread__dlog_thread(
         // ---------------------- write to a public pointer -------------------------
         //               (this is where the race condition might happen)
 
-        all_write_counters[thread_no][next_icache]++;
-
         // element <- f(element)
         //     --- and ---
         //      write item
@@ -593,77 +494,33 @@ void* __thread__dlog_thread(
             index_size_limbs
         );
 
-        all_write_counters[thread_no][next_icache]++;
-
-        // ------------------- comparing with our hare pointer -------------------
-        if (mpn_cmp(tortoise_item, hare_item_cache[next_icache], item_size_limbs) == 0) {
-            mpn_copyd(result_tortoise_ts_index, tortoise_ts_index,                index_size_limbs * 2);
-            mpn_copyd(result_hare_ts_index,     hare_ts_index_cache[next_icache], index_size_limbs * 2);
-
-            shared_obj->founds[thread_no] = 1;
-            shared_obj->overall_found = 1;
-            goto dlog_thread_cleanup;
-        }
-
         // ---------- comparing with the other thread's hare pointers -----------
         for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-            if (ithread == thread_no)
-                continue;
+            // Copy point to avoid the race condition
+            // as much as possible.
+            unsigned int icache = all_thread_write_index[ithread];
+            mpn_copyd(tmp_ts_index, all_hare_ts_index_caches[ithread][icache], index_size_limbs * 2);
+            mpn_copyd(tmp_item, all_hare_item_caches[ithread][icache], item_size_limbs);
 
-            for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
-                // If same index as other thread's cache,
-                // just move on.
-                if (read_counters[ithread][icache] == all_write_counters[ithread][icache]) {
-                    #ifdef DLOG_VERBOSE
-                        mpz_add_ui(cache_hit_counter, cache_hit_counter, 1);
-                    #endif
-                    continue;
-                }
-
-                /* If the last bit of a write counter
-                is 1, that means that the thread is writing,
-                we can just skip it. */
-                if (all_write_counters[ithread][icache] & 0x1) {
-                    continue;
-                }
-
-                // Check how many miss happened
-                #ifdef DLOG_VERBOSE
+            // Check how many misreads might occur.
+            #ifdef DLOG_VERBOSE
+                if (read_counters[ithread][icache] != all_write_counters[ithread][icache]) {
                     mpz_add_ui(
-                        cache_miss_counter, 
-                        cache_miss_counter, 
-                        (all_write_counters[ithread][icache] >> 1) - (read_counters[ithread][icache] >> 1) - 1
+                        cache_possible_misread_counter, 
+                        cache_possible_misread_counter, 
+                        1
                     );
-                #endif 
-
-                // Set read counter.
-                read_counters[ithread][icache] = all_write_counters[ithread][icache];
-
-                // Copy point to avoid the race condition
-                // as much as possible.
-                mpn_copyd(tmp_ts_index, all_hare_ts_index_caches[ithread][icache], index_size_limbs * 2);
-                mpn_copyd(tmp_item, all_hare_item_caches[ithread][icache], item_size_limbs);
-
-                // Check how many misreads might occur.
-                #ifdef DLOG_VERBOSE
-                    if (read_counters[ithread][icache] != all_write_counters[ithread][icache]) {
-                        mpz_add_ui(
-                            cache_possible_misread_counter, 
-                            cache_possible_misread_counter, 
-                            1
-                        );
-                    }
-                #endif 
-
-                // Compare point.
-                if (mpn_cmp(tortoise_item, tmp_item, item_size_limbs) == 0) {
-                    mpn_copyd(result_tortoise_ts_index, tortoise_ts_index, index_size_limbs * 2);
-                    mpn_copyd(result_hare_ts_index,     tmp_ts_index,      index_size_limbs * 2);
-
-                    shared_obj->founds[thread_no] = 1;
-                    shared_obj->overall_found = 1;
-                    goto dlog_thread_cleanup;
                 }
+            #endif 
+
+            // Compare point.
+            if (mpn_cmp(tortoise_item, tmp_item, item_size_limbs) == 0) {
+                mpn_copyd(result_tortoise_ts_index, tortoise_ts_index, index_size_limbs * 2);
+                mpn_copyd(result_hare_ts_index,     tmp_ts_index,      index_size_limbs * 2);
+
+                shared_obj->founds[thread_no] = 1;
+                shared_obj->overall_found = 1;
+                goto dlog_thread_cleanup;
             }
         }
 
