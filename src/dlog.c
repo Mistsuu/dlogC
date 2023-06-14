@@ -148,7 +148,10 @@ int dlog_fast_solve_if_possible(
     ecc_weil_pairing_noverify(curve, E, G, kG, G_mult_order);
     if (mpz_cmp_ui(E, 1) != 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] weil_pairing(G, kG) != 1. kG is not a multiple of G.\n");
+            printf("[debug] weil_pairing(G, kG) == ");
+            mpz_out_str(stdout, 10, E);
+            printf(" != 1.\n");
+            printf("[debug] kG is not a multiple of G.\n");
         #endif
         mpz_clear(E);
         ecc_free_pt(O);
