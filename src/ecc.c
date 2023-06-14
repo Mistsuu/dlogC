@@ -580,7 +580,7 @@ void ecc_weil_pairing_noverify(ecc curve, mpz_t E, eccpt pointP, eccpt pointQ, m
     // -- Step 0: If any of the points are infinity
     // -- just return 1.
     // ===============================================================
-    if (mpz_cmp_ui(pointP->z, 0) || mpz_cmp_ui(pointQ->z, 0)) {
+    if (mpz_cmp_ui(pointP->z, 0) == 0 || mpz_cmp_ui(pointQ->z, 0) == 0) {
         mpz_set_ui(E, 1);
         return;
     }
