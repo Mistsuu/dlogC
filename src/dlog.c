@@ -30,7 +30,7 @@ int dlog_validate_input(
     }
 
     mp_size_t index_size_limbs = mpz_size(G_mult_order);
-    if (mem_limit < index_size_limbs * 2 * sizeof(mp_size_t)) {
+    if (mem_limit < (size_t) (index_size_limbs * 2 * sizeof(mp_limb_t))) {
         #ifdef DLOG_VERBOSE
             mpz_t recommended_mem_limit;
             mpz_init(recommended_mem_limit);
@@ -39,10 +39,10 @@ int dlog_validate_input(
             mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 113);
             // mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 2);     /* each element has t,s index */
             // mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, 2);     /* so we should multiply by 2 */
-            mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, sizeof(mp_size_t));
+            mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, sizeof(mp_limb_t));
 
             printf("[debug] Can't set memory limit lower than %d bytes!\n",
-                index_size_limbs * 2 * sizeof(mp_size_t));
+                index_size_limbs * 2 * sizeof(mp_limb_t));
             printf("[debug] Due to the config, it is recommended that around ");
             mpz_out_str(stdout, 10, recommended_mem_limit);
             printf(" bytes = ");
@@ -201,39 +201,52 @@ void dlog_init_dlog_obj(
     unsigned int n_rand_items
 )
 {
+    // -------------------------------------------------------------------------------------
+    //      Algorithm's configs
+    // -------------------------------------------------------------------------------------
     obj->n_threads = n_threads;
-    obj->n_cache_items = n_cache_items;
+    obj->mem_limit = mem_limit;
     obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
+    obj->hash_item_size_limbs = obj->index_size_limbs * 2;
+    obj->n_hash_items = mem_limit / (size_t) (obj->hash_item_size_limbs * sizeof(mp_limb_t));
 
+    // -------------------------------------------------------------------------------------
+    //      Curve's parameters
+    // -------------------------------------------------------------------------------------
     obj->curve_aR = mpn_init_zero(obj->item_size_limbs);
     obj->curve_bR = mpn_init_zero(obj->item_size_limbs);
     obj->curve_p  = mpn_init_zero(obj->item_size_limbs);
     obj->curve_P  = mpn_init_zero(obj->item_size_limbs);
     obj->G_order  = mpn_init_zero(obj->index_size_limbs);
 
+    // -------------------------------------------------------------------------------------
+    //      Cache values -- reusable after collision failed.
+    // -------------------------------------------------------------------------------------
     obj->thread_tortoise_X_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_XYZ_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
-    obj->thread_hare_X_items_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
-    obj->thread_hare_ts_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_hare_X_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_hare_ts_index = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         obj->thread_tortoise_X_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_tortoise_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
         
         obj->thread_hare_XYZ_items[ithread] = mpn_init_zero(obj->item_size_limbs * 3);
-        obj->thread_hare_X_items_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
-        obj->thread_hare_ts_index_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
-        for (unsigned int jthread = 0; jthread < n_cache_items; ++jthread) {
-            obj->thread_hare_X_items_caches[ithread][jthread] = mpn_init_zero(obj->item_size_limbs);
-            obj->thread_hare_ts_index_caches[ithread][jthread] = mpn_init_zero(obj->index_size_limbs * 2);
-        }
+        obj->thread_hare_X_items[ithread] = mpn_init_zero(obj->item_size_limbs);
+        obj->thread_hare_ts_index[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
     }
+    
+    // -------------------------------------------------------------------------------------
+    //      Hash points.
+    // -------------------------------------------------------------------------------------
+    obj->ts_index_hashstores = mpn_init_zero(obj->hash_item_size_limbs * obj->n_hash_items);
 
-    obj->thread_write_index = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_threads);
-
+    // -------------------------------------------------------------------------------------
+    //      Fixed random points
+    // -------------------------------------------------------------------------------------
     obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     obj->random_ts         = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     for (unsigned int irand = 0; irand < n_rand_items; ++irand) {
@@ -241,6 +254,9 @@ void dlog_init_dlog_obj(
         obj->random_ts[irand] = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
+    // -------------------------------------------------------------------------------------
+    //      Results per thread
+    // -------------------------------------------------------------------------------------
     obj->thread_result_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_result_hare_ts_indices     = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
@@ -248,6 +264,9 @@ void dlog_init_dlog_obj(
         obj->thread_result_hare_ts_indices[ithread]     = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
+    // -------------------------------------------------------------------------------------
+    //      Overall results
+    // -------------------------------------------------------------------------------------
     obj->founds = (int*)malloc_exit_when_null(sizeof(int) * n_threads);
 }
 
@@ -348,17 +367,15 @@ void dlog_fill_dlog_obj(
         mpn_cpyz( obj->thread_hare_XYZ_items[ithread],                         tG_add_skG->x, obj->item_size_limbs);
         mpn_cpyz(&obj->thread_hare_XYZ_items[ithread][obj->item_size_limbs],   tG_add_skG->y, obj->item_size_limbs);
         mpn_cpyz(&obj->thread_hare_XYZ_items[ithread][obj->item_size_limbs*2], mpz_1,         obj->item_size_limbs);
-        for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
-            mpn_cpyz( obj->thread_hare_X_items_caches[ithread][icache], tG_add_skG->x, obj->item_size_limbs);
-            mpn_cpyz( obj->thread_hare_ts_index_caches[ithread][icache],                        t, obj->index_size_limbs);
-            mpn_cpyz(&obj->thread_hare_ts_index_caches[ithread][icache][obj->index_size_limbs], s, obj->index_size_limbs);
-        }
+        mpn_cpyz( obj->thread_hare_X_items[ithread], tG_add_skG->x, obj->item_size_limbs);
+        mpn_cpyz( obj->thread_hare_ts_index[ithread],                        t, obj->index_size_limbs);
+        mpn_cpyz(&obj->thread_hare_ts_index[ithread][obj->index_size_limbs], s, obj->index_size_limbs);
     }
 
     // -------------------------------------------------------------------------------------
-    //      Initialize write index
+    //      Initialize hash points
     // -------------------------------------------------------------------------------------
-    memset(obj->thread_write_index, 0, n_threads * sizeof(unsigned long));
+    mpn_zero(obj->ts_index_hashstores, obj->hash_item_size_limbs * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Initialize overall results
@@ -396,22 +413,15 @@ void dlog_free_dlog_obj(
         free(obj->thread_tortoise_ts_indices[ithread]);
 
         free(obj->thread_hare_XYZ_items[ithread]);
-        for (unsigned int icache = 0; icache < obj->n_cache_items; ++icache) {
-            free(obj->thread_hare_X_items_caches[ithread][icache]);
-            free(obj->thread_hare_ts_index_caches[ithread][icache]);
-        }
-
-        free(obj->thread_hare_X_items_caches[ithread]);
-        free(obj->thread_hare_ts_index_caches[ithread]);
+        free(obj->thread_hare_X_items[ithread]);
+        free(obj->thread_hare_ts_index[ithread]);
     }
 
     free(obj->thread_tortoise_X_items);
     free(obj->thread_tortoise_ts_indices);
     free(obj->thread_hare_XYZ_items);
-    free(obj->thread_hare_X_items_caches);
-    free(obj->thread_hare_ts_index_caches);
-
-    free(obj->thread_write_index);
+    free(obj->thread_hare_X_items);
+    free(obj->thread_hare_ts_index);
 
     for (unsigned int irand = 0; irand < obj->n_rand_items; ++irand) {
         free(obj->random_tG_add_skG[irand]);
@@ -460,8 +470,8 @@ void* __thread__dlog_thread(
     mp_limb_t**  all_tortoise_X_items      = shared_obj->thread_tortoise_X_items;
     mp_limb_t**  all_tortoise_ts_indices   = shared_obj->thread_tortoise_ts_indices;
     mp_limb_t**  all_hare_XYZ_items        = shared_obj->thread_hare_XYZ_items;
-    mp_limb_t*** all_hare_X_item_caches    = shared_obj->thread_hare_X_items_caches;
-    mp_limb_t*** all_hare_ts_index_caches  = shared_obj->thread_hare_ts_index_caches;
+    mp_limb_t*** all_hare_X_item_caches    = shared_obj->thread_hare_X_items;
+    mp_limb_t*** all_hare_ts_index_caches  = shared_obj->thread_hare_ts_index;
 
     unsigned long* all_thread_write_index  = shared_obj->thread_write_index;
 
