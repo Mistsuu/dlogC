@@ -13,7 +13,7 @@ int dlog_validate_input(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_cache_items,
+    size_t mem_limit,
     unsigned int n_rand_items
 )
 {
@@ -29,9 +29,34 @@ int dlog_validate_input(
         return DLOG_BAD_CONFIG;
     }
 
-    if (n_cache_items == 0) {
+    mp_size_t index_size_limbs = mpz_size(G_mult_order);
+    if (mem_limit < index_size_limbs * 2 * sizeof(mp_size_t)) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] You must have >= 1 item in the cache. Exiting...\n");
+            mpz_t recommended_mem_limit;
+            mpz_init(recommended_mem_limit);
+            mpz_sqrt(recommended_mem_limit, G_mult_order);                      /* sqrt(pi*n/2) elements */
+            mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, 355);      /* approximate pi = 355/113 */
+            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 113);
+            // mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 2);     /* each element has t,s index */
+            // mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, 2);     /* so we should multiply by 2 */
+            mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, sizeof(mp_size_t));
+
+            printf("[debug] Can't set memory limit lower than %d bytes!\n",
+                index_size_limbs * 2 * sizeof(mp_size_t));
+            printf("[debug] Due to the config, it is recommended that around ");
+            mpz_out_str(stdout, 10, recommended_mem_limit);
+            printf(" bytes = ");
+            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 1024);
+            mpz_out_str(stdout, 10, recommended_mem_limit);
+            printf(" KB = ");
+            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 1024);
+            mpz_out_str(stdout, 10, recommended_mem_limit);
+            printf(" MB = ");
+            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 1024);
+            mpz_out_str(stdout, 10, recommended_mem_limit);
+            printf(" GB.");
+
+            mpz_clear(recommended_mem_limit);
         #endif
         return DLOG_BAD_CONFIG;
     }
@@ -172,7 +197,7 @@ void dlog_init_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_cache_items,
+    size_t mem_limit,
     unsigned int n_rand_items
 )
 {
@@ -234,7 +259,7 @@ void dlog_fill_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    unsigned int n_cache_items,
+    size_t mem_limit,
     unsigned int n_rand_items
 )
 {
@@ -739,7 +764,7 @@ int dlog(
     mpz_t G_mult_order, 
 
     unsigned int n_threads,
-    unsigned int n_cache_items,
+    size_t mem_limit,
     unsigned int n_rand_items
 )
 {
@@ -760,7 +785,11 @@ int dlog(
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] n_cache_items = %d\n", n_cache_items);
+        printf("[debug] memory limit: %ld bytes = %f MB = %f GB\n", 
+                    mem_limit, 
+                    mem_limit / 1024.0 / 1024.0, 
+                    mem_limit / 1024.0 / 1024.0 / 1024.0
+                );
         printf("[debug] n_rand_items = %d\n", n_rand_items);
     #endif
 
