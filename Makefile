@@ -15,7 +15,7 @@ CFLAGS.memcheck = -I$(LIBRARY_DIR) -O0 -ggdb -fsanitize=address
 CFLAGS.verbose  = -I$(LIBRARY_DIR) -O2 -ggdb -D DLOG_VERBOSE=1
 CFLAGS.static   = -I$(LIBRARY_DIR) -O2 -static
 CFLAGS          = $(CFLAGS.$(BUILD))
-LIBS            = -lgmp -lpthread
+LIBS            = -lgmp -lpthread -lxxhash
 
 # Requirements and stuffs
 FULLDEPS := $(shell find $(LIBRARY_DIR) -name '*.h')
