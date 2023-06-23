@@ -5,6 +5,7 @@
 #include "ex_mpz.h"
 #include "const.h"
 #include "mem.h"
+#include "ex_assert.h"
 
 int dlog_validate_input(
     ecc curve,

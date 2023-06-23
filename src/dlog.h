@@ -2,7 +2,6 @@
 #define DLOG_H
 
 #include <gmp.h>
-#include <ex_assert.h>
 #include <stdint.h>
 #include <string.h>
 #include <pthread.h>
