@@ -416,18 +416,20 @@ void dlog_free_dlog_obj(
         free(obj->thread_hare_X_items[ithread]);
         free(obj->thread_hare_ts_indices[ithread]);
     }
-
     free(obj->thread_tortoise_X_items);
     free(obj->thread_tortoise_ts_indices);
     free(obj->thread_hare_XYZ_items);
     free(obj->thread_hare_X_items);
     free(obj->thread_hare_ts_indices);
 
+
+    free(obj->ts_index_hashstores);
+
+
     for (unsigned int irand = 0; irand < obj->n_rand_items; ++irand) {
         free(obj->random_tG_add_skG[irand]);
         free(obj->random_ts[irand]);
     }
-
     free(obj->random_tG_add_skG);
     free(obj->random_ts);
 
@@ -435,7 +437,6 @@ void dlog_free_dlog_obj(
         free(obj->thread_result_tortoise_ts_indices[ithread]);
         free(obj->thread_result_hare_ts_indices[ithread]);
     }
-    
     free(obj->thread_result_tortoise_ts_indices);
     free(obj->thread_result_hare_ts_indices);
 
