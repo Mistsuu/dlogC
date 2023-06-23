@@ -616,15 +616,6 @@ void* __thread__dlog_thread(
             if (mpn_zero_p(&ts_index_hashstores[hash_index * hash_item_size_limbs],                    index_size_limbs * 2) == 0 && 
                 mpn_cmp   (&ts_index_hashstores[hash_index * hash_item_size_limbs], &hare_ts_index[0], index_size_limbs    ) != 0
             ) {
-                // todo: remove this after.
-                printf("================================\n");
-                for (int i = 0; i < index_size_limbs * 2; ++i) 
-                    printf("%016lx\n", ts_index_hashstores[hash_index * hash_item_size_limbs + i]);
-                printf("--------------------------------\n");
-                for (int i = 0; i < index_size_limbs * 2; ++i) 
-                    printf("%016lx\n", hare_ts_index[i]);
-                printf("================================\n");
-
                 mpn_copyd(result_tortoise_ts_index,  hare_ts_index,                                          index_size_limbs * 2);
                 mpn_copyd(result_hare_ts_index,     &ts_index_hashstores[hash_index * hash_item_size_limbs], index_size_limbs * 2);
 
@@ -725,48 +716,47 @@ int dlog_get_answer(
             mpz_set_mpn(t2, &obj->thread_result_hare_ts_indices[ithread][0],                         obj->index_size_limbs);
             mpz_set_mpn(s2, &obj->thread_result_hare_ts_indices[ithread][obj->index_size_limbs],     obj->index_size_limbs);
 
-            //  -------------------- Collision check --------------------
-            // todo: remove this section.
-            eccpt P1;
-            eccpt P2;
-            ecc_init_pt(P1);
-            ecc_init_pt(P2);
+            // //  -------------------- Collision check --------------------
+            // eccpt P1;
+            // eccpt P2;
+            // ecc_init_pt(P1);
+            // ecc_init_pt(P2);
 
-            ecc_mul(curve, P1, G, t1);
-            ecc_mul(curve, TMP, kG, s1);
-            ecc_add(curve, P1, P1, TMP);
+            // ecc_mul(curve, P1, G, t1);
+            // ecc_mul(curve, TMP, kG, s1);
+            // ecc_add(curve, P1, P1, TMP);
 
-            ecc_mul(curve, P2, G, t2);
-            ecc_mul(curve, TMP, kG, s2);
-            ecc_add(curve, P2, P2, TMP);
+            // ecc_mul(curve, P2, G, t2);
+            // ecc_mul(curve, TMP, kG, s2);
+            // ecc_add(curve, P2, P2, TMP);
 
-            mp_limb_t* p1xlimbs = mpn_init_cpyz(P1->x, obj->item_size_limbs);
-            mp_limb_t* p2xlimbs = mpn_init_cpyz(P2->x, obj->item_size_limbs);
+            // mp_limb_t* p1xlimbs = mpn_init_cpyz(P1->x, obj->item_size_limbs);
+            // mp_limb_t* p2xlimbs = mpn_init_cpyz(P2->x, obj->item_size_limbs);
 
-            unsigned char* p1xbytes = (unsigned char*)p1xlimbs;
-            unsigned char* p2xbytes = (unsigned char*)p2xlimbs;
+            // unsigned char* p1xbytes = (unsigned char*)p1xlimbs;
+            // unsigned char* p2xbytes = (unsigned char*)p2xlimbs;
 
-            printf("[debug] P1 = "); ecc_printf_pt(P1); printf("\n");
-            printf("[debug] P2 = "); ecc_printf_pt(P2); printf("\n");
-            printf("[debug] p1xlimbs = \""); 
-            for (int i = 0; i < obj->item_size_limbs * sizeof(mp_limb_t); ++i)
-                printf("\\x%02x", p1xbytes[i]);
-            printf("\"\n");
-            printf("[debug] p2xlimbs = \""); 
-            for (int i = 0; i < obj->item_size_limbs * sizeof(mp_limb_t); ++i)
-                printf("\\x%02x", p2xbytes[i]);
-            printf("\"\n");
+            // printf("[debug] P1 = "); ecc_printf_pt(P1); printf("\n");
+            // printf("[debug] P2 = "); ecc_printf_pt(P2); printf("\n");
+            // printf("[debug] p1xlimbs = \""); 
+            // for (int i = 0; i < obj->item_size_limbs * sizeof(mp_limb_t); ++i)
+            //     printf("\\x%02x", p1xbytes[i]);
+            // printf("\"\n");
+            // printf("[debug] p2xlimbs = \""); 
+            // for (int i = 0; i < obj->item_size_limbs * sizeof(mp_limb_t); ++i)
+            //     printf("\\x%02x", p2xbytes[i]);
+            // printf("\"\n");
 
-            printf("[debug] hash(p1xlimbs) = %ld\n", (size_t) XXH3_64bits(p1xlimbs, obj->item_size_limbs * sizeof(mp_limb_t)) % obj->n_hash_items);
-            printf("[debug] hash(p2xlimbs) = %ld\n", (size_t) XXH3_64bits(p2xlimbs, obj->item_size_limbs * sizeof(mp_limb_t)) % obj->n_hash_items);
+            // printf("[debug] hash(p1xlimbs) = %ld\n", (size_t) XXH3_64bits(p1xlimbs, obj->item_size_limbs * sizeof(mp_limb_t)) % obj->n_hash_items);
+            // printf("[debug] hash(p2xlimbs) = %ld\n", (size_t) XXH3_64bits(p2xlimbs, obj->item_size_limbs * sizeof(mp_limb_t)) % obj->n_hash_items);
 
-            ecc_free_pt(P1);
-            ecc_free_pt(P2);
+            // ecc_free_pt(P1);
+            // ecc_free_pt(P2);
 
-            free(p1xlimbs);
-            free(p2xlimbs);
+            // free(p1xlimbs);
+            // free(p2xlimbs);
 
-            //  ------------------------------------------------------------
+            // //  ------------------------------------------------------------
 
             // because we have x(tortoise) = x(hare)
             // we have 2 different routes:
