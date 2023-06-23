@@ -15,8 +15,8 @@ Utilizes **GMP version 6.2.1**.
 ## Usages
 
 ```
-git clone https://github.com/Mistsuu/BabyStepGiantStepC
-cd BabyStepGiantStepC
+git clone https://github.com/Mistsuu/dlogC
+cd dlogC
 git checkout pollard-rho
 make -j16
 ```
