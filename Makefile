@@ -21,6 +21,9 @@ LIBS            = -lgmp -lpthread
 FULLDEPS := $(shell find $(LIBRARY_DIR) -name '*.h')
 FULLOBJS := $(shell find $(SOURCE_DIR) -name '*.c' | sed -e "s/^$(SOURCE_DIR)/$(OBJECT_DIR)/" | sed -e "s/\\.c$$/.o/")
 
+# Default targets
+default: dlog libdlogfp
+
 # For creating a user interface binary
 dlog: $(FULLOBJS) $(OBJECT_DIR)/main.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
