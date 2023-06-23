@@ -10,7 +10,7 @@ This is an algorithm that tries to find the solution to the following problem: G
 
 This repo is made for educational purposes, striving for optimal time and space complexity in the discrete log for elliptic curves *(in short Weierstrass form)* in `GF(p)`.
 
-Utilizes **GMP version 6.2.1**.
+Utilizes **GMP version 6.2.1** and **xxhash version 0.8.1**.
 
 ## Usages
 
