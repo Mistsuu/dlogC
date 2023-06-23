@@ -19,11 +19,11 @@ typedef struct dlog_obj_struct
     unsigned int n_threads;
     size_t mem_limit;
     unsigned int n_rand_items;
+    size_t n_hash_items;
+    
     mp_size_t item_size_limbs;
     mp_size_t index_size_limbs;
-
     mp_size_t hash_item_size_limbs;
-    size_t n_hash_items;
 
     /* elliptic curve parameters a, b will 
     be represented in Montgomery form. */    
