@@ -51,57 +51,27 @@ unsigned int parse_arg_uint(char* arg, unsigned int default_val)
     return (unsigned int) val;
 }
 
-size_t parse_arg_memval(char* arg, size_t default_memval)
-{
-    size_t mem_val = DEFAULT_MEM_LIMIT;
-    if (arg) 
-    {
-        char* unit = NULL;
-        double MEM_LIMIT_PER_UNIT = strtod(arg, &unit);
-
-        if (MEM_LIMIT_PER_UNIT == 0) {
-            mem_val = DEFAULT_MEM_LIMIT;
-        }
-        else if ((*unit) == 'M') {
-            if (SIZE_MAX / (1024 * 1024) < MEM_LIMIT_PER_UNIT)
-                mem_val = DEFAULT_MEM_LIMIT;
-            else
-                mem_val = (size_t) (MEM_LIMIT_PER_UNIT * 1024 * 1024);
-        }
-        else if ((*unit) == 'G' || (*unit) == 0) {
-            if (SIZE_MAX / (1024 * 1024 * 1024) < MEM_LIMIT_PER_UNIT)
-                mem_val = DEFAULT_MEM_LIMIT;
-            else
-                mem_val = (size_t) (MEM_LIMIT_PER_UNIT * 1024 * 1024) * 1024;
-        }
-        else {
-            mem_val = DEFAULT_MEM_LIMIT;
-        }
-    }
-    return mem_val;
-}
-
 void main(int argc, char** argv)
 {
     // Get value from arguments.
-    unsigned int NUM_THREADS     = DEFAULT_NUM_THREADS;
-    unsigned int NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
-    size_t       MEM_LIMIT       = DEFAULT_MEM_LIMIT;
+    unsigned int  NUM_THREADS     = DEFAULT_NUM_THREADS;
+    unsigned int  NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
+    unsigned long ALPHA           = DEFAULT_ALPHA;
     
     int opt;
-    while ((opt = getopt(argc, argv, "t:m:r:h")) != -1) {
+    while ((opt = getopt(argc, argv, "t:a:r:h")) != -1) {
         switch (opt) {
             case 't':
                 NUM_THREADS = parse_arg_uint(optarg, DEFAULT_NUM_THREADS);
                 break;
-            case 'm':
-                MEM_LIMIT = parse_arg_memval(optarg, DEFAULT_MEM_LIMIT);
+            case 'a':
+                ALPHA = parse_arg_uint(optarg, DEFAULT_ALPHA);
                 break;
             case 'r':
                 NUM_RAND_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_RAND_ITEMS);
                 break;
             default:
-                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-m mem_limit=1G] [-r nrandpoints=20]\n", argv[0]);
+                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-a alpha=<auto-detect-value>] [-r nrandpoints=20]\n", argv[0]);
                 exit(-1);
         }
     }
@@ -165,7 +135,7 @@ void main(int argc, char** argv)
             G, kG, 
             n, 
             NUM_THREADS, 
-            MEM_LIMIT, 
+            ALPHA, 
             NUM_RAND_ITEMS
         ) == DLOG_SUCCESS
     ) 

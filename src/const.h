@@ -14,9 +14,8 @@
 #define DLOG_BAD_COLLISION       8
 
 #define DEFAULT_NUM_THREADS      4
-#define DEFAULT_NUM_CACHE_ITEMS  4
 #define DEFAULT_NUM_RAND_ITEMS   20
-#define DEFAULT_MEM_LIMIT        1024 * 1024 * 1024
+#define DEFAULT_ALPHA            0
 
 #define SHARED_LIB_NAME          "libdlogefp"
 

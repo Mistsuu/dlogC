@@ -13,7 +13,7 @@ int dlog_validate_input(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    size_t mem_limit,
+    unsigned long alpha,
     unsigned int n_rand_items
 )
 {
@@ -198,7 +198,7 @@ void dlog_init_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    size_t mem_limit,
+    unsigned long alpha,
     unsigned int n_rand_items
 )
 {
@@ -279,7 +279,7 @@ void dlog_fill_dlog_obj(
     mpz_t G_mult_order,
 
     unsigned int n_threads,
-    size_t mem_limit,
+    unsigned long alpha,
     unsigned int n_rand_items
 )
 {
@@ -828,7 +828,7 @@ int dlog(
     mpz_t G_mult_order, 
 
     unsigned int n_threads,
-    size_t mem_limit,
+    unsigned long alpha,
     unsigned int n_rand_items
 )
 {
