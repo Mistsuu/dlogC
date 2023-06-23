@@ -17,13 +17,14 @@
 typedef struct dlog_obj_struct
 {   
     unsigned int n_threads;
-    size_t mem_limit;
     unsigned int n_rand_items;
+    unsigned long alpha;
+    unsigned long gamma;
     size_t n_hash_items;
+    size_t n_distmod;
     
     mp_size_t item_size_limbs;
     mp_size_t index_size_limbs;
-    mp_size_t hash_item_size_limbs;
 
     /* elliptic curve parameters a, b will 
     be represented in Montgomery form. */    

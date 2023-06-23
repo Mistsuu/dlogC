@@ -56,7 +56,7 @@ void main(int argc, char** argv)
     // Get value from arguments.
     unsigned int  NUM_THREADS     = DEFAULT_NUM_THREADS;
     unsigned int  NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
-    unsigned long ALPHA           = DEFAULT_ALPHA;
+    unsigned long ALPHA           = DEFAULT_AUTO_ALPHA;
     
     int opt;
     while ((opt = getopt(argc, argv, "t:a:r:h")) != -1) {
@@ -65,7 +65,7 @@ void main(int argc, char** argv)
                 NUM_THREADS = parse_arg_uint(optarg, DEFAULT_NUM_THREADS);
                 break;
             case 'a':
-                ALPHA = parse_arg_uint(optarg, DEFAULT_ALPHA);
+                ALPHA = parse_arg_uint(optarg, DEFAULT_AUTO_ALPHA);
                 break;
             case 'r':
                 NUM_RAND_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_RAND_ITEMS);

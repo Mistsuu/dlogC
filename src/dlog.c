@@ -29,35 +29,13 @@ int dlog_validate_input(
         return DLOG_BAD_CONFIG;
     }
 
-    mp_size_t index_size_limbs = mpz_size(G_mult_order);
-    mp_size_t hash_item_size_limbs = index_size_limbs * 2;
-    if (mem_limit < (size_t) (hash_item_size_limbs * sizeof(mp_limb_t))) {
+    // This is not really a check, but shows an useful way to adjust alpha.
+    #ifdef DLOG_VERBOSE
+        printf("[debug] It is suggested that (alpha = k*%ld) for some small k.\n", mpz_sizeinbase(G_mult_order, 2));
+    #endif
+    if (alpha >= ULONG_MAX / n_threads / 123638) {
         #ifdef DLOG_VERBOSE
-            mpz_t recommended_mem_limit;
-            mpz_init(recommended_mem_limit);
-            mpz_sqrt(recommended_mem_limit, G_mult_order);                      /* sqrt(pi*n/2) elements */
-            mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, 355);      /* approximate pi = 355/113 */
-            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 113);
-            // mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 2);     /* each element has t,s index */
-            // mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, 2);     /* so we should multiply by 2 */
-            mpz_mul_ui(recommended_mem_limit, recommended_mem_limit, sizeof(mp_limb_t));
-
-            printf("[debug] Can't set memory limit lower than %ld bytes!\n",
-                index_size_limbs * 2 * sizeof(mp_limb_t));
-            printf("[debug] Due to the config, it is recommended that around ");
-            mpz_out_str(stdout, 10, recommended_mem_limit);
-            printf(" bytes = ");
-            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 1024);
-            mpz_out_str(stdout, 10, recommended_mem_limit);
-            printf(" KB = ");
-            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 1024);
-            mpz_out_str(stdout, 10, recommended_mem_limit);
-            printf(" MB = ");
-            mpz_div_ui(recommended_mem_limit, recommended_mem_limit, 1024);
-            mpz_out_str(stdout, 10, recommended_mem_limit);
-            printf(" GB.\n");
-
-            mpz_clear(recommended_mem_limit);
+            printf("[debug] Implementation currently not support for alpha >= %ld. Exiting...\n", ULONG_MAX / n_threads / 123638);
         #endif
         return DLOG_BAD_CONFIG;
     }
@@ -206,12 +184,26 @@ void dlog_init_dlog_obj(
     //      Algorithm's configs
     // -------------------------------------------------------------------------------------
     obj->n_threads = n_threads;
-    obj->mem_limit = mem_limit;
     obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
-    obj->hash_item_size_limbs = obj->index_size_limbs * 2;
-    obj->n_hash_items = mem_limit / (size_t) (obj->hash_item_size_limbs * sizeof(mp_limb_t));
+
+    if (alpha != 0) obj->alpha = alpha;
+    else            obj->alpha = (unsigned long)mpz_sizeinbase(G_mult_order, 2) * 10;
+    obj->gamma        =          (unsigned long)n_threads *      alpha * 123638 / 1549956;  /* gamma = alpha * n_threads * sqrt(2/pi) */
+    obj->n_hash_items = (size_t)((unsigned long)n_threads * (1 + alpha));
+    
+    mpz_t mpz_n_distmod;
+    mpz_init(mpz_n_distmod);
+    mpz_sqrt(mpz_n_distmod, G_mult_order);
+    mpz_mul_ui(mpz_n_distmod, mpz_n_distmod, obj->gamma);
+    mpz_div(mpz_n_distmod, G_mult_order, mpz_n_distmod);
+
+    obj->n_distmod = mpz_fits_ulong_p(mpz_n_distmod)
+                        ? mpz_get_ui(mpz_n_distmod)
+                        : (size_t) ULONG_MAX;
+    
+    mpz_clear(mpz_n_distmod);
 
     // -------------------------------------------------------------------------------------
     //      Curve's parameters
@@ -243,7 +235,7 @@ void dlog_init_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Hash points.
     // -------------------------------------------------------------------------------------
-    obj->ts_index_hashstores = mpn_init_zero(obj->hash_item_size_limbs * obj->n_hash_items);
+    obj->ts_index_hashstores = mpn_init_zero(obj->item_size_limbs * 2 * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Fixed random points
@@ -376,7 +368,7 @@ void dlog_fill_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Initialize hash points
     // -------------------------------------------------------------------------------------
-    mpn_zero(obj->ts_index_hashstores, obj->hash_item_size_limbs * obj->n_hash_items);
+    mpn_zero(obj->ts_index_hashstores, obj->item_size_limbs * 2 * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Initialize overall results
@@ -457,13 +449,15 @@ void* __thread__dlog_thread(
 
     unsigned int thread_no     = args->thread_no;
     unsigned int n_threads     = shared_obj->n_threads;
-    size_t mem_limit           = shared_obj->mem_limit;
     unsigned int n_rand_items  = shared_obj->n_rand_items;
+    unsigned long alpha        = shared_obj->alpha;
+    unsigned long gamma        = shared_obj->gamma;
     size_t n_hash_items        = shared_obj->n_hash_items;
+    size_t n_distmod           = shared_obj->n_distmod;
 
     mp_size_t item_size_limbs      = shared_obj->item_size_limbs;
     mp_size_t index_size_limbs     = shared_obj->index_size_limbs;
-    mp_size_t hash_item_size_limbs = shared_obj->hash_item_size_limbs;
+    mp_size_t hash_item_size_limbs = shared_obj->item_size_limbs * 2;
 
     mp_limb_t* curve_aR = shared_obj->curve_aR;
     mp_limb_t* curve_bR = shared_obj->curve_bR;
@@ -612,33 +606,36 @@ void* __thread__dlog_thread(
         }
 
         // ---------- convert hare's item into an index of a hash table  -----------
-        size_t hash_index = (
-            (size_t) XXH3_64bits(hare_X_item, item_size_limbs * sizeof(mp_limb_t)) % n_hash_items
-        );
+        //              (if the hare item is a distinguished item)
+        if (hare_X_item[item_size_limbs - 1] % n_distmod == 0) {
+            size_t hash_index = (
+                (size_t) XXH3_64bits(hare_X_item, item_size_limbs * sizeof(mp_limb_t)) % n_hash_items
+            );
 
-        // Collision might have been found.
-        if (mpn_zero_p(&ts_index_hashstores[hash_index * hash_item_size_limbs],                    index_size_limbs * 2) == 0 && 
-            mpn_cmp   (&ts_index_hashstores[hash_index * hash_item_size_limbs], &hare_ts_index[0], index_size_limbs    ) != 0
-        ) {
-            // todo: remove this after.
-            printf("================================\n");
-            for (int i = 0; i < index_size_limbs * 2; ++i) 
-                printf("%016lx\n", ts_index_hashstores[hash_index * hash_item_size_limbs + i]);
-            printf("--------------------------------\n");
-            for (int i = 0; i < index_size_limbs * 2; ++i) 
-                printf("%016lx\n", hare_ts_index[i]);
-            printf("================================\n");
+            // Collision might have been found.
+            if (mpn_zero_p(&ts_index_hashstores[hash_index * hash_item_size_limbs],                    index_size_limbs * 2) == 0 && 
+                mpn_cmp   (&ts_index_hashstores[hash_index * hash_item_size_limbs], &hare_ts_index[0], index_size_limbs    ) != 0
+            ) {
+                // todo: remove this after.
+                printf("================================\n");
+                for (int i = 0; i < index_size_limbs * 2; ++i) 
+                    printf("%016lx\n", ts_index_hashstores[hash_index * hash_item_size_limbs + i]);
+                printf("--------------------------------\n");
+                for (int i = 0; i < index_size_limbs * 2; ++i) 
+                    printf("%016lx\n", hare_ts_index[i]);
+                printf("================================\n");
 
-            mpn_copyd(result_tortoise_ts_index,  hare_ts_index,                                          index_size_limbs * 2);
-            mpn_copyd(result_hare_ts_index,     &ts_index_hashstores[hash_index * hash_item_size_limbs], index_size_limbs * 2);
+                mpn_copyd(result_tortoise_ts_index,  hare_ts_index,                                          index_size_limbs * 2);
+                mpn_copyd(result_hare_ts_index,     &ts_index_hashstores[hash_index * hash_item_size_limbs], index_size_limbs * 2);
 
-            shared_obj->founds[thread_no] = 1;
-            shared_obj->overall_found = 1;
-            goto dlog_thread_cleanup;
+                shared_obj->founds[thread_no] = 1;
+                shared_obj->overall_found = 1;
+                goto dlog_thread_cleanup;
+            }
+
+            // If not found, store at hash_index.
+            mpn_copyd(&ts_index_hashstores[hash_index * hash_item_size_limbs], hare_ts_index, index_size_limbs * 2);
         }
-
-        // If not found, store at hash_index.
-        mpn_copyd(&ts_index_hashstores[hash_index * hash_item_size_limbs], hare_ts_index, index_size_limbs * 2);
 
         // ---------------------------- updating lambda --------------------------
         lamda++;
@@ -762,7 +759,6 @@ int dlog_get_answer(
 
             printf("[debug] hash(p1xlimbs) = %ld\n", (size_t) XXH3_64bits(p1xlimbs, obj->item_size_limbs * sizeof(mp_limb_t)) % obj->n_hash_items);
             printf("[debug] hash(p2xlimbs) = %ld\n", (size_t) XXH3_64bits(p2xlimbs, obj->item_size_limbs * sizeof(mp_limb_t)) % obj->n_hash_items);
-            printf("\n");
 
             ecc_free_pt(P1);
             ecc_free_pt(P2);
@@ -849,11 +845,6 @@ int dlog(
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] memory limit: %ld bytes = %f MB = %f GB\n", 
-                    mem_limit, 
-                    mem_limit / 1024.0 / 1024.0, 
-                    mem_limit / 1024.0 / 1024.0 / 1024.0
-                );
         printf("[debug] n_rand_items = %d\n", n_rand_items);
     #endif
 
@@ -868,7 +859,7 @@ int dlog(
                     G_mult_order, 
 
                     n_threads, 
-                    mem_limit, 
+                    alpha, 
                     n_rand_items
                   );
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
@@ -904,7 +895,7 @@ int dlog(
         G_mult_order,
 
         n_threads,
-        mem_limit,
+        alpha,
         n_rand_items
     );
 
@@ -916,15 +907,17 @@ int dlog(
         G_mult_order,
 
         n_threads,
-        mem_limit,
+        alpha,
         n_rand_items
     );
 
     #ifdef DLOG_VERBOSE
-        printf("[debug] n_hash_items = %ld\n", obj->n_hash_items);
         printf("[debug] index_size_limbs = %ld\n", obj->index_size_limbs);
         printf("[debug] item_size_limbs = %ld\n", obj->item_size_limbs);
-        printf("[debug] hash_item_size_limbs = %ld\n", obj->hash_item_size_limbs);
+        printf("[debug] alpha = %ld\n", obj->alpha);
+        printf("[debug] gamma = %ld\n", obj->gamma);
+        printf("[debug] n_hash_items = %ld\n", obj->n_hash_items);
+        printf("[debug] n_distmod = %ld\n", obj->n_distmod);
     #endif
 
     // -------------------------------------------------------------------------------------
