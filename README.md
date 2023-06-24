@@ -48,8 +48,8 @@ You can run `./dlog -t <num_threads>` to specify the number of threads used in 
 You don't need to because in this version, the memory usage is very minimal *(less than `1MB` is expected for most applications)*
 
 ### Some custom parameters
-- `-c <num_cache_items>` 
-This value might allow you to have less errors processing data in a multithread setting. You can customize it to be any value `> 0` but it is advised to put it to any value from `4` to `10`. You can try change it higher to experiement with the runtime. However, the higher the value gets, the less the impact it would have on the runtime. Default value is `4`.
+- `-a <alpha>`
+This is a value that correlates to the proportion `theta = alpha * num_threads / sqrt(pi * N / 2)` of *"distinguished"* points over total number of points. Recommended to set to values in the form of `k * log2(n)` for `k` in `[2, 10]`. If `alpha` is set to `0` or leave empty, the default value is `3 * log2(n)`.
 
 - `-r <nrandpoints>`
 Set up the number of random points on the curve for the Pollard-Rho algorithm. You can experiment with this value, but any value from `20` and upper would work just as fine and won't affect much runtime. Default value is `20`.
@@ -62,8 +62,9 @@ The program outputs `None` in the following cases:
 
 - The program detects that no solution can be found.
 - `n` is not a prime number or it is not positive.
-- `num_cache_items` is `0`.
-- `nrandpoints` is `< 2`. 
+- `num_threads` is `0`.
+- `alpha` is too big.
+- `nrandpoints` is `< 2`.
 
 ## Example
 
@@ -100,11 +101,21 @@ If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for 
 [debug] kG: 
 [debug]    (6229151533029573525925181224628 : 1280290834308035816922484971565 : 1)
 [debug] G_mult_order = 857765763956341
-[debug] n_threads = 4
-[debug] n_cache_items = 10
-[debug] n_rand_items = 20
+[debug] n_threads = 8
+[debug] n_rand_items = 100
+[debug] tip: it is suggested that (alpha = k*50) for some small k.
 [debug] index_size_limbs = 1
 [debug] item_size_limbs = 2
+[debug] alpha = 150
+[debug] gamma = 47
+[debug] n_hash_items = 604
+[debug] n_distmod = 623141
+[debug] Collision found!
+[debug] The result is not correct!? Running cycle detection again...
+[debug] Collision found!
+[debug] The result is not correct!? Running cycle detection again...
+[debug] Collision found!
+[debug] The result is not correct!? Running cycle detection again...
 [debug] Collision found!
 [debug] Finished. Found k = 690204827669615
 690204827669615
@@ -123,7 +134,7 @@ Running `make`, you can specify `BUILD` variable to `release`, `verbose`, `memch
 - `static`: Creates a static version of `release` build of `dlog`.
 - `allwarn`: If you want to compile with a lot of error displaying 🥰
 
-You can also run `make libdlogefp` to build `so/libdlogefp.so` that you can use with the `so/dlog_EFp.py` *(but it gets a very weird bug that if you run the function `discrete_log_EFp()` a-lot, suddenly there's a bottleneck that cause the code to run much slower...)*
+Running `make` also build `so/libdlogefp.so` that you can use with the `so/dlog_EFp.py` *(but it gets a very weird bug that if you run the function `discrete_log_EFp()` a-lot, suddenly there's a bottleneck that cause the code to run much slower...)*
 
 ## Comparisons with the [parent project](https://github.com/Mistsuu/BabyStepGiantStepC)
 
@@ -142,9 +153,9 @@ You can also run `make libdlogefp` to build `so/libdlogefp.so` that you can use 
   generator_order = 857765763956341
   ```
 
-  in the parent project from **34 seconds** to about **6 seconds** *(best running time, because this algorithm is very random, so sometimes it can get to **35 seconds**...)* using *4 threads* on **Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz**. But on average, this should be faster than the **Baby Step Giant Step** one.
+  in the parent project from **34 seconds** to an average of **14 seconds** using *4 threads* on **Intel(R) Core(TM) i5-10300H CPU @ 2.50GHz**.
 
-- Uses `O(1)` memory with a modest constant. *(so I could delete the memory handling code in satisfaction urg feeling so good)*
+- Uses very mimimal memory that only depends on `alpha` and `num_threads`. *(so I could delete the memory handling code in satisfaction urg feeling so good)*
 
 - The slowest operation's time complexity is `O(sqrt(n))`, where `n` is the order of `G`.
 
@@ -200,10 +211,12 @@ And, because `(X:Y:Z)` is the same as `(XR:YR:ZR)`, so we can apply the elliptic
 
 ### Multithreading
 
-If we have `t` threads running at the same time applying the `Pollard-Rho` algorithm independently, we will have a speedup of `sqrt(t)` times. If the threads can communicate with each other, we will have a speed up of `t` times. That's what I (try) to do in this code, multi-threading and making them communicate with each other. 
+If we have `t` threads running at the same time applying the `Pollard-Rho` algorithm independently, we will have a speedup of `sqrt(t)` times. If the threads can communicate with each other, we will have a speed up of `t` times.
 
-Every thread will have a situation of *"one write, many read"*. It is a situation where one thread writes a value to a shared memory and the other threads will try to read it, compare with their data to get the result. 
+During the old implementations, I decided to go with the route where the threads can communicate with each other, but it seems like that will cause *many reads, one write* situation. While I decided there's no lock mechanism to be used here and therefore, allowing some misreads, it turns out that this situation still triggers some locks on memory read on the atomic level, and the program does not scale well with the number of threads increasing :<
 
-I don't use locks, out of fear that it might hinder the finding process. Instead I decided to spread the writes into many memory slots so that the reading thread doesn't read the data at the same place of the writing thread writes. That's what the `-c` option are for, it specifies the number of those slots. 
+Refer back to the amazing paper, *[Random Walks Revisited: Extensions of Pollard’s Rho Algorithm for Computing Multiple Discrete Logarithms](https://ac.informatik.uni-freiburg.de/publications/publications/sac01.pdf)*, it seems like we can mimimalize the lock problem, by hashing points and store the related details in a hash table. If there's a hash collision, we've likely found an answer.
 
-While this mean that we might misread some values, it provide enough speedup so I just roll with this route :) *(and, yes, because I'm too lazy to implement other ways)* *(it probably also explain why we get such drastic fluctuation in runtime though...)*
+However, a hash table requires some memory to be allocated. In practice, a typical computer cannot create the hash table big enough, in turn limits the size of the hash and collisions will occur too frequent. Because the hash output doesn't represent the whole input, many different points can be hashed into the same value. The lower the size of the hash, the higher the probability of finding false positives, which hinder the process even worse.
+
+It turns out the aforementioned paper has a very elegant solution *(✨ the solution that you can just say moaahhh ✨)* to keeping ***BOTH*** the size of the hash table ***AND*** the number of false positive cases **very low**. This problem can be solved if we only hash points that satisfy some constraints that we created *(in the paper they're called the "distinguished points")*. In this implementation, I just check whether the first limb of the point's X-coordinate modulo some number equals 0.
