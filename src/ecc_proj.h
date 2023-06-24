@@ -4,6 +4,7 @@
 #include <gmp.h>
 
 typedef mp_limb_t* ecc_ptemp[15];
+typedef mp_limb_t** ecc_ptemp_ptr;
 
 void ecc_init_ptemp(ecc_ptemp T, mp_size_t n);
 void ecc_free_ptemp(ecc_ptemp T);
