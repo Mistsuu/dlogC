@@ -30,9 +30,9 @@ int sdlog(
     char* str_n,
 
     // Configs
-    unsigned int n_threads,
+    unsigned long n_threads,
     unsigned long alpha,
-    unsigned int n_rand_items
+    unsigned long n_rand_items
 )
 {
     // Register user's interrupt :)
