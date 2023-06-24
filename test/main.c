@@ -38,20 +38,75 @@ int str_init_readline(char** pbuffer)
     return str_len;
 }
 
-unsigned long parse_arg_ulong(char* arg, unsigned long default_val)
+unsigned int parse_arg_uint(char* arg, unsigned int default_val)
 {
-    unsigned long val = default_val;
+    long int val = default_val;
     if (arg) {
-        val = strtoul(arg, NULL, 10);
-        if (val == 0 || val == ULONG_MAX)
+        val = strtol(arg, NULL, 10);
+        if (val == 0 || val == LONG_MAX || val == LONG_MIN)
             val = default_val;
+        else
+            val = abs(val);
     }
-    return val;
+    return (unsigned int) val;
 }
 
-int main(int argc, char** argv)
+size_t parse_arg_memval(char* arg, size_t default_memval)
 {
-    // ----------------------------- parse curve values from stdin. -----------------------------
+    size_t mem_val = DEFAULT_MEM_LIMIT;
+    if (arg) 
+    {
+        char* unit = NULL;
+        double MEM_LIMIT_PER_UNIT = strtod(arg, &unit);
+
+        if (MEM_LIMIT_PER_UNIT == 0) {
+            mem_val = DEFAULT_MEM_LIMIT;
+        }
+        else if ((*unit) == 'M') {
+            if (SIZE_MAX / (1024 * 1024) < MEM_LIMIT_PER_UNIT)
+                mem_val = DEFAULT_MEM_LIMIT;
+            else
+                mem_val = (size_t) (MEM_LIMIT_PER_UNIT * 1024 * 1024);
+        }
+        else if ((*unit) == 'G' || (*unit) == 0) {
+            if (SIZE_MAX / (1024 * 1024 * 1024) < MEM_LIMIT_PER_UNIT)
+                mem_val = DEFAULT_MEM_LIMIT;
+            else
+                mem_val = (size_t) (MEM_LIMIT_PER_UNIT * 1024 * 1024) * 1024;
+        }
+        else {
+            mem_val = DEFAULT_MEM_LIMIT;
+        }
+    }
+    return mem_val;
+}
+
+void main(int argc, char** argv)
+{
+    // Get value from arguments.
+    unsigned int NUM_THREADS     = DEFAULT_NUM_THREADS;
+    unsigned int NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
+    size_t       MEM_LIMIT       = DEFAULT_MEM_LIMIT;
+    
+    int opt;
+    while ((opt = getopt(argc, argv, "t:m:r:h")) != -1) {
+        switch (opt) {
+            case 't':
+                NUM_THREADS = parse_arg_uint(optarg, DEFAULT_NUM_THREADS);
+                break;
+            case 'm':
+                MEM_LIMIT = parse_arg_memval(optarg, DEFAULT_MEM_LIMIT);
+                break;
+            case 'r':
+                NUM_RAND_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_RAND_ITEMS);
+                break;
+            default:
+                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-m mem_limit=1G] [-r nrandpoints=20]\n", argv[0]);
+                exit(-1);
+        }
+    }
+
+    // Parse curve values from stdin.
     char* curve_a;
     char* curve_b;
     char* curve_p;
@@ -101,30 +156,7 @@ int main(int argc, char** argv)
     mpz_t n;
     mpz_init_set_str(n, n_str, 10);
 
-    // ----------------------------- parse value from argc, argv. -----------------------------
-    unsigned long NUM_THREADS     = DEFAULT_NUM_THREADS;
-    unsigned long NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
-    unsigned long ALPHA           = (unsigned long)mpz_sizeinbase(n, 2) * 3;
-    
-    int opt;
-    while ((opt = getopt(argc, argv, "t:a:r:h")) != -1) {
-        switch (opt) {
-            case 't':
-                NUM_THREADS = parse_arg_ulong(optarg, DEFAULT_NUM_THREADS);
-                break;
-            case 'a':
-                ALPHA = parse_arg_ulong(optarg, (unsigned long)mpz_sizeinbase(n, 2) * 3);
-                break;
-            case 'r':
-                NUM_RAND_ITEMS = parse_arg_ulong(optarg, DEFAULT_NUM_RAND_ITEMS);
-                break;
-            default:
-                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-a alpha=3*log2(n)] [-r nrandpoints=20]\n", argv[0]);
-                exit(-1);
-        }
-    }
-    
-    // ---------------------------------- run dlog() ----------------------------------------
+    // dlog() start.
     mpz_t k;
     mpz_init(k);
     if (dlog(
@@ -133,7 +165,7 @@ int main(int argc, char** argv)
             G, kG, 
             n, 
             NUM_THREADS, 
-            ALPHA, 
+            MEM_LIMIT, 
             NUM_RAND_ITEMS
         ) == DLOG_SUCCESS
     ) 
@@ -144,7 +176,7 @@ int main(int argc, char** argv)
     else
         printf("None\n");
 
-    // ---------------------------------- cleaning... ----------------------------------------
+    // cleanup.
     mpz_clear(k);
     mpz_clear(n);
 
@@ -160,6 +192,4 @@ int main(int argc, char** argv)
     free(kGx);
     free(kGy);
     free(n_str);
-
-    return 0;
 }

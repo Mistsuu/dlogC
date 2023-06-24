@@ -28,9 +28,9 @@ int sdlog(
     char* str_n,
 
     // Configs
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 """
 sdlog = libdlogefp.sdlog
@@ -49,9 +49,9 @@ sdlog.argtypes = [
             ctypes.c_char_p,
             ctypes.c_char_p,
 
-            ctypes.c_uint,
-            ctypes.c_uint,
-            ctypes.c_uint,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
+            ctypes.c_ulong,
         ]
 sdlog.restype = ctypes.c_int
 
@@ -76,7 +76,7 @@ def _discrete_log_EFp(
     G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
     n: int, 
     ncores: int = 4,
-    ncacheitems: int = 4,
+    alpha: int = 0,
     nranditems: int = 20,
 ):
     # ============================== Sanity checks ==============================
@@ -104,7 +104,7 @@ def _discrete_log_EFp(
     n = int(n)
 
     ncores = int(ncores)
-    ncacheitems = int(ncacheitems)
+    alpha = int(alpha)
     nranditems = int(nranditems)
 
     # ========================== Parse & run C functions ========================
@@ -138,7 +138,7 @@ def _discrete_log_EFp(
         str_n,
 
         ncores,
-        ncacheitems,
+        alpha,
         nranditems
     )
 
@@ -157,7 +157,7 @@ def discrete_log_EFp(
     G: ECCPoint | ECCInf, kG: ECCPoint | ECCInf,
     n: int, 
     ncores: int = 4,
-    ncacheitems: int = 4,
+    alpha: int = 0,
     nranditems: int = 20
 ):
     with ProcessPoolExecutor(1) as executor:
@@ -167,7 +167,7 @@ def discrete_log_EFp(
             G, kG,
             n,
             ncores,
-            ncacheitems,
+            alpha,
             nranditems
         ) 
         
@@ -197,7 +197,7 @@ if __name__ == '__main__':
             0x06d8fefe8066085f,
 
             ncores=4,
-            ncacheitems=2,
+            alpha=0,
             nranditems=20    
         )
     )

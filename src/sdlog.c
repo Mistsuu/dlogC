@@ -31,7 +31,7 @@ int sdlog(
 
     // Configs
     unsigned int n_threads,
-    unsigned int n_cache_items,
+    unsigned long alpha,
     unsigned int n_rand_items
 )
 {
@@ -76,7 +76,9 @@ int sdlog(
                             n,
                             
                             n_threads,
-                            n_cache_items,
+                            alpha == 0 
+                                ? (unsigned long)mpz_sizeinbase(n, 2) * 3
+                                : alpha,
                             n_rand_items
                         ) == DLOG_SUCCESS); 
 

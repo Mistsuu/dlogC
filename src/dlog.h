@@ -2,10 +2,10 @@
 #define DLOG_H
 
 #include <gmp.h>
-#include <ex_assert.h>
 #include <stdint.h>
 #include <string.h>
 #include <pthread.h>
+#include <xxhash.h>
 
 #ifdef DLOG_VERBOSE
     #include <sys/time.h>
@@ -16,9 +16,13 @@
 
 typedef struct dlog_obj_struct
 {   
-    unsigned int n_threads;
-    unsigned int n_cache_items;
-    unsigned int n_rand_items;
+    unsigned long n_threads;
+    unsigned long n_rand_items;
+    unsigned long alpha;
+    unsigned long gamma;
+    size_t n_hash_items;
+    size_t n_distmod;
+    
     mp_size_t item_size_limbs;
     mp_size_t index_size_limbs;
 
@@ -30,17 +34,19 @@ typedef struct dlog_obj_struct
     mp_limb_t* curve_P;
     mp_limb_t* G_order;
 
-    /* sorry for all the 3 stars pointers... */
-    mp_limb_t**       thread_tortoise_X_items;          // n threads, each thread has 1 value.
-    mp_limb_t***      thread_hare_X_items_caches;       // n threads, each thread has m cache values.
-    mp_limb_t**       thread_hare_XYZ_items;            // n threads, each thread has 1 value.
-    mp_limb_t**       thread_tortoise_ts_indices;       // n threads, each thread has 1 value.
-    mp_limb_t***      thread_hare_ts_index_caches;      // n threads, each thread has m cache indices.
+    /* okay, this version doesn't have any 3 stars pointers :> */
+    mp_limb_t** thread_tortoise_X_items;          // n threads, each thread has 1 value.
+    mp_limb_t** thread_tortoise_ts_indices;       // n threads, each thread has 1 value.
+    mp_limb_t** thread_hare_XYZ_items;            // n threads, each thread has 1 value.
+    mp_limb_t** thread_hare_X_items;              // n threads, each thread has 1 value.
+    mp_limb_t** thread_hare_ts_indices;           // n threads, each thread has 1 value.
 
-    unsigned long*    thread_write_index;
+    /* results points are hashed and t,s indices are put into the collision area... */
+    mp_limb_t*  ts_index_hashstores;              // place to store t, s indices.
 
-    mp_limb_t** random_tG_add_skG;                      // r random points of t*G + s*kG (using X, Y coordinate in Montgomery Form.)
-    mp_limb_t** random_ts;                              // r random multipliers t, s
+    /* random points used in Teske's method to quickly generate psuedo-random points */
+    mp_limb_t** random_tG_add_skG;                // r random points of t*G + s*kG (using X, Y coordinate in Montgomery Form.)
+    mp_limb_t** random_ts;                        // r random multipliers t, s
 
     /* result storage */
     mp_limb_t** thread_result_tortoise_ts_indices;
@@ -65,9 +71,9 @@ int dlog_validate_input(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 int dlog_fast_solve_if_possible(
@@ -84,9 +90,9 @@ void dlog_init_dlog_obj(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 void dlog_fill_dlog_obj(
@@ -96,9 +102,9 @@ void dlog_fill_dlog_obj(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 void dlog_free_dlog_obj(
@@ -128,9 +134,9 @@ int dlog(
     eccpt G, eccpt kG, 
     mpz_t G_mult_order, 
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 #endif
