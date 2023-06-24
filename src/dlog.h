@@ -16,8 +16,8 @@
 
 typedef struct dlog_obj_struct
 {   
-    unsigned int n_threads;
-    unsigned int n_rand_items;
+    unsigned long n_threads;
+    unsigned long n_rand_items;
     unsigned long alpha;
     unsigned long gamma;
     size_t n_hash_items;
