@@ -834,8 +834,8 @@ int dlog(
         printf("[debug] G_mult_order = ");
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
-        printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] n_rand_items = %d\n", n_rand_items);
+        printf("[debug] n_threads = %ld\n", n_threads);
+        printf("[debug] n_rand_items = %ld\n", n_rand_items);
     #endif
 
     int dlog_status;
