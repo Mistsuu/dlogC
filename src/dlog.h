@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <pthread.h>
+#include <xxhash.h>
 
 #ifdef DLOG_VERBOSE
     #include <sys/time.h>

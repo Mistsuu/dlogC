@@ -403,11 +403,15 @@ void* __thread__dlog_thread(
 
     unsigned int thread_no     = args->thread_no;
     unsigned int n_threads     = shared_obj->n_threads;
-    unsigned int n_cache_items = shared_obj->n_cache_items;
     unsigned int n_rand_items  = shared_obj->n_rand_items;
+    unsigned long alpha        = shared_obj->alpha;
+    unsigned long gamma        = shared_obj->gamma;
+    size_t n_hash_items        = shared_obj->n_hash_items;
+    size_t n_distmod           = shared_obj->n_distmod;
 
-    mp_size_t item_size_limbs  = shared_obj->item_size_limbs;
-    mp_size_t index_size_limbs = shared_obj->index_size_limbs;
+    mp_size_t item_size_limbs      = shared_obj->item_size_limbs;
+    mp_size_t index_size_limbs     = shared_obj->index_size_limbs;
+    mp_size_t hash_item_size_limbs = shared_obj->index_size_limbs * 2;
 
     mp_limb_t* field_p  = shared_obj->field_p;
     mp_limb_t* field_P  = shared_obj->field_P;
@@ -415,15 +419,15 @@ void* __thread__dlog_thread(
 
     mp_limb_t**  all_tortoise_items        = shared_obj->thread_tortoise_items;
     mp_limb_t**  all_tortoise_ts_indices   = shared_obj->thread_tortoise_ts_indices;
-    mp_limb_t*** all_hare_item_caches      = shared_obj->thread_hare_items;
-    mp_limb_t*** all_hare_ts_index_caches  = shared_obj->thread_hare_ts_indices;
+    mp_limb_t**  all_hare_items            = shared_obj->thread_hare_items;
+    mp_limb_t**  all_hare_ts_indices       = shared_obj->thread_hare_ts_indices;
 
     mp_limb_t*  tortoise_item              = all_tortoise_items[thread_no];
     mp_limb_t*  tortoise_ts_index          = all_tortoise_ts_indices[thread_no];
-    mp_limb_t** hare_item_cache            = all_hare_item_caches[thread_no];
-    mp_limb_t** hare_ts_index_cache        = all_hare_ts_index_caches[thread_no];
+    mp_limb_t*  hare_item                  = all_hare_items[thread_no];
+    mp_limb_t*  hare_ts_index              = all_hare_ts_indices[thread_no];
 
-    unsigned long* all_thread_write_index  = shared_obj->thread_write_index;
+    mp_limb_t*  ts_index_hashstores        = shared_obj->ts_index_hashstores;
 
     mp_limb_t** random_tG_add_skG = shared_obj->random_tG_add_skG;    
     mp_limb_t** random_ts         = shared_obj->random_ts;
@@ -438,15 +442,9 @@ void* __thread__dlog_thread(
     // -------------------------------------------------------------------------------------
     unsigned long power = 1;
     unsigned long lamda = 1;
-    unsigned long icache = 0;
 
     mp_limb_t* T;
     T = mpn_init_zero(item_size_limbs * 6);
-
-    mp_limb_t* tmp_item;
-    mp_limb_t* tmp_ts_index;
-    tmp_item = mpn_init_zero(item_size_limbs);
-    tmp_ts_index = mpn_init_zero(index_size_limbs * 2);
 
     while (!shared_obj->overall_found) {
         // ---------------------- updating the tortoise pointer -------------------------
@@ -456,23 +454,17 @@ void* __thread__dlog_thread(
             assertf(power != 0, "Oh geez computers are so good nowadays. We've reached the limit of %ld bits, there's nothing we can do now...", sizeof(unsigned long) * 8);
             lamda = 0;
 
-            mpn_copyd(tortoise_item, hare_item_cache[icache], item_size_limbs);
-            mpn_copyd(tortoise_ts_index, hare_ts_index_cache[icache], index_size_limbs * 2);
+            mpn_copyd(tortoise_item, hare_item, item_size_limbs);
+            mpn_copyd(tortoise_ts_index, hare_ts_index, index_size_limbs * 2);
         }
 
-        // ---------------------- updating the hare pointer -------------------------
-        unsigned int next_icache = (icache+1) % n_cache_items;
-        unsigned int irand = hare_item_cache[icache][0] % n_rand_items;
-
-        // ---------------------- write to a public pointer -------------------------
-        //               (this is where the race condition might happen)
+        // ---------------------- update hare pointer and t,s index -------------------------
+        unsigned int irand = hare_item[0] % n_rand_items;
 
         // element <- f(element)
-        //     --- and ---
-        //      write item
         mpn_montgomery_mulmod_n(
-            hare_item_cache[next_icache], 
-            hare_item_cache[icache], 
+            hare_item, 
+            hare_item, 
             random_tG_add_skG[irand],
 
             field_p, field_P,
@@ -482,53 +474,62 @@ void* __thread__dlog_thread(
 
         // write updated index.
         mpn_addmod_n(
-            &hare_ts_index_cache[next_icache][0],
-            &hare_ts_index_cache[icache][0],
+            &hare_ts_index[0],
+            &hare_ts_index[0],
             &random_ts[irand][0],
             G_order,
             index_size_limbs
         );
 
         mpn_addmod_n(
-            &hare_ts_index_cache[next_icache][index_size_limbs],
-            &hare_ts_index_cache[icache][index_size_limbs],
+            &hare_ts_index[index_size_limbs],
+            &hare_ts_index[index_size_limbs],
             &random_ts[irand][index_size_limbs],
             G_order,
             index_size_limbs
         );
 
-        all_thread_write_index[thread_no] = next_icache;
+        // ---------- comparing with our tortoise pointer. ----------
+        if (mpn_cmp(tortoise_item, hare_item, item_size_limbs) == 0) {
+            mpn_copyd(result_tortoise_ts_index, tortoise_ts_index, index_size_limbs * 2);
+            mpn_copyd(result_hare_ts_index,     hare_ts_index,     index_size_limbs * 2);
 
-        // ---------- comparing with the other thread's hare pointers -----------
-        for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
-            // Copy point to avoid the race condition
-            // as much as possible.
-            unsigned int icache = all_thread_write_index[ithread];
-            mpn_copyd(tmp_ts_index, all_hare_ts_index_caches[ithread][icache], index_size_limbs * 2);
-            mpn_copyd(tmp_item, all_hare_item_caches[ithread][icache], item_size_limbs);
+            shared_obj->founds[thread_no] = 1;
+            shared_obj->overall_found = 1;
+            goto dlog_thread_cleanup;
+        }
 
-            // Compare point.
-            if (mpn_cmp(tortoise_item, tmp_item, item_size_limbs) == 0) {
-                mpn_copyd(result_tortoise_ts_index, tortoise_ts_index, index_size_limbs * 2);
-                mpn_copyd(result_hare_ts_index,     tmp_ts_index,      index_size_limbs * 2);
+        // ---------- convert hare's item into an index of a hash table  -----------
+        //              (if the hare item is a distinguished item)
+        if (hare_item[item_size_limbs - 1] % n_distmod == 0) {
+            size_t hash_index = (
+                (size_t) XXH3_64bits(hare_item, item_size_limbs * sizeof(mp_limb_t)) % n_hash_items
+            );
+
+            // Collision might have been found.
+            if (mpn_zero_p(&ts_index_hashstores[hash_index * hash_item_size_limbs],                    index_size_limbs * 2) == 0 && 
+                mpn_cmp   (&ts_index_hashstores[hash_index * hash_item_size_limbs], &hare_ts_index[0], index_size_limbs    ) != 0
+            ) {
+                mpn_copyd(result_tortoise_ts_index,  hare_ts_index,                                          index_size_limbs * 2);
+                mpn_copyd(result_hare_ts_index,     &ts_index_hashstores[hash_index * hash_item_size_limbs], index_size_limbs * 2);
 
                 shared_obj->founds[thread_no] = 1;
                 shared_obj->overall_found = 1;
                 goto dlog_thread_cleanup;
             }
-        }
 
+            // If not found, store at hash_index.
+            mpn_copyd(&ts_index_hashstores[hash_index * hash_item_size_limbs], hare_ts_index, index_size_limbs * 2);
+        }
+        
         // ---------------------------- updating lambda --------------------------
         lamda++;
-        icache = next_icache;
     }
 
     // -------------------------------------------------------------------------------------
     //      Cleanup
     // -------------------------------------------------------------------------------------
 dlog_thread_cleanup:
-    free(tmp_item);
-    free(tmp_ts_index);
     free(T);
 
     return NULL;
