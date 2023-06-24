@@ -327,7 +327,7 @@ void dlog_fill_dlog_obj(
     }
 
     // -------------------------------------------------------------------------------------
-    //      Initialize hash points
+    //      Initialize hash values
     // -------------------------------------------------------------------------------------
     mpn_zero(obj->ts_index_hashstores, obj->index_size_limbs * 2 * obj->n_hash_items);
 
