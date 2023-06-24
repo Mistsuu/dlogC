@@ -64,9 +64,9 @@ int dlog_validate_input(
     mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 int dlog_fast_solve_if_possible(

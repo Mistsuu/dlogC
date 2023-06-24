@@ -10,14 +10,14 @@ int dlog_validate_input(
     mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 )
 {
     // -------------------------------------------------------------------------------------
     //      Must have more than 0 threads.
-    //      Cache must not have 0 items.
+    //      Alpha must not be 0.
     //      Random indices must not have 0 items.
     // -------------------------------------------------------------------------------------
     if (n_threads == 0) {
@@ -27,9 +27,13 @@ int dlog_validate_input(
         return DLOG_BAD_CONFIG;
     }
 
-    if (n_cache_items == 0) {
+    // This is not really a check, but shows an useful way to adjust alpha.
+    #ifdef DLOG_VERBOSE
+        printf("[debug] tip: it is suggested that (alpha = k*%ld) for some small k.\n", mpz_sizeinbase(G_mult_order, 2));
+    #endif
+    if (alpha >= ULONG_MAX / n_threads / 123638 || alpha == 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] You must have >= 1 item in the cache. Exiting...\n");
+            printf("[debug] Implementation currently not support for (alpha >= %ld) or (alpha == 0). Exiting...\n", ULONG_MAX / n_threads / 123638);
         #endif
         return DLOG_BAD_CONFIG;
     }
