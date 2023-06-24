@@ -233,7 +233,7 @@ void dlog_init_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Hash points.
     // -------------------------------------------------------------------------------------
-    obj->ts_index_hashstores = mpn_init_zero(obj->item_size_limbs * 2 * obj->n_hash_items);
+    obj->ts_index_hashstores = mpn_init_zero(obj->index_size_limbs * 2 * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Fixed random points
@@ -366,7 +366,7 @@ void dlog_fill_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Initialize hash points
     // -------------------------------------------------------------------------------------
-    mpn_zero(obj->ts_index_hashstores, obj->item_size_limbs * 2 * obj->n_hash_items);
+    mpn_zero(obj->ts_index_hashstores, obj->index_size_limbs * 2 * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Initialize overall results
@@ -455,7 +455,7 @@ void* __thread__dlog_thread(
 
     mp_size_t item_size_limbs      = shared_obj->item_size_limbs;
     mp_size_t index_size_limbs     = shared_obj->index_size_limbs;
-    mp_size_t hash_item_size_limbs = shared_obj->item_size_limbs * 2;
+    mp_size_t hash_item_size_limbs = shared_obj->index_size_limbs * 2;
 
     mp_limb_t* curve_aR = shared_obj->curve_aR;
     mp_limb_t* curve_bR = shared_obj->curve_bR;
