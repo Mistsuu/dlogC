@@ -20,7 +20,7 @@ cd dlogC
 git checkout pollard-rho
 make -j16
 ```
-to produce `./dlog`.
+to produce `./dlog` and `so/libdlogefp.so`.
 
 ### Input supplying
 
