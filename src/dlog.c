@@ -220,6 +220,7 @@ void dlog_init_dlog_obj(
     obj->thread_hare_XYZ_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_X_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_pad_space = (char**)malloc_exit_when_null(sizeof(char*) * n_threads);
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         obj->thread_tortoise_X_items[ithread] = mpn_init_zero(obj->item_size_limbs);
@@ -228,6 +229,8 @@ void dlog_init_dlog_obj(
         obj->thread_hare_XYZ_items[ithread] = mpn_init_zero(obj->item_size_limbs * 3);
         obj->thread_hare_X_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_hare_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
+
+        obj->thread_pad_space[ithread] = (char*)malloc_exit_when_null((size_t)sysconf(_SC_LEVEL1_DCACHE_LINESIZE));
     }
     
     // -------------------------------------------------------------------------------------
@@ -406,13 +409,15 @@ void dlog_free_dlog_obj(
         free(obj->thread_hare_XYZ_items[ithread]);
         free(obj->thread_hare_X_items[ithread]);
         free(obj->thread_hare_ts_indices[ithread]);
+    
+        free(obj->thread_pad_space[ithread]);
     }
     free(obj->thread_tortoise_X_items);
     free(obj->thread_tortoise_ts_indices);
     free(obj->thread_hare_XYZ_items);
     free(obj->thread_hare_X_items);
     free(obj->thread_hare_ts_indices);
-
+    free(obj->thread_pad_space);
 
     free(obj->ts_index_hashstores);
 
