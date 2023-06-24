@@ -19,7 +19,7 @@ int sdlog(
 
     char* str_G,
     char* str_kG,
-    char* str_upper_k,
+    char* str_n,
     
     // Configs
     unsigned long n_threads,

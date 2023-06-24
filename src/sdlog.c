@@ -21,7 +21,7 @@ int sdlog(
 
     char* str_G,
     char* str_kG,
-    char* str_upper_k,
+    char* str_n,
     
     // Configs
     unsigned long n_threads,
@@ -41,7 +41,7 @@ int sdlog(
     mpz_t kG;
     mpz_init_set_str(kG, str_kG, 10);
     mpz_t n;
-    mpz_init_set_str(n, str_upper_k, 10);
+    mpz_init_set_str(n, str_n, 10);
 
     // Calling the inner dlog().
     int dlog_success = (dlog(
