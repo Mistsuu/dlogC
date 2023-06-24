@@ -207,7 +207,7 @@ void dlog_init_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Hash elements.
     // -------------------------------------------------------------------------------------
-    obj->ts_index_hashstores = mpn_init_zero(obj->item_size_limbs * 2 * obj->n_hash_items);
+    obj->ts_index_hashstores = mpn_init_zero(obj->index_size_limbs * 2 * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Fixed random elements
@@ -242,9 +242,9 @@ void dlog_fill_dlog_obj(
     mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 )
 {
     mpz_t mpz_R;
@@ -321,18 +321,15 @@ void dlog_fill_dlog_obj(
         mpn_cpyz( obj->thread_tortoise_ts_indices[ithread],                        t, obj->index_size_limbs);
         mpn_cpyz(&obj->thread_tortoise_ts_indices[ithread][obj->index_size_limbs], s, obj->index_size_limbs);
 
-        for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
-            mpn_cpyz( obj->thread_hare_items[ithread][icache], tG_add_skG, obj->item_size_limbs);
-            mpn_cpyz( obj->thread_hare_ts_indices[ithread][icache],                        t, obj->index_size_limbs);
-            mpn_cpyz(&obj->thread_hare_ts_indices[ithread][icache][obj->index_size_limbs], s, obj->index_size_limbs);
-        }
+        mpn_cpyz( obj->thread_hare_items[ithread], tG_add_skG, obj->item_size_limbs);
+        mpn_cpyz( obj->thread_hare_ts_indices[ithread],                        t, obj->index_size_limbs);
+        mpn_cpyz(&obj->thread_hare_ts_indices[ithread][obj->index_size_limbs], s, obj->index_size_limbs);
     }
 
     // -------------------------------------------------------------------------------------
-    //      Initialize write index
+    //      Initialize hash points
     // -------------------------------------------------------------------------------------
-    memset(obj->thread_write_index, 0, n_threads * sizeof(unsigned long));
-
+    mpn_zero(obj->ts_index_hashstores, obj->index_size_limbs * 2 * obj->n_hash_items);
 
     // -------------------------------------------------------------------------------------
     //      Initialize overall results
