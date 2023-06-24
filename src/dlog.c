@@ -12,14 +12,14 @@ int dlog_validate_input(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
+    unsigned long n_threads,
     unsigned long alpha,
-    unsigned int n_rand_items
+    unsigned long n_rand_items
 )
 {
     // -------------------------------------------------------------------------------------
     //      Must have more than 0 threads.
-    //      Cache must not have 0 items.
+    //      Alpha must not be 0.
     //      Random indices must not have 0 items.
     // -------------------------------------------------------------------------------------
     if (n_threads == 0) {
@@ -33,9 +33,9 @@ int dlog_validate_input(
     #ifdef DLOG_VERBOSE
         printf("[debug] It is suggested that (alpha = k*%ld) for some small k.\n", mpz_sizeinbase(G_mult_order, 2));
     #endif
-    if (alpha >= ULONG_MAX / n_threads / 123638) {
+    if (alpha >= ULONG_MAX / n_threads / 123638 || alpha == 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] Implementation currently not support for alpha >= %ld. Exiting...\n", ULONG_MAX / n_threads / 123638);
+            printf("[debug] Implementation currently not support for (alpha >= %ld) or (alpha == 0). Exiting...\n", ULONG_MAX / n_threads / 123638);
         #endif
         return DLOG_BAD_CONFIG;
     }
@@ -175,9 +175,9 @@ void dlog_init_dlog_obj(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
+    unsigned long n_threads,
     unsigned long alpha,
-    unsigned int n_rand_items
+    unsigned long n_rand_items
 )
 {
     // -------------------------------------------------------------------------------------
@@ -188,10 +188,10 @@ void dlog_init_dlog_obj(
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
 
-    if (alpha != 0) obj->alpha = alpha;
-    else            obj->alpha = (unsigned long)mpz_sizeinbase(G_mult_order, 2) * 10;
-    obj->gamma        =          (unsigned long)n_threads *      alpha * 123638 / 1549956;  /* gamma = alpha * n_threads * sqrt(2/pi) */
-    obj->n_hash_items = (size_t)((unsigned long)n_threads * (1 + alpha));
+    if (alpha != DEFAULT_AUTO_ALPHA) obj->alpha = alpha;
+    else                             obj->alpha = (unsigned long)mpz_sizeinbase(G_mult_order, 2) * 3;
+    obj->gamma        =          n_threads *      alpha * 123638 / 1549956;  /* gamma = alpha * n_threads * sqrt(2/pi) */
+    obj->n_hash_items = (size_t)(n_threads * (1 + alpha));
     
     mpz_t mpz_n_distmod;
     mpz_init(mpz_n_distmod);
@@ -200,8 +200,8 @@ void dlog_init_dlog_obj(
     mpz_div(mpz_n_distmod, G_mult_order, mpz_n_distmod);
 
     obj->n_distmod = mpz_fits_ulong_p(mpz_n_distmod)
-                        ? mpz_get_ui(mpz_n_distmod)
-                        : (size_t) ULONG_MAX;
+                        ? (size_t) mpz_get_ui(mpz_n_distmod)
+                        : SIZE_MAX;
     
     mpz_clear(mpz_n_distmod);
 
@@ -270,9 +270,9 @@ void dlog_fill_dlog_obj(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
+    unsigned long n_threads,
     unsigned long alpha,
-    unsigned int n_rand_items
+    unsigned long n_rand_items
 )
 {
     mpz_t mpz_R;
@@ -813,9 +813,9 @@ int dlog(
     eccpt G, eccpt kG, 
     mpz_t G_mult_order, 
 
-    unsigned int n_threads,
+    unsigned long n_threads,
     unsigned long alpha,
-    unsigned int n_rand_items
+    unsigned long n_rand_items
 )
 {
     #ifdef DLOG_VERBOSE

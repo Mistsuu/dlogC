@@ -71,9 +71,9 @@ int dlog_validate_input(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    size_t mem_limit,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 int dlog_fast_solve_if_possible(
@@ -90,9 +90,9 @@ void dlog_init_dlog_obj(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    size_t mem_limit,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 void dlog_fill_dlog_obj(
@@ -102,9 +102,9 @@ void dlog_fill_dlog_obj(
     eccpt G, eccpt kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    size_t mem_limit,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 void dlog_free_dlog_obj(
@@ -134,9 +134,9 @@ int dlog(
     eccpt G, eccpt kG, 
     mpz_t G_mult_order, 
 
-    unsigned int n_threads,
-    size_t mem_limit,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 #endif

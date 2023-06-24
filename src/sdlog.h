@@ -29,7 +29,7 @@ int sdlog(
 
     // Configs
     unsigned int n_threads,
-    unsigned int n_cache_items,
+    unsigned long alpha,
     unsigned int n_rand_items
 );
 
