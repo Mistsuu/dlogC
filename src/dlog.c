@@ -137,12 +137,6 @@ int dlog_fast_solve_if_possible(
         return DLOG_NOT_FOUND_DLOG;
     }
 
-    // -------------------------------------------------------------------------------------
-    //      Case 3: I don't know any function
-    //              that can help us to determine that
-    //              kG is from G^k. So this should be
-    //              left here blank.
-    // -------------------------------------------------------------------------------------
     mpz_clear(O);
     return DLOG_MOVE_TO_NEXT_STEP;
 }
