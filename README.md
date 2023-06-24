@@ -46,11 +46,11 @@ You don't need to because in this version, the memory usage is very minimal *(le
 
 ### Some custom parameters
 
-- `-c <num_cache_items>` 
-  This value might allow you to have less errors processing data in a multithread setting. You can customize it to be any value `> 0` but it is advised to put it to any value from `4` to `10`. You can try change it higher to experiement with the runtime. However, the higher the value gets, the less the impact it would have on the runtime. Default value is `4`.
+- `-a <alpha>`
+This is a value that correlates to the proportion `theta = alpha * num_threads / sqrt(pi * N / 2)` of *"distinguished"* elements over total number of elements. Recommended to set to values in the form of `k * log2(n)` for `k` in `[2, 10]`. If `alpha` is set to `0` or leave empty, the default value is `3 * log2(n)`.
 
 - `-r <nrandpoints>`
-  Set up the number of random points on the curve for the Pollard-Rho algorithm. You can experiment with this value, but any value from `20` and upper would work just as fine and won't affect much runtime. Default value is `20`.
+  Set up the number of random elements in Fp for the Pollard-Rho algorithm. You can experiment with this value, but any value from `20` and upper would work just as fine and won't affect much runtime. Default value is `20`.
 
 ### Output
 
@@ -60,8 +60,9 @@ The program outputs `None` in the following cases:
 
 - The program detects that no solution can be found *(but in a very very small case)*
 - `n` is not a prime number or it is not positive.
-- `num_cache_items` is `0`.
-- `nrandpoints` is `< 2`. 
+- `num_threads` is `0`.
+- `alpha` is too big.
+- `nrandpoints` is `< 2`.
 
 ## Example
 
@@ -101,17 +102,24 @@ If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for 
 [debug]    124598459814481000866971099140174848414430762122941331126292491764551683720313014
 [debug] G_mult_order = 2259283924057529
 [debug] n_threads = 4
-[debug] n_cache_items = 10
-[debug] n_rand_items = 20
+[debug] n_rand_items = 100
+[debug] tip: it is suggested that (alpha = k*52) for some small k.
 [debug] index_size_limbs = 1
 [debug] item_size_limbs = 5
+[debug] alpha = 156
+[debug] gamma = 49
+[debug] n_hash_items = 628
+[debug] n_distmod = 970039
+[debug] Collision found!
+[debug] The result is not correct!? Running cycle detection again...
+[debug] Collision found!
+[debug] The result is not correct!? Running cycle detection again...
 [debug] Collision found!
 [debug] Finished. Found k = 814905979740757
 814905979740757
 ```
 
 You can see some input examples provided in the `examples/` folder.
-
 
 ## Compile modes
 
@@ -154,7 +162,7 @@ However, the `mod` operation is so expensive that you can basically replace it w
 (a*R mod p), (b*R mod p) -> (a*b*R mod p)
 ```
 
-where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the fit limbs :happy:
+where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the fit limbs 😊
 
 In the algorithm, most of the runtime is dedicated to multiply 2 numbers mod `p`. So optimize it => Algorithm speedup.
 
@@ -164,8 +172,12 @@ That's the first reason. The second reason is that after every arithmetic operat
 
 If we have `t` threads running at the same time applying the `Pollard-Rho` algorithm independently, we will have a speedup of `sqrt(t)` times. If the threads can communicate with each other, we will have a speed up of `t` times. That's what I (try) to do in this code, multi-threading and making them communicate with each other. 
 
-Every thread will have a situation of *"one write, many read"*. It is a situation where one thread writes a value to a shared memory and the other threads will try to read it, compare with their data to get the result. 
+During the old implementations, I decided to go with the route where the threads can communicate with each other, but it seems like that will cause *many reads, one write* situation. While I decided there's no lock mechanism to be used here and therefore, allowing some misreads, it turns out that this situation still triggers some locks on memory read on the atomic level, and the program does not scale well with the number of threads increasing :<
 
-I don't use locks, out of fear that it might hinder the finding process. Instead I decided to spread the writes into many memory slots so that the reading thread doesn't read the data at the same place of the writing thread writes. That's what the `-c` option are for, it specifies the number of those slots. 
+Refer back to the amazing paper, *[Random Walks Revisited: Extensions of Pollard’s Rho Algorithm for Computing Multiple Discrete Logarithms](https://ac.informatik.uni-freiburg.de/publications/publications/sac01.pdf)*, it seems like we can mimimalize the lock problem, by hashing elements and store the related details in a hash table. If there's a hash collision, we've likely found an answer.
 
-While this mean that we might misread some values, it provide enough speedup so I just roll with this route :) *(and, yes, because I'm too lazy to implement other ways)* *(it probably also explain why we get such drastic fluctuation in runtime though...)*
+However, a hash table requires some memory to be allocated. In practice, a typical computer cannot create the hash table big enough, in turn limits the size of the hash and collisions will occur too frequent. Because the hash output doesn't represent the whole input, many different elements can be hashed into the same value. The lower the size of the hash, the higher the probability of finding false positives, which hinder the process even worse.
+
+It turns out the aforementioned paper has a very elegant solution *(✨ the solution that you can just say moaahhh ✨)* to keeping ***BOTH*** the size of the hash table ***AND*** the number of false positive cases **very low**.
+
+This problem can be solved if we only hash elements that satisfy some constraints that we created *(in the paper they're called the "distinguished elements")*, and check for collisions in those cases only. While at first glance, it seems like many possible equal values will be missed, but trust me, the math checks out. In this implementation, to determine if an element is a distinguished one, I just check whether the first limb of the element modulo some number equals 0. *(yeah that's it)*
