@@ -41,7 +41,7 @@ typedef struct dlog_obj_struct
     mp_limb_t** thread_hare_XYZ_items;            // n threads, each thread has 1 value.
     mp_limb_t** thread_hare_X_items;              // n threads, each thread has 1 value.
     mp_limb_t** thread_hare_ts_indices;           // n threads, each thread has 1 value.
-    char** thread_pad_space;
+    char**      thread_pad_space;                 // each thread will have empty spaces to prevent L1 cache line miss.
 
     /* results points are hashed and t,s indices are put into the collision area... */
     mp_limb_t*  ts_index_hashstores;              // place to store t, s indices.

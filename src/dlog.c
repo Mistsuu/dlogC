@@ -229,7 +229,9 @@ void dlog_init_dlog_obj(
         obj->thread_hare_XYZ_items[ithread] = mpn_init_zero(obj->item_size_limbs * 3);
         obj->thread_hare_X_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_hare_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
-
+        
+        // Pad each thread (typically 64) bytes, so we don't get
+        // L1 cache misses.
         obj->thread_pad_space[ithread] = (char*)malloc_exit_when_null((size_t)sysconf(_SC_LEVEL1_DCACHE_LINESIZE));
     }
     
