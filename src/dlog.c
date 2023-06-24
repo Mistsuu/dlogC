@@ -501,7 +501,7 @@ void* __thread__dlog_thread(
 
         // ---------- convert hare's item into an index of a hash table  -----------
         //              (if the hare item is a distinguished item)
-        if (hare_item[item_size_limbs - 1] % n_distmod == 0) {
+        if (hare_item[0] % n_distmod == 0) {
             size_t hash_index = (
                 (size_t) XXH3_64bits(hare_item, item_size_limbs * sizeof(mp_limb_t)) % n_hash_items
             );
@@ -662,8 +662,8 @@ int dlog(
         printf("[debug] G_mult_order = ");
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
-        printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] n_rand_items = %d\n", n_rand_items);
+        printf("[debug] n_threads = %ld\n", n_threads);
+        printf("[debug] n_rand_items = %ld\n", n_rand_items);
     #endif
 
     int dlog_status;
