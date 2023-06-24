@@ -153,40 +153,65 @@ void dlog_init_dlog_obj(
     mpz_t G, mpz_t kG,
     mpz_t G_mult_order,
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 )
 {
+    // -------------------------------------------------------------------------------------
+    //      Algorithm's configs
+    // -------------------------------------------------------------------------------------
     obj->n_threads = n_threads;
-    obj->n_cache_items = n_cache_items;
     obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(p);
     obj->index_size_limbs = mpz_size(G_mult_order);
+    obj->alpha        = alpha;
+    obj->gamma        =          n_threads *      alpha   * 123638 / 1549956;      /* gamma = alpha * n_threads * sqrt(2/pi) */
+    obj->n_hash_items = (size_t)(n_threads * (1 + alpha));
 
+    mpz_t mpz_n_distmod;
+    mpz_init(mpz_n_distmod);
+    mpz_sqrt(mpz_n_distmod, G_mult_order);
+    mpz_mul_ui(mpz_n_distmod, mpz_n_distmod, obj->gamma);
+    mpz_div(mpz_n_distmod, G_mult_order, mpz_n_distmod);
+
+    obj->n_distmod = mpz_fits_ulong_p(mpz_n_distmod)
+                        ? (size_t) mpz_get_ui(mpz_n_distmod)
+                        : SIZE_MAX;
+    
+    mpz_clear(mpz_n_distmod);
+
+    // -------------------------------------------------------------------------------------
+    //      Field's parameters
+    // -------------------------------------------------------------------------------------
     obj->field_p = mpn_init_zero(obj->item_size_limbs);
     obj->field_P = mpn_init_zero(obj->item_size_limbs);
     obj->G_order = mpn_init_zero(obj->item_size_limbs);
 
+    // -------------------------------------------------------------------------------------
+    //      Cache values -- reusable after collision failed.
+    // -------------------------------------------------------------------------------------
     obj->thread_tortoise_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
-    obj->thread_hare_items = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
-    obj->thread_hare_ts_indices = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_hare_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_hare_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         obj->thread_tortoise_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_tortoise_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
         
-        obj->thread_hare_items[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
-        obj->thread_hare_ts_indices[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
-        for (unsigned int jthread = 0; jthread < n_cache_items; ++jthread) {
-            obj->thread_hare_items[ithread][jthread] = mpn_init_zero(obj->item_size_limbs);
-            obj->thread_hare_ts_indices[ithread][jthread] = mpn_init_zero(obj->index_size_limbs * 2);
-        }
+        obj->thread_hare_items[ithread] = mpn_init_zero(obj->item_size_limbs);
+        obj->thread_hare_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
-    obj->thread_write_index = (unsigned long*)malloc_exit_when_null(sizeof(unsigned long) * n_threads);
+    // -------------------------------------------------------------------------------------
+    //      Hash elements.
+    // -------------------------------------------------------------------------------------
+    obj->ts_index_hashstores = mpn_init_zero(obj->item_size_limbs * 2 * obj->n_hash_items);
 
+    // -------------------------------------------------------------------------------------
+    //      Fixed random elements
+    // -------------------------------------------------------------------------------------
     obj->random_tG_add_skG = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     obj->random_ts         = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_rand_items);
     for (unsigned int irand = 0; irand < n_rand_items; ++irand) {
@@ -194,6 +219,9 @@ void dlog_init_dlog_obj(
         obj->random_ts[irand] = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
+    // -------------------------------------------------------------------------------------
+    //      Results per thread
+    // -------------------------------------------------------------------------------------
     obj->thread_result_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_result_hare_ts_indices     = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
@@ -201,6 +229,9 @@ void dlog_init_dlog_obj(
         obj->thread_result_hare_ts_indices[ithread]     = mpn_init_zero(obj->index_size_limbs * 2);
     }
 
+    // -------------------------------------------------------------------------------------
+    //      Overall results
+    // -------------------------------------------------------------------------------------
     obj->founds = (int*)malloc_exit_when_null(sizeof(int) * n_threads);
 }
 
