@@ -22,9 +22,9 @@ int sdlog(
     char* str_upper_k,
     
     // Configs
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 );
 
 void sdlog_free(

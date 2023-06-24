@@ -24,9 +24,9 @@ int sdlog(
     char* str_upper_k,
     
     // Configs
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 )
 {
     // Register user's interrupt :)
@@ -40,18 +40,20 @@ int sdlog(
     mpz_init_set_str(G, str_G, 10);
     mpz_t kG;
     mpz_init_set_str(kG, str_kG, 10);
-    mpz_t upper_k;
-    mpz_init_set_str(upper_k, str_upper_k, 10);
+    mpz_t n;
+    mpz_init_set_str(n, str_upper_k, 10);
 
     // Calling the inner dlog().
     int dlog_success = (dlog(
                             p,
                             k,
-                            G,
-                            kG,
-                            upper_k,
+                            G, kG,
+                            n,
+
                             n_threads,
-                            n_cache_items,
+                            alpha == 0 
+                                ? (unsigned long)mpz_sizeinbase(n, 2) * 3
+                                : alpha,
                             n_rand_items
                         ) == DLOG_SUCCESS); 
 
@@ -77,7 +79,7 @@ sdlog_cleanup:
     mpz_clear(k);
     mpz_clear(G);
     mpz_clear(kG);
-    mpz_clear(upper_k);
+    mpz_clear(n);
 
     return dlog_success;
 }
