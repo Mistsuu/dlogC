@@ -300,7 +300,7 @@ void dlog_fill_dlog_obj(
     }
 
     // -------------------------------------------------------------------------------------
-    //      Initialize cache values
+    //      Initialize values
     // -------------------------------------------------------------------------------------
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         do {
