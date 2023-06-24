@@ -195,7 +195,7 @@ void dlog_init_dlog_obj(
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
-    obj->thread_pad_space = (char**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
+    obj->thread_pad_space = (char**)malloc_exit_when_null(sizeof(char*) * n_threads);
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         obj->thread_tortoise_items[ithread] = mpn_init_zero(obj->item_size_limbs);
