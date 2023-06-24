@@ -37,45 +37,20 @@ int str_init_readline(char** pbuffer)
     return str_len;
 }
 
-unsigned int parse_arg_uint(char* arg, unsigned int default_val)
+unsigned long parse_arg_ulong(char* arg, unsigned long default_val)
 {
-    long int val = default_val;
+    unsigned long val = default_val;
     if (arg) {
-        val = strtol(arg, NULL, 10);
-        if (val == 0 || val == LONG_MAX || val == LONG_MIN)
+        val = strtoul(arg, NULL, 10);
+        if (val == 0 || val == ULONG_MAX)
             val = default_val;
-        else
-            val = abs(val);
     }
-    return (unsigned int) val;
+    return val;
 }
 
-void main(int argc, char** argv)
+int main(int argc, char** argv)
 {
-    // Get value from arguments.
-    unsigned int NUM_THREADS     = DEFAULT_NUM_THREADS;
-    unsigned int NUM_CACHE_ITEMS = DEFAULT_NUM_CACHE_ITEMS;
-    unsigned int NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
-    
-    int opt;
-    while ((opt = getopt(argc, argv, "t:c:r:h")) != -1) {
-        switch (opt) {
-            case 't':
-                NUM_THREADS = parse_arg_uint(optarg, DEFAULT_NUM_THREADS);
-                break;
-            case 'c':
-                NUM_CACHE_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_CACHE_ITEMS);
-                break;
-            case 'r':
-                NUM_RAND_ITEMS = parse_arg_uint(optarg, DEFAULT_NUM_RAND_ITEMS);
-                break;
-            default:
-                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-c num_cache_items=4] [-r nrandpoints=20]\n", argv[0]);
-                exit(-1);
-        }
-    }
-
-    // Parse curve values from stdin.
+    // ----------------------------- parse field values from stdin. -----------------------------
     char* p_str;        // field
     char* G_str;        // g
     char* kG_str;       // g^k mod p
@@ -96,10 +71,43 @@ void main(int argc, char** argv)
     mpz_t n;
     mpz_init_set_str(n, n_str, 10);
 
-    // dlog() start.
+    // ----------------------------- parse value from argc, argv. -----------------------------
+    unsigned long NUM_THREADS     = DEFAULT_NUM_THREADS;
+    unsigned long NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
+    unsigned long ALPHA           = (unsigned long)mpz_sizeinbase(n, 2) * 3;
+    
+    int opt;
+    while ((opt = getopt(argc, argv, "t:a:r:h")) != -1) {
+        switch (opt) {
+            case 't':
+                NUM_THREADS = parse_arg_ulong(optarg, DEFAULT_NUM_THREADS);
+                break;
+            case 'a':
+                ALPHA = parse_arg_ulong(optarg, (unsigned long)mpz_sizeinbase(n, 2) * 3);
+                break;
+            case 'r':
+                NUM_RAND_ITEMS = parse_arg_ulong(optarg, DEFAULT_NUM_RAND_ITEMS);
+                break;
+            default:
+                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-a alpha=3*log2(n)] [-r nranditem=20]\n", argv[0]);
+                exit(-1);
+        }
+    }
+
+    // ---------------------------------- run dlog() ----------------------------------------
     mpz_t k;
     mpz_init(k);
-    if (dlog(p, k, G, kG, n, NUM_THREADS, NUM_CACHE_ITEMS, NUM_RAND_ITEMS) == DLOG_SUCCESS) {
+    if (dlog(
+            p, 
+            k, 
+            G, kG, 
+            n, 
+            NUM_THREADS, 
+            ALPHA, 
+            NUM_RAND_ITEMS
+        ) == DLOG_SUCCESS
+    ) 
+    {
         mpz_out_str(stdout, 10, k);
         printf("\n");
     }
@@ -107,7 +115,7 @@ void main(int argc, char** argv)
         printf("None\n");
     }
 
-    // cleanup.
+    // ---------------------------------- cleaning... ----------------------------------------
     mpz_clear(k);
     mpz_clear(n);
     mpz_clear(kG);
@@ -118,4 +126,6 @@ void main(int argc, char** argv)
     free(G_str);
     free(kG_str);
     free(n_str);
+
+    return 0;
 }
