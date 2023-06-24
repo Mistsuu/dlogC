@@ -162,7 +162,7 @@ However, the `mod` operation is so expensive that you can basically replace it w
 (a*R mod p), (b*R mod p) -> (a*b*R mod p)
 ```
 
-where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the fit limbs 😊
+where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs 😊
 
 In the algorithm, most of the runtime is dedicated to multiply 2 numbers mod `p`. So optimize it => Algorithm speedup.
 
