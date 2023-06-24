@@ -51,30 +51,7 @@ unsigned long parse_arg_ulong(char* arg, unsigned long default_val)
 
 int main(int argc, char** argv)
 {
-    // Get value from arguments.
-    unsigned long NUM_THREADS     = DEFAULT_NUM_THREADS;
-    unsigned long NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
-    unsigned long ALPHA           = DEFAULT_AUTO_ALPHA;
-    
-    int opt;
-    while ((opt = getopt(argc, argv, "t:a:r:h")) != -1) {
-        switch (opt) {
-            case 't':
-                NUM_THREADS = parse_arg_ulong(optarg, DEFAULT_NUM_THREADS);
-                break;
-            case 'a':
-                ALPHA = parse_arg_ulong(optarg, DEFAULT_AUTO_ALPHA);
-                break;
-            case 'r':
-                NUM_RAND_ITEMS = parse_arg_ulong(optarg, DEFAULT_NUM_RAND_ITEMS);
-                break;
-            default:
-                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-a alpha=3*log2(n)] [-r nrandpoints=20]\n", argv[0]);
-                exit(-1);
-        }
-    }
-
-    // Parse curve values from stdin.
+    // ----------------------------- parse curve values from stdin. -----------------------------
     char* curve_a;
     char* curve_b;
     char* curve_p;
@@ -124,7 +101,30 @@ int main(int argc, char** argv)
     mpz_t n;
     mpz_init_set_str(n, n_str, 10);
 
-    // dlog() start.
+    // ----------------------------- parse value from argc, argv. -----------------------------
+    unsigned long NUM_THREADS     = DEFAULT_NUM_THREADS;
+    unsigned long NUM_RAND_ITEMS  = DEFAULT_NUM_RAND_ITEMS;
+    unsigned long ALPHA           = (unsigned long)mpz_sizeinbase(n, 2) * 3;
+    
+    int opt;
+    while ((opt = getopt(argc, argv, "t:a:r:h")) != -1) {
+        switch (opt) {
+            case 't':
+                NUM_THREADS = parse_arg_ulong(optarg, DEFAULT_NUM_THREADS);
+                break;
+            case 'a':
+                ALPHA = parse_arg_ulong(optarg, (unsigned long)mpz_sizeinbase(n, 2) * 3);
+                break;
+            case 'r':
+                NUM_RAND_ITEMS = parse_arg_ulong(optarg, DEFAULT_NUM_RAND_ITEMS);
+                break;
+            default:
+                fprintf(stderr, "[usage]: %s [-t num_threads=4] [-a alpha=3*log2(n)] [-r nrandpoints=20]\n", argv[0]);
+                exit(-1);
+        }
+    }
+    
+    // ---------------------------------- run dlog() ----------------------------------------
     mpz_t k;
     mpz_init(k);
     if (dlog(
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     else
         printf("None\n");
 
-    // cleanup.
+    // ---------------------------------- cleaning... ----------------------------------------
     mpz_clear(k);
     mpz_clear(n);
 

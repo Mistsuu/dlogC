@@ -76,7 +76,9 @@ int sdlog(
                             n,
                             
                             n_threads,
-                            alpha,
+                            alpha == 0 
+                                ? (unsigned long)mpz_sizeinbase(n, 2) * 3
+                                : alpha,
                             n_rand_items
                         ) == DLOG_SUCCESS); 
 

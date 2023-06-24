@@ -31,7 +31,7 @@ int dlog_validate_input(
 
     // This is not really a check, but shows an useful way to adjust alpha.
     #ifdef DLOG_VERBOSE
-        printf("[debug] It is suggested that (alpha = k*%ld) for some small k.\n", mpz_sizeinbase(G_mult_order, 2));
+        printf("[debug] tip: it is suggested that (alpha = k*%ld) for some small k.\n", mpz_sizeinbase(G_mult_order, 2));
     #endif
     if (alpha >= ULONG_MAX / n_threads / 123638 || alpha == 0) {
         #ifdef DLOG_VERBOSE
@@ -187,12 +187,10 @@ void dlog_init_dlog_obj(
     obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
-
-    if (alpha != DEFAULT_AUTO_ALPHA) obj->alpha = alpha;
-    else                             obj->alpha = (unsigned long)mpz_sizeinbase(G_mult_order, 2) * 3;
-    obj->gamma        =          n_threads *      alpha * 123638 / 1549956;  /* gamma = alpha * n_threads * sqrt(2/pi) */
+    obj->alpha        = alpha;
+    obj->gamma        =          n_threads *      alpha   * 123638 / 1549956;      /* gamma = alpha * n_threads * sqrt(2/pi) */
     obj->n_hash_items = (size_t)(n_threads * (1 + alpha));
-    
+
     mpz_t mpz_n_distmod;
     mpz_init(mpz_n_distmod);
     mpz_sqrt(mpz_n_distmod, G_mult_order);
