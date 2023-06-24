@@ -521,7 +521,7 @@ void* __thread__dlog_thread(
             // If not found, store at hash_index.
             mpn_copyd(&ts_index_hashstores[hash_index * hash_item_size_limbs], hare_ts_index, index_size_limbs * 2);
         }
-        
+
         // ---------------------------- updating lambda --------------------------
         lamda++;
     }
@@ -641,9 +641,9 @@ int dlog(
     mpz_t G, mpz_t kG, 
     mpz_t G_mult_order, 
 
-    unsigned int n_threads,
-    unsigned int n_cache_items,
-    unsigned int n_rand_items
+    unsigned long n_threads,
+    unsigned long alpha,
+    unsigned long n_rand_items
 )
 {
     #ifdef DLOG_VERBOSE
@@ -663,7 +663,6 @@ int dlog(
         mpz_out_str(stdout, 10, G_mult_order);
         printf("\n");
         printf("[debug] n_threads = %d\n", n_threads);
-        printf("[debug] n_cache_items = %d\n", n_cache_items);
         printf("[debug] n_rand_items = %d\n", n_rand_items);
     #endif
 
@@ -678,7 +677,7 @@ int dlog(
                     G_mult_order, 
 
                     n_threads, 
-                    n_cache_items, 
+                    alpha, 
                     n_rand_items
                   );
     if (dlog_status != DLOG_MOVE_TO_NEXT_STEP)
@@ -714,7 +713,7 @@ int dlog(
         G_mult_order,
 
         n_threads,
-        n_cache_items,
+        alpha,
         n_rand_items
     );
 
@@ -726,13 +725,17 @@ int dlog(
         G_mult_order,
 
         n_threads,
-        n_cache_items,
+        alpha,
         n_rand_items
     );
 
     #ifdef DLOG_VERBOSE
         printf("[debug] index_size_limbs = %ld\n", obj->index_size_limbs);
         printf("[debug] item_size_limbs = %ld\n", obj->item_size_limbs);
+        printf("[debug] alpha = %ld\n", obj->alpha);
+        printf("[debug] gamma = %ld\n", obj->gamma);
+        printf("[debug] n_hash_items = %ld\n", obj->n_hash_items);
+        printf("[debug] n_distmod = %ld\n", obj->n_distmod);
     #endif
 
     // -------------------------------------------------------------------------------------
