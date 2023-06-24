@@ -15,7 +15,6 @@
 
 #define DEFAULT_NUM_THREADS      4
 #define DEFAULT_NUM_RAND_ITEMS   20
-#define DEFAULT_AUTO_ALPHA       0
 
 #define SHARED_LIB_NAME          "libdlogefp"
 
