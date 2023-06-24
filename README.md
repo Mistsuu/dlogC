@@ -10,7 +10,7 @@ This is an algorithm that tries to find the solution to the following problem: G
 
 This repo is made for educational purposes, and for fun.
 
-Utilizes **GMP version 6.2.1**.
+Utilizes **GMP version 6.2.1** and **xxhash version 0.8.1**.
 
 ## Usages
 
@@ -21,7 +21,7 @@ git checkout pollard-rho-Fp
 make -j16
 ```
 
-to produce `./dlog`.
+to produce `./dlog` and `so/libdlogfp.so`.
 
 ### Input supplying
 
