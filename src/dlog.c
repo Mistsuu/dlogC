@@ -3,6 +3,7 @@
 #include "ex_mpz.h"
 #include "const.h"
 #include "mem.h"
+#include "ex_assert.h"
 
 int dlog_validate_input(
     mpz_t p,
@@ -165,18 +166,18 @@ void dlog_init_dlog_obj(
 
     obj->thread_tortoise_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
-    obj->thread_hare_items_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
-    obj->thread_hare_ts_index_caches = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_hare_items = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
+    obj->thread_hare_ts_indices = (mp_limb_t***)malloc_exit_when_null(sizeof(mp_limb_t**) * n_threads);
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
         obj->thread_tortoise_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_tortoise_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
         
-        obj->thread_hare_items_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
-        obj->thread_hare_ts_index_caches[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
+        obj->thread_hare_items[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
+        obj->thread_hare_ts_indices[ithread] = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_cache_items);
         for (unsigned int jthread = 0; jthread < n_cache_items; ++jthread) {
-            obj->thread_hare_items_caches[ithread][jthread] = mpn_init_zero(obj->item_size_limbs);
-            obj->thread_hare_ts_index_caches[ithread][jthread] = mpn_init_zero(obj->index_size_limbs * 2);
+            obj->thread_hare_items[ithread][jthread] = mpn_init_zero(obj->item_size_limbs);
+            obj->thread_hare_ts_indices[ithread][jthread] = mpn_init_zero(obj->index_size_limbs * 2);
         }
     }
 
@@ -286,9 +287,9 @@ void dlog_fill_dlog_obj(
         mpn_cpyz(&obj->thread_tortoise_ts_indices[ithread][obj->index_size_limbs], s, obj->index_size_limbs);
 
         for (unsigned int icache = 0; icache < n_cache_items; ++icache) {
-            mpn_cpyz( obj->thread_hare_items_caches[ithread][icache], tG_add_skG, obj->item_size_limbs);
-            mpn_cpyz( obj->thread_hare_ts_index_caches[ithread][icache],                        t, obj->index_size_limbs);
-            mpn_cpyz(&obj->thread_hare_ts_index_caches[ithread][icache][obj->index_size_limbs], s, obj->index_size_limbs);
+            mpn_cpyz( obj->thread_hare_items[ithread][icache], tG_add_skG, obj->item_size_limbs);
+            mpn_cpyz( obj->thread_hare_ts_indices[ithread][icache],                        t, obj->index_size_limbs);
+            mpn_cpyz(&obj->thread_hare_ts_indices[ithread][icache][obj->index_size_limbs], s, obj->index_size_limbs);
         }
     }
 
@@ -329,18 +330,18 @@ void dlog_free_dlog_obj(
         free(obj->thread_tortoise_ts_indices[ithread]);
 
         for (unsigned int icache = 0; icache < obj->n_cache_items; ++icache) {
-            free(obj->thread_hare_items_caches[ithread][icache]);
-            free(obj->thread_hare_ts_index_caches[ithread][icache]);
+            free(obj->thread_hare_items[ithread][icache]);
+            free(obj->thread_hare_ts_indices[ithread][icache]);
         }
 
-        free(obj->thread_hare_items_caches[ithread]);
-        free(obj->thread_hare_ts_index_caches[ithread]);
+        free(obj->thread_hare_items[ithread]);
+        free(obj->thread_hare_ts_indices[ithread]);
     }
 
     free(obj->thread_tortoise_items);
     free(obj->thread_tortoise_ts_indices);
-    free(obj->thread_hare_items_caches);
-    free(obj->thread_hare_ts_index_caches);
+    free(obj->thread_hare_items);
+    free(obj->thread_hare_ts_indices);
 
     free(obj->thread_write_index);
 
@@ -388,8 +389,8 @@ void* __thread__dlog_thread(
 
     mp_limb_t**  all_tortoise_items        = shared_obj->thread_tortoise_items;
     mp_limb_t**  all_tortoise_ts_indices   = shared_obj->thread_tortoise_ts_indices;
-    mp_limb_t*** all_hare_item_caches      = shared_obj->thread_hare_items_caches;
-    mp_limb_t*** all_hare_ts_index_caches  = shared_obj->thread_hare_ts_index_caches;
+    mp_limb_t*** all_hare_item_caches      = shared_obj->thread_hare_items;
+    mp_limb_t*** all_hare_ts_index_caches  = shared_obj->thread_hare_ts_indices;
 
     mp_limb_t*  tortoise_item              = all_tortoise_items[thread_no];
     mp_limb_t*  tortoise_ts_index          = all_tortoise_ts_indices[thread_no];
