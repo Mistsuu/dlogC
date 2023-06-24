@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <xxhash.h>
+#include <unistd.h>
 
 #ifdef DLOG_VERBOSE
     #include <sys/time.h>
@@ -34,6 +35,7 @@ typedef struct dlog_obj_struct
     mp_limb_t** thread_tortoise_ts_indices;       // n threads, each thread has 1 value.
     mp_limb_t** thread_hare_items;                // n threads, each thread has 1 value.
     mp_limb_t** thread_hare_ts_indices;           // n threads, each thread has 1 value.
+    char**      thread_pad_space;                 // each thread will have empty spaces to prevent L1 cache line miss.
 
     /* results values are hashed and t,s indices are put into the collision area... */
     mp_limb_t*  ts_index_hashstores;              // place to store t, s indices.
