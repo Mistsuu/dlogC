@@ -48,6 +48,7 @@ You can run `./dlog -t <num_threads>` to specify the number of threads used in 
 You don't need to because in this version, the memory usage is very minimal *(less than `1MB` is expected for most applications)*
 
 ### Some custom parameters
+
 - `-a <alpha>`
 This is a value that correlates to the proportion `theta = alpha * num_threads / sqrt(pi * N / 2)` of *"distinguished"* points over total number of points. Recommended to set to values in the form of `k * log2(n)` for `k` in `[2, 10]`. If `alpha` is set to `0` or leave empty, the default value is `3 * log2(n)`.
 
@@ -122,7 +123,6 @@ If compiled with `BUILD=verbose` *(see the next section, **Compile modes**, for 
 ```
 
 You can see some input examples provided in the `examples/` folder.
-
 
 ## Compile modes
 
@@ -201,7 +201,7 @@ However, the `mod` operation is so expensive that you can basically replace it w
 (a*R mod p), (b*R mod p) -> (a*b*R mod p)
 ```
 
-where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs :happy: 
+where `R` is some random number you choose. While this map still requires you to do `mod`, but now it's in `mod R` instead of `mod p`. If you choose `R` to be `2^n` then `mod R` is just an `and` operation and that's how you save time baby 🤑🤑🤑!!! Better, if you choose `R` to be `mp_bits_per_limb` times the number of `mp_limb_t`s of `p`, you can just omit the first limbs 😊
 
 In elliptic curve arithmetics, most of the runtime is dedicated to multiply 2 numbers mod p. So optimize it => Optimizing runtime to create newer points => Algorithm speedup because most of the runtime we spent on adding points.
 
