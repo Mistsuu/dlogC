@@ -231,7 +231,7 @@ void dlog_init_dlog_obj(
         obj->thread_hare_X_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_hare_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
 
-        // Temporary values
+        // Temporary object, allocated outside so that there's no memory overlap in a cache line.
         ecc_init_ptemp(obj->thread_Ts[ithread], obj->item_size_limbs);
         
         // Pad each thread (typically 64) bytes, so we don't get L1 cache misses.
