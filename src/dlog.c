@@ -195,7 +195,6 @@ void dlog_init_dlog_obj(
     obj->thread_tortoise_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_items = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_hare_ts_indices = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
-    obj->thread_Ts = (mp_limb_t**)malloc_exit_when_null(sizeof(mp_limb_t*) * n_threads);
     obj->thread_pad_space = (char**)malloc_exit_when_null(sizeof(char*) * n_threads);
 
     for (unsigned int ithread = 0; ithread < n_threads; ++ithread) {
@@ -204,9 +203,6 @@ void dlog_init_dlog_obj(
         
         obj->thread_hare_items[ithread] = mpn_init_zero(obj->item_size_limbs);
         obj->thread_hare_ts_indices[ithread] = mpn_init_zero(obj->index_size_limbs * 2);
-
-        // Temporary object, allocated outside so that there's no memory overlap in a cache line.
-        obj->thread_Ts[ithread] = mpn_init_zero(obj->item_size_limbs * 6);
 
         // Pad each thread (typically 64) bytes, so we don't get L1 cache misses.
         obj->thread_pad_space[ithread] = (char*)malloc_exit_when_null((size_t)sysconf(_SC_LEVEL1_DCACHE_LINESIZE));
@@ -372,15 +368,12 @@ void dlog_free_dlog_obj(
         free(obj->thread_hare_items[ithread]);
         free(obj->thread_hare_ts_indices[ithread]);
 
-        free(obj->thread_Ts[ithread]);
-
         free(obj->thread_pad_space[ithread]);
     }
     free(obj->thread_tortoise_items);
     free(obj->thread_tortoise_ts_indices);
     free(obj->thread_hare_items);
     free(obj->thread_hare_ts_indices);
-    free(obj->thread_Ts);
     free(obj->thread_pad_space);
 
 
@@ -449,8 +442,6 @@ void* __thread__dlog_thread(
     mp_limb_t* result_tortoise_ts_index = shared_obj->thread_result_tortoise_ts_indices[thread_no];
     mp_limb_t* result_hare_ts_index     = shared_obj->thread_result_hare_ts_indices[thread_no];
 
-    mp_limb_t* T = shared_obj->thread_Ts[thread_no];
-
     // -------------------------------------------------------------------------------------
     //      Real calculation.
     //      Do a cycle detection using Brent's algorithm
@@ -458,6 +449,9 @@ void* __thread__dlog_thread(
     // -------------------------------------------------------------------------------------
     unsigned long power = 1;
     unsigned long lamda = 1;
+
+    mp_limb_t* T;
+    T = mpn_init_zero(item_size_limbs * 6);
 
     while (!shared_obj->overall_found) {
         // ---------------------- updating the tortoise pointer -------------------------
@@ -543,6 +537,7 @@ void* __thread__dlog_thread(
     //      Cleanup
     // -------------------------------------------------------------------------------------
 dlog_thread_cleanup:
+    free(T);
 
     return NULL;
 }
