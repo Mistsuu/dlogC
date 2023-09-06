@@ -33,9 +33,9 @@ int dlog_validate_input(
     #ifdef DLOG_VERBOSE
         printf("[debug] tip: it is suggested that (alpha = k*%ld) for some small k.\n", mpz_sizeinbase(G_mult_order, 2));
     #endif
-    if (alpha >= ULONG_MAX / n_threads / 123638 || alpha == 0) {
+    if (alpha >= ULONG_MAX / n_threads / SQRT_2_DIV_PI_NUMERATOR || alpha == 0) {
         #ifdef DLOG_VERBOSE
-            printf("[debug] Implementation currently not support for (alpha >= %ld) or (alpha == 0). Exiting...\n", ULONG_MAX / n_threads / 123638);
+            printf("[debug] Implementation currently not support for (alpha >= %ld) or (alpha == 0). Exiting...\n", ULONG_MAX / n_threads / SQRT_2_DIV_PI_NUMERATOR);
         #endif
         return DLOG_BAD_CONFIG;
     }
@@ -183,12 +183,13 @@ void dlog_init_dlog_obj(
     // -------------------------------------------------------------------------------------
     //      Algorithm's configs
     // -------------------------------------------------------------------------------------
+    /* gamma = alpha * n_threads * sqrt(2/pi) */
     obj->n_threads = n_threads;
     obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
     obj->alpha        = alpha;
-    obj->gamma        =          n_threads *      alpha   * 123638 / 1549956;      /* gamma = alpha * n_threads * sqrt(2/pi) */
+    obj->gamma        =          n_threads *      alpha   * SQRT_2_DIV_PI_NUMERATOR / SQRT_2_DIV_PI_DENOMINATOR;
     obj->n_hash_items = (size_t)(n_threads * (1 + alpha));
 
     mpz_t mpz_n_distmod;
