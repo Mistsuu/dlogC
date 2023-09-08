@@ -20,7 +20,7 @@
 
 #define SHARED_LIB_NAME             "libdlogfp"
 
-#define SQRT_2_DIV_PI_NUMERATOR     123638
-#define SQRT_2_DIV_PI_DENOMINATOR   1549956
+#define SQRT_2_DIV_PI_NUMERATOR     30273640
+#define SQRT_2_DIV_PI_DENOMINATOR   37942381
 
 #endif
