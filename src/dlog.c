@@ -188,7 +188,7 @@ void dlog_init_dlog_obj(
     obj->n_rand_items = n_rand_items;
     obj->item_size_limbs  = mpz_size(curve->p);
     obj->index_size_limbs = mpz_size(G_mult_order);
-    obj->alpha        = alpha;
+    obj->alpha        =                           alpha;
     obj->gamma        =          n_threads *      alpha   * SQRT_2_DIV_PI_NUMERATOR / SQRT_2_DIV_PI_DENOMINATOR;
     obj->n_hash_items = (size_t)(n_threads * (1 + alpha));
 
