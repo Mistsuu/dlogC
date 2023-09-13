@@ -31,19 +31,19 @@ jobs:
           path: pollard-rho-Fp
 
       - run: echo "my main branches ${MAIN_BRANCHES[0]}"
-      - run: echo ${{ fromJSON(MAIN_BRANCHES) }}
+      - run: echo ${{ fromJSON(env.MAIN_BRANCHES) }}
 
-      - name: Install libgmp && libxxhash
-        run: sudo apt-get install libgmp-dev libxxhash-dev
+      # - name: Install libgmp && libxxhash
+      #   run: sudo apt-get install libgmp-dev libxxhash-dev
 
-      - name: Building libdlog for E(Fp)
-        run: make libdlogefp
+      # - name: Building libdlog for E(Fp)
+      #   run: make libdlogefp
 
-      - name: Pusing libdlog for E(Fp) to this branch
-        run: |
-          cp so/libdlogefp.so libdlogefp.so
-          git config --global user.email "hi_im_mistsu_hehe@gmail.com"
-          git config --global user.name "Misuru"
-          git add libdlogefp.so
-          git commit -m "Automatically compile libdlogefp.so"
-          git push
+      # - name: Pusing libdlog for E(Fp) to this branch
+      #   run: |
+      #     cp so/libdlogefp.so libdlogefp.so
+      #     git config --global user.email "hi_im_mistsu_hehe@gmail.com"
+      #     git config --global user.name "Misuru"
+      #     git add libdlogefp.so
+      #     git commit -m "Automatically compile libdlogefp.so"
+      #     git push
