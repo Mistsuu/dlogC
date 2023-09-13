@@ -24,7 +24,7 @@ jobs:
 
       - name: Building libdlog for E(Fp)
         run: |
-          git checkout -- src Makefile pollard-rho
+          git checkout pollard-rho -- src Makefile 
           make libdlogefp
 
       - name: Pusing libdlog for E(Fp) to this branch
