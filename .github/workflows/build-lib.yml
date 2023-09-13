@@ -21,11 +21,11 @@ jobs:
         run: sudo apt-get install libgmp-dev libxxhash-dev
 
       - uses: actions/checkout@v4
-        with:
-          ref: pollard-rho
 
       - name: Building libdlog for E(Fp)
-        run: make libdlogefp
+        run: |
+          git checkout -- src Makefile pollard-rho
+          make libdlogefp
 
       - name: Pusing libdlog for E(Fp) to this branch
         run: |
