@@ -10,7 +10,7 @@ on:
       - "pohlig-hellman"
 
 env:
-  MAIN_BRANCHES: ["pollard-rho", "pollard-rho-Fp", "baby", "baby-Fp"]
+  MAIN_BRANCHES: "pollard-rho","pollard-rho-Fp","baby","baby-Fp"
 
 permissions:
   contents: write
@@ -31,6 +31,7 @@ jobs:
           path: pollard-rho-Fp
 
       - run: echo "my main branches ${MAIN_BRANCHES[0]}"
+      - run: echo ${{ fromJSON(MAIN_BRANCHES) }}
 
       - name: Install libgmp && libxxhash
         run: sudo apt-get install libgmp-dev libxxhash-dev
