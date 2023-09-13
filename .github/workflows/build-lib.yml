@@ -81,7 +81,7 @@ jobs:
           cp pollard-rho-Fp/so/libdlogfp.so baby-Fp/so/libbsgsfp.so bin/Fp
           git config --global user.email "hi_im_mistsuu@gmail.com"
           git config --global user.name "Misuru"
+          git add bin
           git commit -m "Automatically build binaries"
-          git add src
           git push
           
