@@ -31,7 +31,7 @@ jobs:
           path: pollard-rho-Fp
 
       - run: echo "my main branches ${MAIN_BRANCHES[0]}"
-      - run: echo ${{ fromJSON(env.MAIN_BRANCHES) }}
+      - run: echo "${{ fromJSON(env.MAIN_BRANCHES) }}"
 
       # - name: Install libgmp && libxxhash
       #   run: sudo apt-get install libgmp-dev libxxhash-dev
