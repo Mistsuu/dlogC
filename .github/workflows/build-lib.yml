@@ -9,9 +9,6 @@ on:
       - "baby-Fp"
       - "pohlig-hellman"
 
-env:
-  MAIN_BRANCHES: pollard-rho,pollard-rho-Fp,baby,baby-Fp
-
 permissions:
   contents: write
 
@@ -30,20 +27,61 @@ jobs:
           ref: pollard-rho-Fp
           path: pollard-rho-Fp
 
-      - run: echo "my main branches ${MAIN_BRANCHES[0]}"
-      - run: echo "${{ fromJSON(env.MAIN_BRANCHES) }}"
+      - uses: actions/checkout@v4
+        with:
+          ref: baby
+          path: baby
 
-      # - name: Install libgmp && libxxhash
-      #   run: sudo apt-get install libgmp-dev libxxhash-dev
+      - uses: actions/checkout@v4
+        with:
+          ref: baby-Fp
+          path: baby-Fp
 
-      # - name: Building libdlog for E(Fp)
-      #   run: make libdlogefp
 
-      # - name: Pusing libdlog for E(Fp) to this branch
-      #   run: |
-      #     cp so/libdlogefp.so libdlogefp.so
-      #     git config --global user.email "hi_im_mistsu_hehe@gmail.com"
-      #     git config --global user.name "Misuru"
-      #     git add libdlogefp.so
-      #     git commit -m "Automatically compile libdlogefp.so"
-      #     git push
+      - name: Create output folders
+        run: |
+          mkdir -p bin/EFp
+          mkdir -p bin/Fp
+
+
+      - name: Install libgmp && libxxhash
+        run: sudo apt-get install libgmp-dev libxxhash-dev
+
+
+
+      - name: Building libdlog for E(Fp)
+        run: |
+          cd pollard-rho
+          make libdlogefp
+          cd ..
+
+      - name: Building libdlog for Fp
+        run: |
+          cd pollard-rho-Fp
+          make libdlogfp
+          cd ..
+
+      - name: Building libbsgs for E(Fp)
+        run: |
+          cd baby
+          make libbsgsefp
+          cd ..
+
+      - name: Building libbsgs for Fp
+        run: |
+          cd baby-Fp
+          make libbsgsfp
+          cd ..
+
+
+
+      - name: Pusing all .so files to this branch
+        run: |
+          cp pollard-rho/so/libdlogefp baby/so/libbsgsefp src/EFp
+          cp pollard-rho-Fp/so/libdlogefp baby-Fp/so/libbsgsefp src/Fp
+          git config --global user.email "hi_im_mistsuu@gmail.com"
+          git config --global user.name "Misuru"
+          git commit -m "Automatically build binaries"
+          git add src
+          git push
+          
