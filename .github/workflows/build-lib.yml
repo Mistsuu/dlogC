@@ -17,9 +17,6 @@ jobs:
     name: Building .so files
     runs-on: ubuntu-latest
     steps:
-      - name: Install libgmp && libxxhash
-        run: sudo apt-get install libgmp-dev libxxhash-dev
-
       - uses: actions/checkout@v4
         with:
           ref: pollard-rho
@@ -30,6 +27,9 @@ jobs:
       - run: ls -la
       - run: ls -la run
       - run: ls -la Makefile
+
+      - name: Install libgmp && libxxhash
+        run: sudo apt-get install libgmp-dev libxxhash-dev
 
       - name: Building libdlog for E(Fp)
         run: make libdlogefp
