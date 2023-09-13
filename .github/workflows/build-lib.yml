@@ -10,7 +10,7 @@ on:
       - "pohlig-hellman"
 
 permissions:
-  content: write
+  contents: write
 
 jobs:
   libbuild:
