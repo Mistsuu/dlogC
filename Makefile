@@ -26,6 +26,7 @@ default: dlog libbsgsfp
 # For creating a user interface binary
 dlog: $(FULLOBJS) $(OBJECT_DIR)/main.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+	strip dlog
 
 $(OBJECT_DIR):
 	mkdir -p $(OBJECT_DIR)
