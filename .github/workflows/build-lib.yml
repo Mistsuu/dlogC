@@ -28,6 +28,8 @@ jobs:
             'Makefile'
 
       - run: ls -la
+      - run: ls -la run
+      - run: ls -la Makefile
 
       - name: Building libdlog for E(Fp)
         run: make libdlogefp
