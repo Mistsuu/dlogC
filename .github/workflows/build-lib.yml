@@ -32,7 +32,7 @@ jobs:
           ref: pohlig-hellman
 
       - name: Pusing libdlog for E(Fp) to this branch
-      - run: |
+        run: |
           cp so/libdlogefp.so libdlogefp.so
           git add libdlogefp.so
           git commit -m "Automatically compile libdlogefp.so"
