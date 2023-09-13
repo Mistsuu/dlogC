@@ -28,7 +28,7 @@ jobs:
           path: Makefile
 
       - run: ls -la
-      - run: ls -la run
+      - run: ls -la src
       - run: ls -la Makefile
 
       - name: Install libgmp && libxxhash
