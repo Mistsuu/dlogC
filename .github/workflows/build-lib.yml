@@ -31,7 +31,7 @@ jobs:
         run: |
           cp so/libdlogefp.so libdlogefp.so
           git config --global user.email "hi_im_mistsu_hehe@gmail.com"
-          git commit --global user.name "Misuru"
+          git config --global user.name "Misuru"
           git add libdlogefp.so
           git commit -m "Automatically compile libdlogefp.so"
           git push
