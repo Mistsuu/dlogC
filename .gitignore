@@ -1,9 +1,5 @@
-*
-
-!.gitignore
-!.github
-
-!libdlogefp.so
-!libbsgsefp.so
-!libdlogfp.so
-!libbsgsfp.so
+.vscode
+misc
+obj
+so
+dlog
