@@ -22,12 +22,12 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          repository: pollard-rho
+          ref: pollard-rho
           path: 'src'
 
       - uses: actions/checkout@v4
         with:
-          repository: pollard-rho
+          ref: pollard-rho
           path: 'Makefile'
 
       - name: Building libdlog for E(Fp)
