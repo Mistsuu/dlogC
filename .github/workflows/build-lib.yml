@@ -7,7 +7,6 @@ on:
       - "pollard-rho-Fp"
       - "baby"
       - "baby-Fp"
-      - "pohlig-hellman"
 
 permissions:
   contents: write
