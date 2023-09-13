@@ -24,10 +24,16 @@ jobs:
         with:
           ref: pollard-rho
 
-      - run: git checkout pollard-rho
-      - run: make libdlogefp
-      - run: git checkout pohlig-hellman
-      - run: cp so/libdlogefp.so libdlogefp.so
-      - run: git add libdlogefp.so
-      - run: git commit -m "Automatically compile libdlogefp.so"
-      - run: git push
+      - name: Building libdlog for E(Fp)
+        run: make libdlogefp
+        
+      - uses: actions/checkout@v4
+        with:
+          ref: pohlig-hellman
+
+      - name: Pusing libdlog for E(Fp) to this branch
+      - run: |
+          cp so/libdlogefp.so libdlogefp.so
+          git add libdlogefp.so
+          git commit -m "Automatically compile libdlogefp.so"
+          git push
