@@ -1,0 +1,8 @@
+*
+
+!.gitignore
+
+!libdlogefp.so
+!libbsgsefp.so
+!libdlogfp.so
+!libbsgsfp.so
