@@ -10,7 +10,7 @@ on:
       - "pohlig-hellman"
 
 env:
-  MAIN_BRANCHES: "pollard-rho","pollard-rho-Fp","baby","baby-Fp"
+  MAIN_BRANCHES: pollard-rho,pollard-rho-Fp,baby,baby-Fp
 
 permissions:
   contents: write
