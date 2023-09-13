@@ -24,8 +24,8 @@ jobs:
         with:
           ref: pollard-rho
           path: |
-            'src'
-            'Makefile'
+            src
+            Makefile
 
       - run: ls -la
       - run: ls -la run
