@@ -26,10 +26,6 @@ jobs:
 
       - name: Building libdlog for E(Fp)
         run: make libdlogefp
-        
-      - uses: actions/checkout@v4
-        with:
-          ref: pohlig-hellman
 
       - name: Pusing libdlog for E(Fp) to this branch
         run: |
