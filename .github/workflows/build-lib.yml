@@ -27,6 +27,8 @@ jobs:
             'src'
             'Makefile'
 
+      - run: ls -la
+
       - name: Building libdlog for E(Fp)
         run: make libdlogefp
 
