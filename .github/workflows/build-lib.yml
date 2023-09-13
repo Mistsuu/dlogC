@@ -1,0 +1,92 @@
+name: Building lib*dlog.so files
+
+on:
+  push:
+    branches: 
+      - "pollard-rho"
+      - "pollard-rho-Fp"
+      - "baby"
+      - "baby-Fp"
+
+permissions:
+  contents: write
+
+jobs:
+  libbuild:
+    name: Building .so files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: pohlig-hellman
+      
+      - uses: actions/checkout@v4
+        with:
+          ref: pollard-rho
+          path: pollard-rho
+
+      - uses: actions/checkout@v4
+        with:
+          ref: pollard-rho-Fp
+          path: pollard-rho-Fp
+
+      - uses: actions/checkout@v4
+        with:
+          ref: baby
+          path: baby
+
+      - uses: actions/checkout@v4
+        with:
+          ref: baby-Fp
+          path: baby-Fp
+
+
+      - name: Create output folders
+        run: |
+          mkdir -p bin/EFp
+          mkdir -p bin/Fp
+
+
+      - name: Install libgmp && libxxhash
+        run: sudo apt-get install libgmp-dev libxxhash-dev
+
+
+
+      - name: Building libdlog for E(Fp)
+        run: |
+          cd pollard-rho
+          make libdlogefp
+          cd ..
+
+      - name: Building libdlog for Fp
+        run: |
+          cd pollard-rho-Fp
+          make libdlogfp
+          cd ..
+
+      - name: Building libbsgs for E(Fp)
+        run: |
+          cd baby
+          make libbsgsefp
+          cd ..
+
+      - name: Building libbsgs for Fp
+        run: |
+          cd baby-Fp
+          make libbsgsfp
+          cd ..
+
+
+
+      - name: Pusing all .so files to this branch
+        run: |
+          cp pollard-rho/so/* baby/so/* bin/EFp
+          cp pollard-rho-Fp/so/* baby-Fp/so/* bin/Fp
+          
+          git config --global user.email "hi_im_mistsuu@gmail.com"
+          git config --global user.name "Misuru"
+          
+          git add bin
+          git commit -m "Automatically build binaries"
+          git push
+          
