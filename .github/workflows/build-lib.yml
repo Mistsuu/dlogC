@@ -18,4 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo $GITHUB_HEAD_REF
+      - run: git checkout pollard-rho
+      - run: apt install libgmp-dev libxxhash-dev
+      - run: make libdlogefp
+      - run: git checkout pohlig-hellman
+      - run: cp so/libdlogefp.so libdlogefp.so
+      - run: git add libdlogefp.so
+      - run: git commit -m "Automatically compile libdlogefp.so"
+      - run: git push
