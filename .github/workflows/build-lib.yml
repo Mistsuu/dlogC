@@ -30,7 +30,7 @@ jobs:
           ref: pollard-rho-Fp
           path: pollard-rho-Fp
 
-      - run: echo "my main branches ${MAIN_BRANCHES}"
+      - run: echo "my main branches ${MAIN_BRANCHES[1]}"
 
       - name: Install libgmp && libxxhash
         run: sudo apt-get install libgmp-dev libxxhash-dev
