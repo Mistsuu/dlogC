@@ -10,8 +10,7 @@ on:
       - "pohlig-hellman"
 
 env:
-  MAIN_BRANCHES: ("develop" "main")
-
+  MAIN_BRANCHES: ["pollard-rho", "pollard-rho-Fp", "baby", "baby-Fp"]
 
 permissions:
   contents: write
