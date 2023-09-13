@@ -77,8 +77,8 @@ jobs:
 
       - name: Pusing all .so files to this branch
         run: |
-          cp pollard-rho/so/libdlogefp baby/so/libbsgsefp bin/EFp
-          cp pollard-rho-Fp/so/libdlogfp baby-Fp/so/libbsgsfp bin/Fp
+          cp pollard-rho/so/libdlogefp.so baby/so/libbsgsefp.so bin/EFp
+          cp pollard-rho-Fp/so/libdlogfp.so baby-Fp/so/libbsgsfp.so bin/Fp
           git config --global user.email "hi_im_mistsuu@gmail.com"
           git config --global user.name "Misuru"
           git commit -m "Automatically build binaries"
